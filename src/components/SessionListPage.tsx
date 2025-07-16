@@ -1,7 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { FileText, Search, Plus, Play, Pause, Square, Clock, User, Calendar, Filter, Download, Eye } from 'lucide-react';
 import { supabase } from '../lib/supabase';
-import { supabase } from '../lib/supabase';
 import { Session } from '../types/session';
 import { Patient } from '../types/patient';
 import StartSessionModal from './StartSessionModal';
