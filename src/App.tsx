@@ -18,6 +18,7 @@ function App() {
   const [showAdminPanel, setShowAdminPanel] = useState(false);
   const [showPatientPanel, setShowPatientPanel] = useState(false);
   const [showSessionsPanel, setShowSessionsPanel] = useState(false);
+  const [selectedPatientFilter, setSelectedPatientFilter] = useState<string | null>(null);
   const [activeRecordingSession, setActiveRecordingSession] = useState<{
     patientId: string;
     title: string;
@@ -37,6 +38,7 @@ function App() {
     setShowAdminPanel(false);
     setShowPatientPanel(false);
     setShowSessionsPanel(false);
+    setSelectedPatientFilter(null);
     setActiveRecordingSession(null);
   };
 
@@ -44,6 +46,7 @@ function App() {
     setShowAdminPanel(true);
     setShowPatientPanel(false);
     setShowSessionsPanel(false);
+    setSelectedPatientFilter(null);
     setActiveRecordingSession(null);
   };
 
@@ -51,6 +54,7 @@ function App() {
     setShowAdminPanel(false);
     setShowPatientPanel(true);
     setShowSessionsPanel(false);
+    setSelectedPatientFilter(null);
     setActiveRecordingSession(null);
   };
 
@@ -58,6 +62,15 @@ function App() {
     setShowAdminPanel(false);
     setShowPatientPanel(false);
     setShowSessionsPanel(true);
+    setSelectedPatientFilter(null);
+    setActiveRecordingSession(null);
+  };
+
+  const navigateToSessionsWithPatient = (patientId: string) => {
+    setShowAdminPanel(false);
+    setShowPatientPanel(false);
+    setShowSessionsPanel(true);
+    setSelectedPatientFilter(patientId);
     setActiveRecordingSession(null);
   };
 
@@ -292,7 +305,10 @@ function App() {
           </header>
 
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-            <PatientList currentUser={user} />
+            <PatientList 
+              currentUser={user} 
+              onNavigateToSessions={navigateToSessionsWithPatient}
+            />
           </div>
         </div>
       </>
