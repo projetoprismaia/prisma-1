@@ -41,6 +41,7 @@ export default function RecordingPage({
   const [patientName, setPatientName] = useState('');
   const [microphonePermission, setMicrophonePermission] = useState<'granted' | 'denied' | 'prompt'>('prompt');
   const [interimTranscript, setInterimTranscript] = useState('');
+  const [hasStarted, setHasStarted] = useState(false);
   
   const recognitionRef = useRef<SpeechRecognition | null>(null);
   const intervalRef = useRef<NodeJS.Timeout | null>(null);
@@ -53,8 +54,8 @@ export default function RecordingPage({
     // Fetch patient name
     fetchPatientName();
     
-    // Create session and start recording automatically
-    createSessionAndStart();
+    // Create session but don't start recording automatically
+    createSession();
 
     // Cleanup
     return () => {
@@ -235,7 +236,7 @@ export default function RecordingPage({
     }
   };
 
-  const createSessionAndStart = async () => {
+  const createSession = async () => {
     if (!isSupported) {
       showError(
         'Navegador Não Suportado',
@@ -268,8 +269,7 @@ export default function RecordingPage({
       console.log('✅ Sessão criada com sucesso:', data);
       setCurrentSession(data);
       
-      // Start recording automatically
-      startRecording();
+      // Session created, ready to start recording manually
     } catch (error) {
       console.error('Erro ao criar sessão:', error);
       showError(
@@ -526,9 +526,11 @@ export default function RecordingPage({
                   ? 'bg-red-100 text-red-800' 
                   : isPaused 
                   ? 'bg-yellow-100 text-yellow-800'
-                  : 'bg-gray-100 text-gray-800'
+                  : hasStarted 
+                  ? 'bg-gray-100 text-gray-800'
+                  : 'bg-blue-100 text-blue-800'
               }`}>
-                {isRecording && !isPaused ? 'Gravando' : isPaused ? 'Pausado' : 'Parado'}
+                {isRecording && !isPaused ? 'Gravando' : isPaused ? 'Pausado' : hasStarted ? 'Parado' : 'Pronto para Iniciar'}
               </div>
             </div>
           </div>
@@ -577,34 +579,64 @@ export default function RecordingPage({
             <div className="bg-white rounded-xl shadow-lg p-6">
               <h2 className="text-xl font-semibold text-gray-800 mb-6">Controles de Gravação</h2>
               
-              <div className="flex items-center justify-center space-x-4">
-                {!isPaused ? (
+              <div className="flex items-center justify-center space-x-4 flex-wrap gap-2">
+                {!hasStarted ? (
                   <button
-                    onClick={pauseRecording}
-                    disabled={!isRecording}
-                    className="bg-yellow-600 hover:bg-yellow-700 disabled:bg-gray-400 text-white px-6 py-3 rounded-lg flex items-center space-x-2 transition-colors duration-200 shadow-md"
+                    onClick={startRecording}
+                    disabled={microphonePermission !== 'granted' || !isSupported}
+                    className="bg-green-600 hover:bg-green-700 disabled:bg-gray-400 text-white px-8 py-4 rounded-lg flex items-center space-x-3 transition-colors duration-200 shadow-md text-lg font-medium"
                   >
-                    <Pause className="h-5 w-5" />
-                    <span>Pausar</span>
+                    <Play className="h-6 w-6" />
+                    <span>Iniciar Gravação</span>
                   </button>
                 ) : (
+                  <>
+                    {!isPaused ? (
+                      <button
+                        onClick={pauseRecording}
+                        disabled={!isRecording}
+                        className="bg-yellow-600 hover:bg-yellow-700 disabled:bg-gray-400 text-white px-6 py-3 rounded-lg flex items-center space-x-2 transition-colors duration-200 shadow-md"
+                      >
+                        <Pause className="h-5 w-5" />
+                        <span>Pausar</span>
+                      </button>
+                    ) : (
+                      <button
+                        onClick={resumeRecording}
+                        className="bg-green-600 hover:bg-green-700 text-white px-6 py-3 rounded-lg flex items-center space-x-2 transition-colors duration-200 shadow-md"
+                      >
+                        <Play className="h-5 w-5" />
+                        <span>Retomar</span>
+                      </button>
+                    )}
+                    
+                    <button
+                      onClick={stopRecording}
+                      disabled={!isRecording}
+                      className="bg-red-600 hover:bg-red-700 disabled:bg-gray-400 text-white px-6 py-3 rounded-lg flex items-center space-x-2 transition-colors duration-200 shadow-md"
+                    >
+                      <Square className="h-5 w-5" />
+                      <span>Finalizar</span>
+                    </button>
+                  </>
+                )}
+              </div>
+              
+              {/* Status da gravação */}
+              <div className="mt-4 text-center">
+                {!hasStarted && microphonePermission === 'granted' && (
+                  <p className="text-sm text-gray-600">
+                    ✅ Tudo pronto! Clique em "Iniciar Gravação" para começar a transcrição.
+                  </p>
+                )}
+                {!hasStarted && microphonePermission !== 'granted' && (
                   <button
-                    onClick={resumeRecording}
-                    className="bg-green-600 hover:bg-green-700 text-white px-6 py-3 rounded-lg flex items-center space-x-2 transition-colors duration-200 shadow-md"
+                    onClick={requestMicrophonePermission}
+                    className="text-sm text-blue-600 hover:text-blue-700 underline"
                   >
-                    <Play className="h-5 w-5" />
-                    <span>Retomar</span>
+                    Permitir acesso ao microfone
                   </button>
                 )}
-                
-                <button
-                  onClick={stopRecording}
-                  disabled={!isRecording}
-                  className="bg-red-600 hover:bg-red-700 disabled:bg-gray-400 text-white px-6 py-3 rounded-lg flex items-center space-x-2 transition-colors duration-200 shadow-md"
-                >
-                  <Square className="h-5 w-5" />
-                  <span>Finalizar</span>
-                </button>
               </div>
             </div>
 
@@ -625,7 +657,7 @@ export default function RecordingPage({
               <textarea
                 value={transcript}
                 onChange={(e) => setTranscript(e.target.value)}
-                placeholder="A transcrição aparecerá aqui em tempo real conforme você fala..."
+                placeholder={hasStarted ? "A transcrição aparecerá aqui em tempo real conforme você fala..." : "Clique em 'Iniciar Gravação' para começar a transcrever sua consulta..."}
                 className="w-full h-96 p-4 border border-gray-200 rounded-lg resize-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                 style={{ fontFamily: 'monospace' }}
               />
@@ -640,7 +672,7 @@ export default function RecordingPage({
               
               <div className="mt-4 flex items-center justify-between text-sm text-gray-500">
                 <span>{transcript.length + interimTranscript.length} caracteres</span>
-                <span>Auto-save a cada 30 segundos</span>
+                <span>{hasStarted ? 'Auto-save a cada 30 segundos' : 'Pronto para iniciar'}</span>
               </div>
             </div>
           </div>
@@ -710,7 +742,7 @@ export default function RecordingPage({
                 <span className={`text-sm font-medium ${
                   microphonePermission === 'granted' ? 'text-green-800' : 'text-red-800'
                 }`}>
-                  Status do Microfone
+                  {isRecording && !isPaused ? 'Ouvindo...' : isPaused ? 'Pausado' : hasStarted ? 'Parado' : 'Aguardando início'}
                 </span>
               </div>
               <p className={`text-sm ${
