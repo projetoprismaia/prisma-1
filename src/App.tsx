@@ -13,6 +13,9 @@ import { useNotification } from './hooks/useNotification';
 
 function App() {
   const { user, loading, error, signOut, isAdmin } = useAuth();
+  const [showAdminPanel, setShowAdminPanel] = useState(false);
+  const [showPatientPanel, setShowPatientPanel] = useState(false);
+  const [showSessionsPanel, setShowSessionsPanel] = useState(false);
   const [activeRecordingSession, setActiveRecordingSession] = useState<{
     patientId: string;
     title: string;
