@@ -4,6 +4,7 @@ import { supabase } from '../lib/supabase';
 import { Patient, PatientFormData } from '../types/patient';
 import { AuthUser } from '../types/user';
 import PatientFormModal from './PatientFormModal';
+import { useNotification } from '../hooks/useNotification';
 
 interface PatientListProps {
   currentUser: AuthUser;
@@ -11,6 +12,7 @@ interface PatientListProps {
 
 export default function PatientList({ currentUser }: PatientListProps) {
   const [patients, setPatients] = useState<Patient[]>([]);
+  const { showSuccess, showError } = useNotification();
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
   const [showPatientFormModal, setShowPatientFormModal] = useState(false);
@@ -87,9 +89,18 @@ export default function PatientList({ currentUser }: PatientListProps) {
 
       setShowPatientFormModal(false);
       setEditingPatient(null);
+      showSuccess(
+        editingPatient ? 'Paciente Atualizado' : 'Paciente Criado',
+        editingPatient 
+          ? 'Os dados do paciente foram atualizados com sucesso.'
+          : 'O novo paciente foi adicionado com sucesso.'
+      );
     } catch (error: any) {
       console.error('Erro ao salvar paciente:', error);
-      alert(`Erro ao salvar paciente: ${error.message}`);
+      showError(
+        'Erro ao Salvar',
+        `Não foi possível salvar o paciente: ${error.message}`
+      );
     } finally {
       setFormLoading(false);
     }
@@ -107,9 +118,16 @@ export default function PatientList({ currentUser }: PatientListProps) {
       // Remove from local state
       setPatients(patients.filter(patient => patient.id !== patientId));
       setDeleteConfirm(null);
+      showSuccess(
+        'Paciente Removido',
+        'O paciente foi removido com sucesso do sistema.'
+      );
     } catch (error: any) {
       console.error('Erro ao deletar paciente:', error);
-      alert(`Erro ao deletar paciente: ${error.message}`);
+      showError(
+        'Erro ao Deletar',
+        `Não foi possível deletar o paciente: ${error.message}`
+      );
     }
   };
 

@@ -3,6 +3,7 @@ import { Users, Shield, UserCheck, UserX, Search, Filter, Plus, Edit, Trash2, Ph
 import { supabase } from '../lib/supabase';
 import { UserProfile, UserRole } from '../types/user';
 import UserFormModal, { UserFormData } from './UserFormModal';
+import { useNotification } from '../hooks/useNotification';
 
 interface AdminPanelProps {
   currentUser: any;
@@ -10,6 +11,7 @@ interface AdminPanelProps {
 
 export default function AdminPanel({ currentUser }: AdminPanelProps) {
   const [users, setUsers] = useState<UserProfile[]>([]);
+  const { showSuccess, showError, showWarning } = useNotification();
   const [patientCounts, setPatientCounts] = useState<Record<string, number>>({});
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
@@ -149,7 +151,10 @@ export default function AdminPanel({ currentUser }: AdminPanelProps) {
 
   const updateUserRole = async (userId: string, newRole: UserRole) => {
     if (userId === currentUser.id) {
-      alert('Você não pode alterar seu próprio role!');
+      showWarning(
+        'Ação Não Permitida',
+        'Você não pode alterar seu próprio role de usuário.'
+      );
       return;
     }
 
@@ -167,7 +172,10 @@ export default function AdminPanel({ currentUser }: AdminPanelProps) {
       ));
     } catch (error) {
       console.error('Erro ao atualizar role:', error);
-      alert('Erro ao atualizar role do usuário');
+      showError(
+        'Erro ao Atualizar',
+        'Não foi possível atualizar o role do usuário. Tente novamente.'
+      );
     } finally {
       setUpdating(null);
     }
@@ -231,7 +239,10 @@ export default function AdminPanel({ currentUser }: AdminPanelProps) {
       setEditingUser(null);
     } catch (error: any) {
       console.error('Erro ao salvar usuário:', error);
-      alert(`Erro ao salvar usuário: ${error.message}`);
+      showError(
+        'Erro ao Salvar Usuário',
+        `Não foi possível salvar o usuário: ${error.message}`
+      );
     } finally {
       setFormLoading(false);
     }
@@ -239,7 +250,10 @@ export default function AdminPanel({ currentUser }: AdminPanelProps) {
 
   const handleDeleteUser = async (userId: string) => {
     if (userId === currentUser.id) {
-      alert('Você não pode deletar sua própria conta!');
+      showWarning(
+        'Ação Não Permitida',
+        'Você não pode deletar sua própria conta.'
+      );
       return;
     }
 
@@ -262,9 +276,16 @@ export default function AdminPanel({ currentUser }: AdminPanelProps) {
       // Remove user from local state
       setUsers(users.filter(user => user.id !== userId));
       setDeleteConfirm(null);
+      showSuccess(
+        'Usuário Deletado',
+        'O usuário foi removido com sucesso do sistema.'
+      );
     } catch (error: any) {
       console.error('Erro ao deletar usuário:', error);
-      alert(`Erro ao deletar usuário: ${error.message}`);
+      showError(
+        'Erro ao Deletar',
+        `Não foi possível deletar o usuário: ${error.message}`
+      );
     }
   };
 

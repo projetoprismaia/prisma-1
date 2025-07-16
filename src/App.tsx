@@ -8,10 +8,13 @@ import AdminPanel from './components/AdminPanel';
 import PatientList from './components/PatientList';
 import SessionListPage from './components/SessionListPage';
 import StartSessionModal from './components/StartSessionModal';
+import NotificationModal from './components/NotificationModal';
+import { useNotification } from './hooks/useNotification';
 import { Session } from './types/session';
 
 function App() {
   const { user, loading, error, signOut, isAdmin } = useAuth();
+  const { notification, hideNotification, showSuccess, showError, showWarning } = useNotification();
 
   // Recording states
   const [isRecording, setIsRecording] = useState(false);
@@ -150,7 +153,10 @@ function App() {
       setCurrentSession(data);
     } catch (error) {
       console.error('Erro ao criar sessão:', error);
-      alert('❌ Erro ao criar sessão. Verifique se você tem pacientes cadastrados.');
+      showError(
+        'Erro ao Criar Sessão',
+        'Não foi possível criar a sessão. Verifique se você tem pacientes cadastrados e tente novamente.'
+      );
     }
   };
 
@@ -253,10 +259,16 @@ function App() {
       setDuration('00:00:00');
       setStartTime(null);
       
-      alert('✅ Sessão salva com sucesso no banco de dados!');
+      showSuccess(
+        'Sessão Salva!',
+        'A sessão foi salva com sucesso no banco de dados e está vinculada ao paciente.'
+      );
     } catch (error) {
       console.error('❌ Erro ao salvar sessão:', error);
-      alert('❌ Erro ao salvar sessão. Tente novamente.');
+      showError(
+        'Erro ao Salvar',
+        'Não foi possível salvar a sessão. Verifique sua conexão e tente novamente.'
+      );
     }
   };
 
@@ -658,6 +670,15 @@ function App() {
           currentUser={user}
         />
       )}
+
+      {/* Notification Modal */}
+      <NotificationModal
+        isOpen={notification.isOpen}
+        type={notification.type}
+        title={notification.title}
+        message={notification.message}
+        onClose={hideNotification}
+      />
     </div>
   );
 }
