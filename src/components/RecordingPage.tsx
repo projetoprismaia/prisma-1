@@ -791,54 +791,55 @@ export default function RecordingPage({
   }
 
   return (
-    <div className="min-h-screen">
-      {/* Header */}
-      <header className="glass-card shadow-lg border-b border-blue-200">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center space-x-4">
-              <button
-                onClick={handleCancel}
-                className="flex items-center space-x-2 text-gray-600 hover:text-gray-900 transition-colors"
-              >
-                <ArrowLeft className="h-5 w-5" />
-                <span>Voltar</span>
-              </button>
-              
-              <div className="flex items-center space-x-3">
-                <div className="bg-red-600 p-2 rounded-lg">
-                  <Mic className="h-6 w-6 text-white" />
-                </div>
-                <div>
-                  <h1 className="text-xl font-bold text-gray-900">Gravação em Andamento</h1>
-                  <p className="text-sm text-gray-600">{sessionTitle}</p>
-                </div>
-              </div>
-            </div>
-            
-            <div className="flex items-center space-x-6">
-              <div className="flex items-center space-x-2 text-sm text-gray-600">
-                <Clock className="h-4 w-4" />
-                <span className="font-mono font-semibold text-lg">{duration}</span>
-              </div>
-              
-              <div className={`px-3 py-1 rounded-full text-sm font-medium ${
-                isRecording && !isPaused 
-                  ? 'bg-red-100 text-red-800' 
-                  : isPaused 
-                  ? 'bg-yellow-100 text-yellow-800'
-                  : hasStarted 
-                  ? 'bg-gray-100 text-gray-800'
-                  : 'bg-blue-100 text-blue-800'
-              }`}>
-                {isRecording && !isPaused ? 'Gravando' : isPaused ? 'Pausado' : hasStarted ? 'Parado' : 'Pronto para Iniciar'}
-              </div>
-            </div>
+    <div className="min-h-screen max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+      {/* Page Header with Recording Info */}
+      <div className="glass-card rounded-xl shadow-lg p-6 mb-8">
+        <div className="flex items-center justify-between mb-4">
+          <button
+            onClick={handleCancel}
+            className="flex items-center space-x-2 text-gray-600 hover:text-gray-900 transition-colors"
+          >
+            <ArrowLeft className="h-5 w-5" />
+            <span>Voltar</span>
+          </button>
+          
+          <div className={`px-4 py-2 rounded-full text-sm font-medium flex items-center space-x-2 ${
+            isRecording && !isPaused 
+              ? 'bg-red-100 text-red-800' 
+              : isPaused 
+              ? 'bg-yellow-100 text-yellow-800'
+              : hasStarted 
+              ? 'bg-gray-100 text-gray-800'
+              : 'bg-blue-100 text-blue-800'
+          }`}>
+            <div className={`w-2 h-2 rounded-full ${
+              isRecording && !isPaused ? 'bg-red-500 animate-pulse' : 'bg-gray-400'
+            }`}></div>
+            <span>{isRecording && !isPaused ? 'Gravando' : isPaused ? 'Pausado' : hasStarted ? 'Parado' : 'Pronto para Iniciar'}</span>
           </div>
         </div>
-      </header>
+        
+        <div className="flex items-center justify-between">
+          <div className="flex items-center space-x-4">
+            <div className="bg-red-600 p-3 rounded-lg">
+              <Mic className="h-6 w-6 text-white" />
+            </div>
+            <div>
+              <h1 className="text-2xl font-bold text-gray-900">Gravação em Andamento</h1>
+              <p className="text-gray-600">{sessionTitle}</p>
+            </div>
+          </div>
+          
+          <div className="text-right">
+            <div className="flex items-center space-x-2 text-gray-600 mb-1">
+              <Clock className="h-4 w-4" />
+              <span className="text-sm">Duração</span>
+            </div>
+            <span className="font-mono font-bold text-2xl text-gray-900">{duration}</span>
+          </div>
+        </div>
+      </div>
 
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
           {/* Main Recording Area */}
           <div className="lg:col-span-2 space-y-6">
@@ -1086,7 +1087,6 @@ export default function RecordingPage({
             </div>
           </div>
         </div>
-      </div>
     </div>
   );
 }
