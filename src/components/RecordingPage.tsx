@@ -689,7 +689,6 @@ export default function RecordingPage({
                   ) : null}
                   )}
                 </div>
-
                 {/* Session Title */}
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-2">
