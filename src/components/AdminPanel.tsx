@@ -26,6 +26,8 @@ export default function AdminPanel({ currentUser }: AdminPanelProps) {
 
   const fetchUsers = async () => {
     try {
+      console.log('🔍 Buscando usuários e contagem de pacientes...');
+      
       // Buscar usuários
       const { data: usersData, error: usersError } = await supabase
         .from('profiles')
@@ -33,34 +35,55 @@ export default function AdminPanel({ currentUser }: AdminPanelProps) {
         .order('created_at', { ascending: false });
 
       if (usersError) throw usersError;
+      console.log('👥 Usuários encontrados:', usersData?.length || 0);
       setUsers(usersData || []);
 
       // Buscar contagem de pacientes para cada usuário
       if (usersData && usersData.length > 0) {
+        console.log('🔍 Buscando pacientes...');
         const { data: patientsData, error: patientsError } = await supabase
           .from('patients')
-          .select('user_id');
+          .select('user_id, name');
 
         if (patientsError) {
           console.error('Erro ao buscar pacientes:', patientsError);
+          // Em caso de erro, inicializar com zeros
+          const emptyCounts: Record<string, number> = {};
+          usersData.forEach(user => {
+            emptyCounts[user.id] = 0;
+          });
+          setPatientCounts(emptyCounts);
         } else {
+          console.log('👤 Total de pacientes no banco:', patientsData?.length || 0);
+          console.log('📊 Dados dos pacientes:', patientsData);
+          
           // Contar pacientes por usuário
           const counts: Record<string, number> = {};
+          
+          // Inicializar todos os usuários com 0
           usersData.forEach(user => {
             counts[user.id] = 0;
           });
           
+          // Contar pacientes para cada usuário
           patientsData?.forEach(patient => {
-            if (counts.hasOwnProperty(patient.user_id)) {
+            if (patient.user_id && counts.hasOwnProperty(patient.user_id)) {
               counts[patient.user_id]++;
+            } else if (patient.user_id) {
+              console.warn('⚠️ Paciente com user_id não encontrado nos usuários:', patient.user_id);
             }
           });
           
+          console.log('📈 Contagem final por usuário:', counts);
           setPatientCounts(counts);
         }
+      } else {
+        console.log('👥 Nenhum usuário encontrado');
+        setPatientCounts({});
       }
     } catch (error) {
       console.error('Erro ao buscar usuários:', error);
+      setPatientCounts({});
     } finally {
       setLoading(false);
     }
@@ -301,9 +324,23 @@ export default function AdminPanel({ currentUser }: AdminPanelProps) {
               <User className="h-5 w-5 text-green-600" />
               <span className="text-sm font-medium text-green-800">Total de Pacientes</span>
             </div>
-            <p className="text-2xl font-bold text-green-900 mt-1">
-              {Object.values(patientCounts).reduce((sum, count) => sum + count, 0)}
-            </p>
+            <div className="flex items-center space-x-2 mt-1">
+              <p className="text-2xl font-bold text-green-900">
+                {Object.keys(patientCounts).length > 0 
+                  ? Object.values(patientCounts).reduce((sum, count) => sum + count, 0)
+                  : '...'
+                }
+              </p>
+              {Object.keys(patientCounts).length > 0 && (
+                <button
+                  onClick={fetchUsers}
+                  className="text-xs text-green-600 hover:text-green-800 underline"
+                  title="Atualizar contagem"
+                >
+                  ↻ Atualizar
+                </button>
+              )}
+            </div>
           </div>
         </div>
 
@@ -341,7 +378,12 @@ export default function AdminPanel({ currentUser }: AdminPanelProps) {
                         <p>Criado em: {new Date(user.created_at).toLocaleDateString('pt-BR')}</p>
                         <p className="flex items-center">
                           <Users className="h-3 w-3 mr-1" />
-                          {patientCounts[user.id] || 0} paciente{(patientCounts[user.id] || 0) !== 1 ? 's' : ''}
+                          <span className="font-medium">
+                            {patientCounts[user.id] !== undefined ? patientCounts[user.id] : '...'}
+                          </span>
+                          <span className="ml-1">
+                            {patientCounts[user.id] === 1 ? 'paciente' : 'pacientes'}
+                          </span>
                         </p>
                       </div>
                     </div>
