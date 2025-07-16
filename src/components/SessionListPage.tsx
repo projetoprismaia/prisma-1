@@ -1,13 +1,13 @@
 import React, { useState, useEffect } from 'react';
-import { FileText, Search, Plus, Play, Pause, Square, Clock, User, Calendar, Filter, Download, Eye } from 'lucide-react';
+import { FileText, Search, Plus, Play, Pause, Square, Clock, User, Calendar, Filter, Download, Eye, Mic } from 'lucide-react';
 import { supabase } from '../lib/supabase';
 import { Session } from '../types/session';
 import { Patient } from '../types/patient';
-import StartSessionModal from './StartSessionModal';
+import { AuthUser } from '../types/user';
 
 interface SessionListPageProps {
   currentUser: AuthUser;
-  onStartRecording: (patientId: string, title: string) => void;
+  onStartRecording: () => void;
   initialPatientFilter?: string;
 }
 
@@ -26,7 +26,6 @@ export default function SessionListPage({ currentUser, onStartRecording, initial
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedPatient, setSelectedPatient] = useState<string>('all');
   const [dateFilter, setDateFilter] = useState('');
-  const [showStartModal, setShowStartModal] = useState(false);
   const [selectedSession, setSelectedSession] = useState<Session | null>(null);
 
   useEffect(() => {
@@ -80,10 +79,9 @@ export default function SessionListPage({ currentUser, onStartRecording, initial
     }
   };
 
-  const handleStartSession = async (patientId: string, title: string) => {
-    log('Iniciando nova sessão:', { patientId, title });
-    setShowStartModal(false);
-    onStartRecording(patientId, title);
+  const handleStartSession = () => {
+    log('Iniciando nova sessão - indo direto para gravação');
+    onStartRecording();
   };
 
   const exportSession = (session: Session) => {
@@ -179,10 +177,10 @@ export default function SessionListPage({ currentUser, onStartRecording, initial
             </div>
           </div>
           <button
-            onClick={() => setShowStartModal(true)}
+            onClick={handleStartSession}
             className="bg-indigo-600 hover:bg-indigo-700 text-white px-4 py-2 rounded-lg flex items-center space-x-2 transition-colors"
           >
-            <Plus className="h-4 w-4" />
+            <Mic className="h-4 w-4" />
             <span>Nova Sessão</span>
           </button>
         </div>
@@ -260,7 +258,7 @@ export default function SessionListPage({ currentUser, onStartRecording, initial
               </p>
               {!searchTerm && selectedPatient === 'all' && !dateFilter && (
                 <button
-                  onClick={() => setShowStartModal(true)}
+                  onClick={handleStartSession}
                   className="mt-3 text-indigo-600 hover:text-indigo-700 font-medium"
                 >
                   Criar primeira sessão
@@ -333,16 +331,6 @@ export default function SessionListPage({ currentUser, onStartRecording, initial
           )}
         </div>
       </div>
-
-      {/* Start Session Modal */}
-      {showStartModal && (
-        <StartSessionModal
-          isOpen={showStartModal}
-          onClose={() => setShowStartModal(false)}
-          onStart={handleStartSession}
-          currentUser={currentUser}
-        />
-      )}
 
       {/* Session Detail Modal */}
       {selectedSession && (
