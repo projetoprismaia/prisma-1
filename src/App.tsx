@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { Mic, MicOff, Play, Pause, Square, Save, Download, Clock, FileText, Settings, Users } from 'lucide-react';
+import { supabase } from './lib/supabase';
 import { useAuth } from './hooks/useAuth';
 import AuthForm from './components/AuthForm';
 import UserProfile from './components/UserProfile';
