@@ -54,7 +54,23 @@ function App() {
             }
           }
           
-          setTranscript(prev => prev + finalTranscript);
+          if (finalTranscript) {
+            setTranscript(prev => {
+              const newTranscript = prev + finalTranscript;
+              
+              // Auto-save transcription every 30 seconds during recording
+              if (currentSession && isRecording && !isPaused) {
+                const now = Date.now();
+                const lastSave = localStorage.getItem('lastAutoSave');
+                if (!lastSave || now - parseInt(lastSave) > 30000) {
+                  localStorage.setItem('lastAutoSave', now.toString());
+                  updateSessionStatus('recording', false);
+                }
+              }
+              
+              return newTranscript;
+            });
+          }
         };
         
         recognitionRef.current.onerror = (event) => {
@@ -110,6 +126,8 @@ function App() {
     if (!user) return;
 
     try {
+      console.log('🔄 Criando nova sessão...', { patientId, title });
+      
       const { data, error } = await supabase
         .from('sessions')
         .insert({
@@ -117,15 +135,22 @@ function App() {
           user_id: user.id,
           title: title,
           status: 'recording',
-          start_time: new Date().toISOString()
+          start_time: new Date().toISOString(),
+          transcription_content: ''
         })
-        .select()
+        .select(`
+          *,
+          patient:patients(id, name, email, whatsapp)
+        `)
         .single();
 
       if (error) throw error;
+      
+      console.log('✅ Sessão criada com sucesso:', data);
       setCurrentSession(data);
     } catch (error) {
       console.error('Erro ao criar sessão:', error);
+      alert('❌ Erro ao criar sessão. Verifique se você tem pacientes cadastrados.');
     }
   };
 
@@ -133,6 +158,11 @@ function App() {
     if (recognitionRef.current) {
       setIsPaused(true);
       recognitionRef.current.stop();
+      
+      // Update session status to paused
+      if (currentSession) {
+        updateSessionStatus('paused');
+      }
     }
   };
 
@@ -140,6 +170,11 @@ function App() {
     if (recognitionRef.current) {
       setIsPaused(false);
       recognitionRef.current.start();
+      
+      // Update session status back to recording
+      if (currentSession) {
+        updateSessionStatus('recording');
+      }
     }
   };
 
@@ -152,23 +187,27 @@ function App() {
         clearInterval(intervalRef.current);
       }
       
-      // Update session status
+      // Save session with final data
       if (currentSession) {
-        updateSessionStatus('completed');
+        saveSessionToDatabase();
       }
     }
   };
 
-  const updateSessionStatus = async (status: 'recording' | 'paused' | 'completed') => {
+  const updateSessionStatus = async (status: 'recording' | 'paused' | 'completed', saveTranscript = false) => {
     if (!currentSession) return;
 
     try {
       const updateData: any = { status };
       
-      if (status === 'completed') {
+      // Always update transcription content if there's new content
+      if (transcript.trim()) {
+        updateData.transcription_content = transcript;
+      }
+      
+      if (status === 'completed' || saveTranscript) {
         updateData.end_time = new Date().toISOString();
         updateData.duration = duration;
-        updateData.transcription_content = transcript;
       }
 
       const { error } = await supabase
@@ -177,22 +216,53 @@ function App() {
         .eq('id', currentSession.id);
 
       if (error) throw error;
-      
-      if (status === 'completed') {
-        // Clear current session and transcript
-        setCurrentSession(null);
-        setTranscript('');
-        setDuration('00:00:00');
-        setStartTime(null);
-      }
+      console.log('✅ Status da sessão atualizado:', status);
     } catch (error) {
       console.error('Erro ao atualizar sessão:', error);
     }
   };
 
+  const saveSessionToDatabase = async () => {
+    if (!currentSession || !transcript.trim()) {
+      console.warn('⚠️ Não há sessão ativa ou transcrição para salvar');
+      return;
+    }
+
+    try {
+      console.log('💾 Salvando sessão no banco de dados...');
+      console.log('📝 Transcrição:', transcript.substring(0, 100) + '...');
+      console.log('⏱️ Duração:', duration);
+      
+      const { error } = await supabase
+        .from('sessions')
+        .update({
+          status: 'completed',
+          end_time: new Date().toISOString(),
+          duration: duration,
+          transcription_content: transcript
+        })
+        .eq('id', currentSession.id);
+
+      if (error) throw error;
+      
+      console.log('✅ Sessão salva com sucesso!');
+      
+      // Clear current session and transcript after successful save
+      setCurrentSession(null);
+      setTranscript('');
+      setDuration('00:00:00');
+      setStartTime(null);
+      
+      alert('✅ Sessão salva com sucesso no banco de dados!');
+    } catch (error) {
+      console.error('❌ Erro ao salvar sessão:', error);
+      alert('❌ Erro ao salvar sessão. Tente novamente.');
+    }
+  };
+
   const saveTranscription = () => {
-    if (currentSession && transcript.trim()) {
-      updateSessionStatus('completed');
+    if (currentSession) {
+      saveSessionToDatabase();
     }
   };
 
