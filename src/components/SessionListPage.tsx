@@ -1,14 +1,22 @@
 import React, { useState, useEffect } from 'react';
 import { FileText, Search, Plus, Play, Pause, Square, Clock, User, Calendar, Filter, Download, Eye } from 'lucide-react';
 import { supabase } from '../lib/supabase';
+import { supabase } from '../lib/supabase';
 import { Session } from '../types/session';
 import { Patient } from '../types/patient';
-import { AuthUser } from '../types/user';
 import StartSessionModal from './StartSessionModal';
 
 interface SessionListPageProps {
   currentUser: AuthUser;
   onStartSession: (patientId: string, title: string) => void;
+}
+
+// Add debug logging
+const DEBUG = true;
+const log = (message: string, data?: any) => {
+  if (DEBUG) {
+    console.log(`[SessionListPage] ${message}`, data);
+  }
 }
 
 export default function SessionListPage({ currentUser, onStartSession }: SessionListPageProps) {
@@ -28,18 +36,21 @@ export default function SessionListPage({ currentUser, onStartSession }: Session
 
   const fetchSessions = async () => {
     try {
+      log('Iniciando busca de sessões...');
       const { data, error } = await supabase
         .from('sessions')
         .select(`
           *,
           patient:patients(id, name, email, whatsapp)
         `)
+        .eq('user_id', currentUser.id)
         .order('created_at', { ascending: false });
 
       if (error) throw error;
+      log('Sessões encontradas:', data);
       setSessions(data || []);
     } catch (error) {
-      console.error('Erro ao buscar sessões:', error);
+      log('Erro ao buscar sessões:', error);
     } finally {
       setLoading(false);
     }
@@ -47,19 +58,23 @@ export default function SessionListPage({ currentUser, onStartSession }: Session
 
   const fetchPatients = async () => {
     try {
+      log('Iniciando busca de pacientes...');
       const { data, error } = await supabase
         .from('patients')
         .select('*')
+        .eq('user_id', currentUser.id)
         .order('name');
 
       if (error) throw error;
+      log('Pacientes encontrados:', data);
       setPatients(data || []);
     } catch (error) {
-      console.error('Erro ao buscar pacientes:', error);
+      log('Erro ao buscar pacientes:', error);
     }
   };
 
   const handleStartSession = async (patientId: string, title: string) => {
+    log('Iniciando nova sessão:', { patientId, title });
     setShowStartModal(false);
     onStartSession(patientId, title);
   };
@@ -331,12 +346,14 @@ export default function SessionListPage({ currentUser, onStartSession }: Session
       </div>
 
       {/* Start Session Modal */}
-      <StartSessionModal
-        isOpen={showStartModal}
-        onClose={() => setShowStartModal(false)}
-        onStart={handleStartSession}
-        patients={patients}
-      />
+      {showStartModal && (
+        <StartSessionModal
+          isOpen={showStartModal}
+          onClose={() => setShowStartModal(false)}
+          onStart={handleStartSession}
+          currentUser={currentUser}
+        />
+      )}
 
       {/* Session Detail Modal */}
       {selectedSession && (

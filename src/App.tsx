@@ -6,6 +6,7 @@ import UserProfile from './components/UserProfile';
 import AdminPanel from './components/AdminPanel';
 import PatientList from './components/PatientList';
 import SessionListPage from './components/SessionListPage';
+import StartSessionModal from './components/StartSessionModal';
 import { Session } from './types/session';
 
 function App() {
@@ -22,6 +23,7 @@ function App() {
   const [showPatientPanel, setShowPatientPanel] = useState(false);
   const [showSessionsPanel, setShowSessionsPanel] = useState(false);
   const [currentSession, setCurrentSession] = useState<Session | null>(null);
+  const [showStartSessionModal, setShowStartSessionModal] = useState(false);
   
   const recognitionRef = useRef<SpeechRecognition | null>(null);
   const intervalRef = useRef<NodeJS.Timeout | null>(null);
@@ -195,6 +197,7 @@ function App() {
 
   const handleStartSession = (patientId: string, title: string) => {
     setShowSessionsPanel(false);
+    setShowStartSessionModal(false);
     startRecording(patientId, title);
   };
 
@@ -482,7 +485,7 @@ function App() {
               <div className="flex items-center justify-center space-x-4">
                 {!isRecording ? (
                   <button
-                    onClick={navigateToSessions}
+                    onClick={() => setShowStartSessionModal(true)}
                     className="bg-blue-600 hover:bg-blue-700 text-white px-6 py-3 rounded-lg flex items-center space-x-2 transition-colors duration-200 shadow-md"
                   >
                     <Mic className="h-5 w-5" />
@@ -574,6 +577,16 @@ function App() {
           </div>
         </div>
       </div>
+
+      {/* Start Session Modal */}
+      {showStartSessionModal && (
+        <StartSessionModal
+          isOpen={showStartSessionModal}
+          onClose={() => setShowStartSessionModal(false)}
+          onStart={handleStartSession}
+          currentUser={user}
+        />
+      )}
     </div>
   );
 }

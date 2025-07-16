@@ -1,23 +1,53 @@
 import React, { useState } from 'react';
 import { X, User, FileText, Mic, AlertCircle, Play } from 'lucide-react';
+import { supabase } from '../lib/supabase';
 import { Patient } from '../types/patient';
+import { AuthUser } from '../types/user';
 
 interface StartSessionModalProps {
   isOpen: boolean;
   onClose: () => void;
   onStart: (patientId: string, title: string) => void;
-  patients: Patient[];
+  currentUser: AuthUser;
 }
 
 export default function StartSessionModal({ 
   isOpen, 
   onClose, 
   onStart, 
-  patients 
+  currentUser
 }: StartSessionModalProps) {
+  const [patients, setPatients] = useState<Patient[]>([]);
+  const [loading, setLoading] = useState(true);
   const [selectedPatient, setSelectedPatient] = useState('');
   const [sessionTitle, setSessionTitle] = useState('');
   const [errors, setErrors] = useState<{ patient?: string; title?: string }>({});
+
+  // Fetch patients when modal opens
+  React.useEffect(() => {
+    if (isOpen) {
+      fetchPatients();
+    }
+  }, [isOpen]);
+
+  const fetchPatients = async () => {
+    try {
+      setLoading(true);
+      const { data, error } = await supabase
+        .from('patients')
+        .select('*')
+        .eq('user_id', currentUser.id)
+        .order('name');
+
+      if (error) throw error;
+      setPatients(data || []);
+    } catch (error) {
+      console.error('Erro ao buscar pacientes:', error);
+      setPatients([]);
+    } finally {
+      setLoading(false);
+    }
+  };
 
   const validateForm = (): boolean => {
     const newErrors: { patient?: string; title?: string } = {};
@@ -91,6 +121,13 @@ export default function StartSessionModal({
 
         {/* Form */}
         <div className="p-6 space-y-4">
+          {loading ? (
+            <div className="text-center py-8">
+              <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-indigo-600 mx-auto mb-4"></div>
+              <p className="text-gray-600">Carregando pacientes...</p>
+            </div>
+          ) : (
+            <>
           {/* Patient Selection */}
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-2">
@@ -190,6 +227,8 @@ export default function StartSessionModal({
               <span>Iniciar Gravação</span>
             </button>
           </div>
+            </>
+          )}
         </div>
       </div>
     </div>
