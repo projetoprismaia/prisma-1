@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Users, FileText, Play, Pause, Square, TrendingUp, Calendar, Clock } from 'lucide-react';
+import { Users, FileText, TrendingUp, Calendar, Clock } from 'lucide-react';
 import { supabase } from '../lib/supabase';
 import { AuthUser } from '../types/user';
 
@@ -13,9 +13,6 @@ interface DashboardSummariesProps {
 interface DashboardData {
   totalPatients: number;
   totalSessions: number;
-  recordingSessions: number;
-  pausedSessions: number;
-  completedSessions: number;
   totalUsers?: number;
   recentSessions: Array<{
     id: string;
@@ -35,9 +32,6 @@ export default function DashboardSummaries({
   const [data, setData] = useState<DashboardData>({
     totalPatients: 0,
     totalSessions: 0,
-    recordingSessions: 0,
-    pausedSessions: 0,
-    completedSessions: 0,
     totalUsers: 0,
     recentSessions: []
   });
@@ -81,7 +75,7 @@ export default function DashboardSummaries({
     // Buscar sessões por status
     const { data: sessions } = await supabase
       .from('sessions')
-      .select('status');
+      .select('id');
 
     // Buscar sessões recentes
     const { data: recentSessions } = await supabase
@@ -96,18 +90,10 @@ export default function DashboardSummaries({
       .order('created_at', { ascending: false })
       .limit(5);
 
-    const sessionsByStatus = sessions?.reduce((acc, session) => {
-      acc[session.status] = (acc[session.status] || 0) + 1;
-      return acc;
-    }, {} as Record<string, number>) || {};
-
     setData({
       totalUsers: usersCount || 0,
       totalPatients: patientsCount || 0,
       totalSessions: sessions?.length || 0,
-      recordingSessions: sessionsByStatus.recording || 0,
-      pausedSessions: sessionsByStatus.paused || 0,
-      completedSessions: sessionsByStatus.completed || 0,
       recentSessions: recentSessions?.map(session => ({
         id: session.id,
         title: session.title,
@@ -128,7 +114,7 @@ export default function DashboardSummaries({
     // Buscar sessões do usuário por status
     const { data: sessions } = await supabase
       .from('sessions')
-      .select('status')
+      .select('id')
       .eq('user_id', currentUser.id);
 
     // Buscar sessões recentes do usuário
@@ -145,17 +131,9 @@ export default function DashboardSummaries({
       .order('created_at', { ascending: false })
       .limit(5);
 
-    const sessionsByStatus = sessions?.reduce((acc, session) => {
-      acc[session.status] = (acc[session.status] || 0) + 1;
-      return acc;
-    }, {} as Record<string, number>) || {};
-
     setData({
       totalPatients: patientsCount || 0,
       totalSessions: sessions?.length || 0,
-      recordingSessions: sessionsByStatus.recording || 0,
-      pausedSessions: sessionsByStatus.paused || 0,
-      completedSessions: sessionsByStatus.completed || 0,
       recentSessions: recentSessions?.map(session => ({
         id: session.id,
         title: session.title,
@@ -220,7 +198,7 @@ export default function DashboardSummaries({
       </div>
 
       {/* Cards de Sumário */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
         {/* Total de Usuários (apenas para admin) */}
         {isAdmin && (
           <div 
@@ -285,67 +263,6 @@ export default function DashboardSummaries({
             <TrendingUp className="h-4 w-4 mr-1" />
             <span>Ver todas</span>
           </div>
-        </div>
-
-        {/* Sessões Ativas */}
-        <div className="bg-white rounded-xl shadow-lg p-6">
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="text-sm font-medium text-blue-600 mb-1">Sessões Ativas</p>
-              <p className="text-3xl font-bold text-gray-900">
-                {data.recordingSessions + data.pausedSessions}
-              </p>
-            </div>
-            <div className="bg-blue-100 p-3 rounded-full">
-              <Play className="h-6 w-6 text-blue-600" />
-            </div>
-          </div>
-          <div className="mt-4 flex items-center text-sm text-blue-600">
-            <Clock className="h-4 w-4 mr-1" />
-            <span>Em andamento</span>
-          </div>
-        </div>
-      </div>
-
-      {/* Status das Sessões */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-        <div className="bg-white rounded-xl shadow-lg p-6">
-          <div className="flex items-center space-x-3 mb-4">
-            <div className="bg-red-100 p-2 rounded-full">
-              <Play className="h-5 w-5 text-red-600" />
-            </div>
-            <div>
-              <h3 className="font-semibold text-gray-900">Gravando</h3>
-              <p className="text-sm text-gray-600">Sessões em gravação</p>
-            </div>
-          </div>
-          <p className="text-2xl font-bold text-red-600">{data.recordingSessions}</p>
-        </div>
-
-        <div className="bg-white rounded-xl shadow-lg p-6">
-          <div className="flex items-center space-x-3 mb-4">
-            <div className="bg-yellow-100 p-2 rounded-full">
-              <Pause className="h-5 w-5 text-yellow-600" />
-            </div>
-            <div>
-              <h3 className="font-semibold text-gray-900">Pausadas</h3>
-              <p className="text-sm text-gray-600">Sessões pausadas</p>
-            </div>
-          </div>
-          <p className="text-2xl font-bold text-yellow-600">{data.pausedSessions}</p>
-        </div>
-
-        <div className="bg-white rounded-xl shadow-lg p-6">
-          <div className="flex items-center space-x-3 mb-4">
-            <div className="bg-green-100 p-2 rounded-full">
-              <Square className="h-5 w-5 text-green-600" />
-            </div>
-            <div>
-              <h3 className="font-semibold text-gray-900">Concluídas</h3>
-              <p className="text-sm text-gray-600">Sessões finalizadas</p>
-            </div>
-          </div>
-          <p className="text-2xl font-bold text-green-600">{data.completedSessions}</p>
         </div>
       </div>
 
