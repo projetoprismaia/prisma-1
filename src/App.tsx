@@ -141,12 +141,6 @@ function App() {
                   </div>
                 </div>
                 <div className="flex items-center space-x-4">
-                  <button
-                    onClick={navigateToHome}
-                    className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg text-sm transition-colors"
-                  >
-                    Voltar ao App
-                  </button>
                   <UserProfile user={user} onSignOut={signOut} />
                 </div>
               </div>
@@ -181,12 +175,6 @@ function App() {
                   </div>
                 </div>
                 <div className="flex items-center space-x-4">
-                  <button
-                    onClick={navigateToHome}
-                    className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg text-sm transition-colors"
-                  >
-                    Voltar ao App
-                  </button>
                   <UserProfile user={user} onSignOut={signOut} />
                 </div>
               </div>
@@ -221,12 +209,6 @@ function App() {
                   </div>
                 </div>
                 <div className="flex items-center space-x-4">
-                  <button
-                    onClick={navigateToHome}
-                    className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg text-sm transition-colors"
-                  >
-                    Voltar ao App
-                  </button>
                   <UserProfile user={user} onSignOut={signOut} />
                 </div>
               </div>
