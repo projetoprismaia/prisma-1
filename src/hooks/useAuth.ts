@@ -5,27 +5,55 @@ import { AuthUser, UserProfile } from '../types/user';
 export function useAuth() {
   const [user, setUser] = useState<AuthUser | null>(null);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
     // Get initial session
     const getInitialSession = async () => {
-      const { data: { session } } = await supabase.auth.getSession();
-      if (session?.user) {
-        await fetchUserProfile(session.user);
+      try {
+        console.log('🔍 Buscando sessão inicial...');
+        const { data: { session }, error: sessionError } = await supabase.auth.getSession();
+        
+        if (sessionError) {
+          console.error('❌ Erro ao buscar sessão:', sessionError);
+          setError(`Erro de sessão: ${sessionError.message}`);
+          setLoading(false);
+          return;
+        }
+        
+        console.log('✅ Sessão obtida:', session ? 'Usuário logado' : 'Sem usuário');
+        
+        if (session?.user) {
+          await fetchUserProfile(session.user);
+        } else {
+          console.log('👤 Nenhum usuário logado');
+          setLoading(false);
+        }
+      } catch (error) {
+        console.error('❌ Erro crítico na inicialização:', error);
+        setError(`Erro de inicialização: ${error instanceof Error ? error.message : 'Erro desconhecido'}`);
+        setLoading(false);
       }
-      setLoading(false);
     };
 
     getInitialSession();
 
     // Listen for auth changes
     const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
-      if (session?.user) {
-        await fetchUserProfile(session.user);
-      } else {
-        setUser(null);
+      try {
+        console.log('🔄 Mudança de autenticação:', event, session ? 'com usuário' : 'sem usuário');
+        
+        if (session?.user) {
+          await fetchUserProfile(session.user);
+        } else {
+          setUser(null);
+          setLoading(false);
+        }
+      } catch (error) {
+        console.error('❌ Erro na mudança de auth:', error);
+        setError(`Erro de autenticação: ${error instanceof Error ? error.message : 'Erro desconhecido'}`);
+        setLoading(false);
       }
-      setLoading(false);
     });
 
     return () => subscription.unsubscribe();
@@ -33,6 +61,8 @@ export function useAuth() {
 
   const fetchUserProfile = async (authUser: any) => {
     try {
+      console.log('👤 Buscando perfil do usuário:', authUser.id);
+      
       const { data: profile, error } = await supabase
         .from('profiles')
         .select('*')
@@ -40,17 +70,25 @@ export function useAuth() {
         .single();
 
       if (error) {
-        console.error('Error fetching profile:', error);
+        console.error('❌ Erro ao buscar perfil:', error);
+        setError(`Erro de perfil: ${error.message}`);
+        setLoading(false);
         return;
       }
 
+      console.log('✅ Perfil encontrado:', profile);
+      
       setUser({
         id: authUser.id,
         email: authUser.email,
         profile: profile as UserProfile
       });
+      
+      setLoading(false);
     } catch (error) {
-      console.error('Error fetching user profile:', error);
+      console.error('❌ Erro crítico ao buscar perfil:', error);
+      setError(`Erro crítico: ${error instanceof Error ? error.message : 'Erro desconhecido'}`);
+      setLoading(false);
     }
   };
 
@@ -64,6 +102,7 @@ export function useAuth() {
   return {
     user,
     loading,
+    error,
     signOut,
     isAdmin,
     refreshProfile: () => user && fetchUserProfile({ id: user.id, email: user.email })

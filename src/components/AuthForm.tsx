@@ -17,19 +17,30 @@ export default function AuthForm() {
 
     try {
       if (isLogin) {
+        console.log('🔐 Tentando fazer login...');
         const { error } = await supabase.auth.signInWithPassword({
           email,
           password,
         });
-        if (error) throw error;
+        if (error) {
+          console.error('❌ Erro no login:', error);
+          throw error;
+        }
+        console.log('✅ Login realizado com sucesso');
       } else {
+        console.log('📝 Tentando cadastrar usuário...');
         const { error } = await supabase.auth.signUp({
           email,
           password,
         });
-        if (error) throw error;
+        if (error) {
+          console.error('❌ Erro no cadastro:', error);
+          throw error;
+        }
+        console.log('✅ Cadastro realizado com sucesso');
       }
     } catch (error: any) {
+      console.error('❌ Erro na autenticação:', error);
       setError(error.message);
     } finally {
       setLoading(false);
