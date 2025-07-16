@@ -593,34 +593,30 @@ export default function RecordingPage({
   if (!sessionConfigured) {
     return (
       <div className="min-h-screen">
-        {/* Header */}
-        <header className="glass-card shadow-lg border-b border-blue-200">
-          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
-            <div className="flex items-center justify-between">
-              <div className="flex items-center space-x-4">
-                <button
-                  onClick={handleCancel}
-                  className="flex items-center space-x-2 text-gray-600 hover:text-gray-900 transition-colors"
-                >
-                  <ArrowLeft className="h-5 w-5" />
-                  <span>Voltar</span>
-                </button>
-                
-                <div className="flex items-center space-x-3">
-                  <div className="bg-indigo-600 p-2 rounded-lg">
-                    <FileText className="h-6 w-6 text-white" />
-                  </div>
-                  <div>
-                    <h1 className="text-xl font-bold text-gray-900">Configurar Nova Sessão</h1>
-                    <p className="text-sm text-gray-600">Selecione o paciente e configure a sessão</p>
-                  </div>
-                </div>
+        <div className="max-w-2xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+          {/* Page Header */}
+          <div className="glass-card rounded-xl shadow-lg p-6 mb-8">
+            <div className="flex items-center justify-between mb-4">
+              <button
+                onClick={handleCancel}
+                className="flex items-center space-x-2 text-gray-600 hover:text-gray-900 transition-colors"
+              >
+                <ArrowLeft className="h-5 w-5" />
+                <span>Voltar</span>
+              </button>
+            </div>
+            
+            <div className="flex items-center space-x-4">
+              <div className="bg-indigo-600 p-3 rounded-lg">
+                <FileText className="h-6 w-6 text-white" />
+              </div>
+              <div>
+                <h1 className="text-2xl font-bold text-gray-900">Configurar Nova Sessão</h1>
+                <p className="text-gray-600">Selecione o paciente e configure a sessão</p>
               </div>
             </div>
           </div>
-        </header>
 
-        <div className="max-w-2xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
           <div className="glass-card rounded-xl shadow-lg p-8">
             {loadingPatients ? (
               <div className="text-center py-8">
