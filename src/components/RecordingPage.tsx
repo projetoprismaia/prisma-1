@@ -5,6 +5,14 @@ import { AuthUser } from '../types/user';
 import { Session } from '../types/session';
 import { useNotification } from '../hooks/useNotification';
 
+// Extend Window interface for Speech Recognition
+declare global {
+  interface Window {
+    SpeechRecognition: any;
+    webkitSpeechRecognition: any;
+  }
+}
+
 interface RecordingPageProps {
   currentUser: AuthUser;
   patientId: string;
@@ -31,64 +39,16 @@ export default function RecordingPage({
   const [duration, setDuration] = useState('00:00:00');
   const [currentSession, setCurrentSession] = useState<Session | null>(null);
   const [patientName, setPatientName] = useState('');
+  const [microphonePermission, setMicrophonePermission] = useState<'granted' | 'denied' | 'prompt'>('prompt');
+  const [interimTranscript, setInterimTranscript] = useState('');
   
   const recognitionRef = useRef<SpeechRecognition | null>(null);
   const intervalRef = useRef<NodeJS.Timeout | null>(null);
 
   // Speech recognition setup
   useEffect(() => {
-    if ('webkitSpeechRecognition' in window || 'SpeechRecognition' in window) {
-      setIsSupported(true);
-      const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
-      recognitionRef.current = new SpeechRecognition();
-      
-      if (recognitionRef.current) {
-        recognitionRef.current.continuous = true;
-        recognitionRef.current.interimResults = true;
-        recognitionRef.current.lang = 'pt-BR';
-        
-        recognitionRef.current.onresult = (event) => {
-          let finalTranscript = '';
-          
-          for (let i = event.resultIndex; i < event.results.length; i++) {
-            const transcript = event.results[i][0].transcript;
-            if (event.results[i].isFinal) {
-              finalTranscript += transcript;
-            }
-          }
-          
-          if (finalTranscript) {
-            setTranscript(prev => {
-              const newTranscript = prev + finalTranscript;
-              
-              // Auto-save transcription every 30 seconds during recording
-              if (currentSession && isRecording && !isPaused) {
-                const now = Date.now();
-                const lastSave = localStorage.getItem('lastAutoSave');
-                if (!lastSave || now - parseInt(lastSave) > 30000) {
-                  localStorage.setItem('lastAutoSave', now.toString());
-                  updateSessionStatus('recording', false);
-                }
-              }
-              
-              return newTranscript;
-            });
-          }
-        };
-        
-        recognitionRef.current.onerror = (event) => {
-          console.error('Erro na transcrição:', event.error);
-          if (event.error !== 'no-speech') {
-            showError(
-              'Erro na Transcrição',
-              'Ocorreu um erro no reconhecimento de voz. Verifique se o microfone está funcionando.'
-            );
-          }
-        };
-      }
-    } else {
-      setIsSupported(false);
-    }
+    initializeSpeechRecognition();
+    requestMicrophonePermission();
 
     // Fetch patient name
     fetchPatientName();
@@ -128,6 +88,136 @@ export default function RecordingPage({
       }
     };
   }, [isRecording, isPaused, startTime]);
+
+  const requestMicrophonePermission = async () => {
+    try {
+      console.log('🎤 Solicitando permissão do microfone...');
+      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+      console.log('✅ Permissão do microfone concedida');
+      setMicrophonePermission('granted');
+      
+      // Stop the stream immediately as we only needed permission
+      stream.getTracks().forEach(track => track.stop());
+    } catch (error) {
+      console.error('❌ Permissão do microfone negada:', error);
+      setMicrophonePermission('denied');
+      showError(
+        'Permissão Necessária',
+        'É necessário permitir o acesso ao microfone para usar a transcrição de voz.'
+      );
+    }
+  };
+
+  const initializeSpeechRecognition = () => {
+    if ('webkitSpeechRecognition' in window || 'SpeechRecognition' in window) {
+      console.log('🎙️ Inicializando Speech Recognition...');
+      setIsSupported(true);
+      
+      const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+      recognitionRef.current = new SpeechRecognition();
+      
+      if (recognitionRef.current) {
+        recognitionRef.current.continuous = true;
+        recognitionRef.current.interimResults = true;
+        recognitionRef.current.lang = 'pt-BR';
+        recognitionRef.current.maxAlternatives = 1;
+        
+        recognitionRef.current.onstart = () => {
+          console.log('🎤 Speech Recognition iniciado');
+        };
+        
+        recognitionRef.current.onresult = (event) => {
+          let finalTranscript = '';
+          let interimTranscript = '';
+          
+          for (let i = event.resultIndex; i < event.results.length; i++) {
+            const transcript = event.results[i][0].transcript;
+            if (event.results[i].isFinal) {
+              finalTranscript += transcript + ' ';
+            } else {
+              interimTranscript += transcript;
+            }
+          }
+          
+          // Update interim transcript for real-time feedback
+          setInterimTranscript(interimTranscript);
+          
+          if (finalTranscript) {
+            console.log('📝 Transcrição final:', finalTranscript);
+            setTranscript(prev => {
+              const newTranscript = prev + finalTranscript;
+              
+              // Auto-save transcription every 30 seconds during recording
+              if (currentSession && isRecording && !isPaused) {
+                const now = Date.now();
+                const lastSave = localStorage.getItem('lastAutoSave');
+                if (!lastSave || now - parseInt(lastSave) > 30000) {
+                  localStorage.setItem('lastAutoSave', now.toString());
+                  updateSessionStatus('recording', false);
+                }
+              }
+              
+              return newTranscript;
+            });
+          }
+        };
+        
+        recognitionRef.current.onerror = (event) => {
+          console.error('❌ Erro na transcrição:', event.error);
+          
+          switch (event.error) {
+            case 'no-speech':
+              console.log('⚠️ Nenhuma fala detectada');
+              break;
+            case 'audio-capture':
+              showError(
+                'Erro de Áudio',
+                'Não foi possível capturar áudio. Verifique se o microfone está conectado e funcionando.'
+              );
+              break;
+            case 'not-allowed':
+              setMicrophonePermission('denied');
+              showError(
+                'Permissão Negada',
+                'Permissão para usar o microfone foi negada. Permita o acesso nas configurações do navegador.'
+              );
+              break;
+            case 'network':
+              showError(
+                'Erro de Rede',
+                'Erro de conexão durante a transcrição. Verifique sua conexão com a internet.'
+              );
+              break;
+            default:
+              showError(
+                'Erro na Transcrição',
+                `Ocorreu um erro no reconhecimento de voz: ${event.error}`
+              );
+          }
+        };
+        
+        recognitionRef.current.onend = () => {
+          console.log('🔚 Speech Recognition finalizado');
+          // Restart recognition if still recording and not paused
+          if (isRecording && !isPaused && microphonePermission === 'granted') {
+            console.log('🔄 Reiniciando Speech Recognition...');
+            setTimeout(() => {
+              if (recognitionRef.current && isRecording && !isPaused) {
+                try {
+                  recognitionRef.current.start();
+                } catch (error) {
+                  console.error('Erro ao reiniciar recognition:', error);
+                }
+              }
+            }, 100);
+          }
+        };
+      }
+    } else {
+      console.error('❌ Speech Recognition não suportado');
+      setIsSupported(false);
+    }
+  };
 
   const fetchPatientName = async () => {
     try {
@@ -190,20 +280,43 @@ export default function RecordingPage({
   };
 
   const startRecording = () => {
-    if (recognitionRef.current && isSupported) {
+    if (recognitionRef.current && isSupported && microphonePermission === 'granted') {
+      console.log('▶️ Iniciando gravação...');
       setTranscript('');
+      setInterimTranscript('');
       setIsRecording(true);
       setIsPaused(false);
       setStartTime(new Date());
       setDuration('00:00:00');
-      recognitionRef.current.start();
+      
+      try {
+        recognitionRef.current.start();
+      } catch (error) {
+        console.error('Erro ao iniciar recognition:', error);
+        showError(
+          'Erro ao Iniciar',
+          'Não foi possível iniciar o reconhecimento de voz. Tente novamente.'
+        );
+      }
+    } else if (microphonePermission === 'denied') {
+      showError(
+        'Permissão Necessária',
+        'É necessário permitir o acesso ao microfone para gravar.'
+      );
+    } else if (!isSupported) {
+      showError(
+        'Navegador Não Suportado',
+        'Seu navegador não suporta reconhecimento de voz.'
+      );
     }
   };
 
   const pauseRecording = () => {
     if (recognitionRef.current) {
+      console.log('⏸️ Pausando gravação...');
       setIsPaused(true);
       recognitionRef.current.stop();
+      setInterimTranscript('');
       
       // Update session status to paused
       if (currentSession) {
@@ -214,8 +327,13 @@ export default function RecordingPage({
 
   const resumeRecording = () => {
     if (recognitionRef.current) {
+      console.log('▶️ Retomando gravação...');
       setIsPaused(false);
-      recognitionRef.current.start();
+      try {
+        recognitionRef.current.start();
+      } catch (error) {
+        console.error('Erro ao retomar recognition:', error);
+      }
       
       // Update session status back to recording
       if (currentSession) {
@@ -226,9 +344,11 @@ export default function RecordingPage({
 
   const stopRecording = () => {
     if (recognitionRef.current) {
+      console.log('⏹️ Parando gravação...');
       recognitionRef.current.stop();
       setIsRecording(false);
       setIsPaused(false);
+      setInterimTranscript('');
       if (intervalRef.current) {
         clearInterval(intervalRef.current);
       }
@@ -335,6 +455,35 @@ export default function RecordingPage({
           >
             Voltar
           </button>
+        </div>
+      </div>
+    );
+  }
+
+  if (microphonePermission === 'denied') {
+    return (
+      <div className="min-h-screen flex items-center justify-center p-4">
+        <div className="bg-white rounded-xl shadow-xl p-8 max-w-md text-center">
+          <div className="text-red-500 text-6xl mb-4">🎤</div>
+          <h1 className="text-2xl font-bold text-gray-800 mb-4">Permissão do Microfone Necessária</h1>
+          <p className="text-gray-600 mb-6">
+            É necessário permitir o acesso ao microfone para usar a transcrição de voz. 
+            Clique no ícone do microfone na barra de endereços e permita o acesso.
+          </p>
+          <div className="flex space-x-3">
+            <button
+              onClick={handleCancel}
+              className="flex-1 bg-gray-600 hover:bg-gray-700 text-white px-6 py-2 rounded-lg"
+            >
+              Voltar
+            </button>
+            <button
+              onClick={requestMicrophonePermission}
+              className="flex-1 bg-blue-600 hover:bg-blue-700 text-white px-6 py-2 rounded-lg"
+            >
+              Tentar Novamente
+            </button>
+          </div>
         </div>
       </div>
     );
@@ -481,8 +630,16 @@ export default function RecordingPage({
                 style={{ fontFamily: 'monospace' }}
               />
               
+              {/* Interim transcript overlay */}
+              {interimTranscript && (
+                <div className="mt-2 p-2 bg-yellow-50 border border-yellow-200 rounded text-sm text-yellow-800">
+                  <span className="font-medium">Ouvindo: </span>
+                  <span className="italic">{interimTranscript}</span>
+                </div>
+              )}
+              
               <div className="mt-4 flex items-center justify-between text-sm text-gray-500">
-                <span>{transcript.length} caracteres</span>
+                <span>{transcript.length + interimTranscript.length} caracteres</span>
                 <span>Auto-save a cada 30 segundos</span>
               </div>
             </div>
@@ -536,7 +693,34 @@ export default function RecordingPage({
                 <li>• Evite ruídos de fundo</li>
                 <li>• A transcrição é salva automaticamente</li>
                 <li>• Use "Pausar" para interrupções</li>
+                <li>• Permita o acesso ao microfone quando solicitado</li>
               </ul>
+            </div>
+            
+            {/* Microphone Status */}
+            <div className={`rounded-xl p-4 ${
+              microphonePermission === 'granted' 
+                ? 'bg-green-50 border border-green-200' 
+                : 'bg-red-50 border border-red-200'
+            }`}>
+              <div className="flex items-center space-x-2 mb-2">
+                <Mic className={`h-4 w-4 ${
+                  microphonePermission === 'granted' ? 'text-green-600' : 'text-red-600'
+                }`} />
+                <span className={`text-sm font-medium ${
+                  microphonePermission === 'granted' ? 'text-green-800' : 'text-red-800'
+                }`}>
+                  Status do Microfone
+                </span>
+              </div>
+              <p className={`text-sm ${
+                microphonePermission === 'granted' ? 'text-green-700' : 'text-red-700'
+              }`}>
+                {microphonePermission === 'granted' 
+                  ? '✅ Microfone autorizado e funcionando' 
+                  : '❌ Microfone não autorizado'
+                }
+              </p>
             </div>
           </div>
         </div>
