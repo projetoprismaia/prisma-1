@@ -286,9 +286,6 @@ export default function DashboardSummaries({
             </button>
           )}
         </div>
-          </div>
-        </div>
-      </div>
 
       {/* Sessões Recentes */}
       {data.recentSessions.length > 0 && (
