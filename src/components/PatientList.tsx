@@ -8,9 +8,10 @@ import { useNotification } from '../hooks/useNotification';
 
 interface PatientListProps {
   currentUser: AuthUser;
+  onNavigateToSessions?: (patientId: string) => void;
 }
 
-export default function PatientList({ currentUser }: PatientListProps) {
+export default function PatientList({ currentUser, onNavigateToSessions }: PatientListProps) {
   const [patients, setPatients] = useState<Patient[]>([]);
   const { showSuccess, showError } = useNotification();
   const [loading, setLoading] = useState(true);
