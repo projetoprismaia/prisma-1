@@ -7,7 +7,7 @@ import StartSessionModal from './StartSessionModal';
 
 interface SessionListPageProps {
   currentUser: AuthUser;
-  onStartSession: (patientId: string, title: string) => void;
+  onStartRecording: (patientId: string, title: string) => void;
 }
 
 // Add debug logging
@@ -18,7 +18,7 @@ const log = (message: string, data?: any) => {
   }
 }
 
-export default function SessionListPage({ currentUser, onStartSession }: SessionListPageProps) {
+export default function SessionListPage({ currentUser, onStartRecording }: SessionListPageProps) {
   const [sessions, setSessions] = useState<Session[]>([]);
   const [patients, setPatients] = useState<Patient[]>([]);
   const [loading, setLoading] = useState(true);
@@ -75,7 +75,7 @@ export default function SessionListPage({ currentUser, onStartSession }: Session
   const handleStartSession = async (patientId: string, title: string) => {
     log('Iniciando nova sessão:', { patientId, title });
     setShowStartModal(false);
-    onStartSession(patientId, title);
+    onStartRecording(patientId, title);
   };
 
   const exportSession = (session: Session) => {
