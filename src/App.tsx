@@ -19,8 +19,7 @@ function App() {
   const [showSessionsPanel, setShowSessionsPanel] = useState(false);
   const [selectedPatientFilter, setSelectedPatientFilter] = useState<string | null>(null);
   const [activeRecordingSession, setActiveRecordingSession] = useState<{
-    patientId: string;
-    title: string;
+    active: boolean;
   } | null>(null);
 
   const handleSignOut = () => {
@@ -93,9 +92,9 @@ function App() {
     console.log('✅ [navigateToSessionsWithPatient] Navegação concluída');
   };
 
-  const navigateToRecording = (patientId: string, title: string) => {
-    console.log('🎤 [navigateToRecording] Navegando para gravação:', { patientId, title });
-    setActiveRecordingSession({ patientId, title });
+  const navigateToRecording = () => {
+    console.log('🎤 [navigateToRecording] Navegando para gravação');
+    setActiveRecordingSession({ active: true });
     setShowAdminPanel(false);
     setShowPatientPanel(false);
     setShowSessionsPanel(false);
@@ -105,9 +104,16 @@ function App() {
   const handleRecordingComplete = () => {
     console.log('✅ [handleRecordingComplete] Gravação concluída');
     setActiveRecordingSession(null);
-    // Optionally navigate to sessions list
-    navigateToSessions();
+    navigateToHome();
     console.log('✅ [handleRecordingComplete] Redirecionamento concluído');
+  };
+
+  const handleFinishConsultation = (patientId: string) => {
+    console.log('✅ [handleFinishConsultation] Consulta finalizada para paciente:', patientId);
+    setActiveRecordingSession(null);
+    // Navigate to patient's sessions
+    navigateToSessionsWithPatient(patientId);
+    console.log('✅ [handleFinishConsultation] Redirecionamento para sessões do paciente concluído');
   };
 
   const handleRecordingCancel = () => {
@@ -157,10 +163,9 @@ function App() {
         <div className="app-content">
           <RecordingPage
             currentUser={user}
-            patientId={activeRecordingSession.patientId}
-            sessionTitle={activeRecordingSession.title}
             onComplete={handleRecordingComplete}
             onCancel={handleRecordingCancel}
+            onFinishConsultation={handleFinishConsultation}
           />
         </div>
       </>
