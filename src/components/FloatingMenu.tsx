@@ -28,6 +28,15 @@ export default function FloatingMenu({
       <div className="menu-items">
         <button
           onClick={onNavigateToHome}
+          onClick={() => {
+            console.log('🖱️ [FloatingMenu] Clique em Dashboard');
+            console.log('🔍 [FloatingMenu] Props:', {
+              currentUser: currentUser ? currentUser.id : 'NO_USER',
+              activeSection,
+              isAdmin
+            });
+            onNavigateToHome();
+          }}
           className={`menu-item ${activeSection === 'dashboard' ? 'active' : ''}`}
         >
           <BarChart3 className="h-4 w-4 mr-2" />
@@ -36,7 +45,11 @@ export default function FloatingMenu({
         
         {!isAdmin && (
           <button
-            onClick={onNavigateToPatients}
+            onClick={() => {
+              console.log('🖱️ [FloatingMenu] Clique em Pacientes');
+              console.log('🔍 [FloatingMenu] isAdmin:', isAdmin);
+              onNavigateToPatients();
+            }}
             className={`menu-item ${activeSection === 'patients' ? 'active' : ''}`}
           >
             <Users className="h-4 w-4 mr-2" />
@@ -45,7 +58,10 @@ export default function FloatingMenu({
         )}
         
         <button
-          onClick={onNavigateToSessions}
+          onClick={() => {
+            console.log('🖱️ [FloatingMenu] Clique em Sessões');
+            onNavigateToSessions();
+          }}
           className={`menu-item ${activeSection === 'sessions' ? 'active' : ''}`}
         >
           <FileText className="h-4 w-4 mr-2" />
@@ -54,7 +70,11 @@ export default function FloatingMenu({
         
         {isAdmin && (
           <button
-            onClick={onNavigateToAdmin}
+            onClick={() => {
+              console.log('🖱️ [FloatingMenu] Clique em Admin');
+              console.log('🔍 [FloatingMenu] isAdmin:', isAdmin);
+              onNavigateToAdmin();
+            }}
             className={`menu-item ${activeSection === 'admin' ? 'active' : ''}`}
           >
             <Settings className="h-4 w-4 mr-2" />
@@ -70,7 +90,11 @@ export default function FloatingMenu({
         </span>
         
         <button
-          onClick={onSignOut}
+          onClick={() => {
+            console.log('🖱️ [FloatingMenu] Clique em Sair');
+            console.log('🔍 [FloatingMenu] Fazendo logout...');
+            onSignOut();
+          }}
           className="menu-item logout"
         >
           <LogOut className="h-4 w-4 mr-2" />

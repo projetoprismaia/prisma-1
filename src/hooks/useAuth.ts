@@ -7,9 +7,13 @@ export function useAuth() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
+  console.log('🔍 [useAuth] Hook inicializado');
+
   useEffect(() => {
     let mounted = true;
     let isProcessing = false;
+
+    console.log('🔍 [useAuth] useEffect iniciado');
 
     const clearAllSessions = async () => {
       try {
@@ -45,15 +49,22 @@ export function useAuth() {
       isProcessing = true;
 
       try {
-        console.log('🔍 Inicializando autenticação...');
+        console.log('🔍 [initializeAuth] Inicializando autenticação...');
+        console.log('🔍 [initializeAuth] mounted:', mounted, 'isProcessing:', isProcessing);
         
         // Verificar sessão atual
         const { data: { session }, error: sessionError } = await supabase.auth.getSession();
         
+        console.log('🔍 [initializeAuth] Sessão obtida:', {
+          session: session ? 'EXISTS' : 'NULL',
+          user: session?.user ? session.user.id : 'NO_USER',
+          sessionError: sessionError?.message || 'NO_ERROR'
+        });
+        
         if (!mounted) return;
         
         if (sessionError) {
-          console.error('❌ Erro ao buscar sessão:', sessionError);
+          console.error('❌ [initializeAuth] Erro ao buscar sessão:', sessionError);
           await clearAllSessions();
           if (mounted) {
             setUser(null);
@@ -64,10 +75,11 @@ export function useAuth() {
         }
         
         if (session?.user) {
-          console.log('✅ Sessão encontrada, verificando usuário...');
+          console.log('✅ [initializeAuth] Sessão encontrada, verificando usuário...');
+          console.log('🔍 [initializeAuth] User data:', session.user.id, session.user.email);
           await handleUserSession(session.user);
         } else {
-          console.log('👤 Nenhuma sessão ativa');
+          console.log('👤 [initializeAuth] Nenhuma sessão ativa');
           if (mounted) {
             setUser(null);
             setError(null);
@@ -75,7 +87,7 @@ export function useAuth() {
           }
         }
       } catch (error) {
-        console.error('❌ Erro na inicialização:', error);
+        console.error('❌ [initializeAuth] Erro na inicialização:', error);
         await clearAllSessions();
         if (mounted) {
           setUser(null);
@@ -91,7 +103,12 @@ export function useAuth() {
       if (!mounted) return;
 
       try {
-        console.log('👤 Buscando perfil do usuário:', authUser.id);
+        console.log('👤 [handleUserSession] Buscando perfil do usuário:', authUser.id);
+        console.log('🔍 [handleUserSession] Auth user data:', {
+          id: authUser.id,
+          email: authUser.email,
+          created_at: authUser.created_at
+        });
         
         // Tentar buscar perfil existente
         const { data: profile, error } = await supabase
@@ -100,16 +117,21 @@ export function useAuth() {
           .eq('id', authUser.id)
           .single();
 
+        console.log('🔍 [handleUserSession] Profile query result:', {
+          profile: profile ? 'FOUND' : 'NOT_FOUND',
+          error: error?.message || 'NO_ERROR'
+        });
+
         if (!mounted) return;
 
         if (error) {
-          console.error('❌ Erro ao buscar perfil:', error.message);
+          console.error('❌ [handleUserSession] Erro ao buscar perfil:', error.message);
           
           // Se usuário não existe no banco, limpar tudo e fazer logout
           if (error.code === 'PGRST116' || 
               error.message?.includes('No rows found') ||
               error.message?.includes('relation "profiles" does not exist')) {
-            console.log('🚪 Usuário não encontrado no banco, limpando sessão...');
+            console.log('🚪 [handleUserSession] Usuário não encontrado no banco, limpando sessão...');
             await clearAllSessions();
             if (mounted) {
               setUser(null);
@@ -120,7 +142,7 @@ export function useAuth() {
           }
 
           // Para outros erros, tentar criar perfil
-          console.log('📝 Tentando criar perfil...');
+          console.log('📝 [handleUserSession] Tentando criar perfil...');
           const { data: newProfile, error: insertError } = await supabase
             .from('profiles')
             .insert({
@@ -134,16 +156,21 @@ export function useAuth() {
             .select()
             .single();
 
+          console.log('🔍 [handleUserSession] Profile creation result:', {
+            newProfile: newProfile ? 'CREATED' : 'FAILED',
+            insertError: insertError?.message || 'NO_ERROR'
+          });
+
           if (!mounted) return;
 
           if (insertError) {
-            console.error('❌ Erro ao criar perfil:', insertError.message);
+            console.error('❌ [handleUserSession] Erro ao criar perfil:', insertError.message);
             
             // Se erro de recursão ou política, limpar sessão
             if (insertError.message?.includes('infinite recursion') || 
                 insertError.message?.includes('policy') ||
                 insertError.message?.includes('relation "profiles" does not exist')) {
-              console.log('🚪 Erro crítico, limpando sessão...');
+              console.log('🚪 [handleUserSession] Erro crítico, limpando sessão...');
               await clearAllSessions();
               if (mounted) {
                 setUser(null);
@@ -154,7 +181,7 @@ export function useAuth() {
             }
             
             // Usar perfil temporário como último recurso
-            console.log('⚠️ Usando perfil temporário...');
+            console.log('⚠️ [handleUserSession] Usando perfil temporário...');
             if (mounted) {
               setUser({
                 id: authUser.id,
@@ -173,7 +200,7 @@ export function useAuth() {
             return;
           }
 
-          console.log('✅ Perfil criado com sucesso');
+          console.log('✅ [handleUserSession] Perfil criado com sucesso');
           if (mounted) {
             setUser({
               id: authUser.id,
@@ -183,7 +210,13 @@ export function useAuth() {
             setLoading(false);
           }
         } else {
-          console.log('✅ Perfil encontrado');
+          console.log('✅ [handleUserSession] Perfil encontrado');
+          console.log('🔍 [handleUserSession] Profile data:', {
+            id: profile.id,
+            email: profile.email,
+            role: profile.role,
+            full_name: profile.full_name
+          });
           if (mounted) {
             setUser({
               id: authUser.id,
@@ -194,7 +227,7 @@ export function useAuth() {
           }
         }
       } catch (error) {
-        console.error('❌ Erro crítico ao buscar perfil:', error);
+        console.error('❌ [handleUserSession] Erro crítico ao buscar perfil:', error);
         await clearAllSessions();
         if (mounted) {
           setUser(null);
@@ -211,10 +244,16 @@ export function useAuth() {
     const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
       if (!mounted || isProcessing) return;
       
-      console.log('🔄 Mudança de autenticação:', event);
+      console.log('🔄 [onAuthStateChange] Mudança de autenticação:', {
+        event,
+        session: session ? 'EXISTS' : 'NULL',
+        user: session?.user ? session.user.id : 'NO_USER',
+        mounted,
+        isProcessing
+      });
       
       if (event === 'SIGNED_OUT' || !session?.user) {
-        console.log('🚪 Usuário deslogado');
+        console.log('🚪 [onAuthStateChange] Usuário deslogado');
         if (mounted) {
           setUser(null);
           setError(null);
@@ -224,7 +263,7 @@ export function useAuth() {
       }
       
       if (event === 'SIGNED_IN' && session?.user) {
-        console.log('🔑 Usuário logado');
+        console.log('🔑 [onAuthStateChange] Usuário logado');
         await handleUserSession(session.user);
       }
     });
@@ -237,7 +276,7 @@ export function useAuth() {
 
   const signOut = async () => {
     try {
-      console.log('🔓 Fazendo logout...');
+      console.log('🔓 [signOut] Fazendo logout...');
       
       // Limpar localStorage do Supabase
       const keys = Object.keys(localStorage);
@@ -258,9 +297,9 @@ export function useAuth() {
       // Logout do Supabase
       await supabase.auth.signOut();
       
-      console.log('✅ Logout realizado com sucesso');
+      console.log('✅ [signOut] Logout realizado com sucesso');
     } catch (error) {
-      console.error('❌ Erro ao fazer logout:', error);
+      console.error('❌ [signOut] Erro ao fazer logout:', error);
       // Forçar limpeza do estado mesmo com erro
       await clearAllSessions();
     }

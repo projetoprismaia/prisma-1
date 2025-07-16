@@ -34,67 +34,94 @@ function App() {
   };
 
   const navigateToHome = () => {
+    console.log('🏠 [navigateToHome] Navegando para home');
+    console.log('🔍 [navigateToHome] Estado atual:', {
+      user: user ? user.id : 'NO_USER',
+      showAdminPanel,
+      showPatientPanel,
+      showSessionsPanel,
+      activeRecordingSession: activeRecordingSession ? 'ACTIVE' : 'NONE'
+    });
     setShowAdminPanel(false);
     setShowPatientPanel(false);
     setShowSessionsPanel(false);
     setSelectedPatientFilter(null);
     setActiveRecordingSession(null);
+    console.log('✅ [navigateToHome] Navegação concluída');
   };
 
   const navigateToAdmin = () => {
+    console.log('⚙️ [navigateToAdmin] Navegando para admin');
+    console.log('🔍 [navigateToAdmin] User role:', user?.profile?.role);
+    console.log('🔍 [navigateToAdmin] isAdmin():', isAdmin());
     setShowAdminPanel(true);
     setShowPatientPanel(false);
     setShowSessionsPanel(false);
     setSelectedPatientFilter(null);
     setActiveRecordingSession(null);
+    console.log('✅ [navigateToAdmin] Navegação concluída');
   };
 
   const navigateToPatients = () => {
+    console.log('👥 [navigateToPatients] Navegando para pacientes');
+    console.log('🔍 [navigateToPatients] User role:', user?.profile?.role);
     setShowAdminPanel(false);
     setShowPatientPanel(true);
     setShowSessionsPanel(false);
     setSelectedPatientFilter(null);
     setActiveRecordingSession(null);
+    console.log('✅ [navigateToPatients] Navegação concluída');
   };
 
   const navigateToSessions = () => {
+    console.log('📄 [navigateToSessions] Navegando para sessões');
     setShowAdminPanel(false);
     setShowPatientPanel(false);
     setShowSessionsPanel(true);
     setSelectedPatientFilter(null);
     setActiveRecordingSession(null);
+    console.log('✅ [navigateToSessions] Navegação concluída');
   };
 
   const navigateToSessionsWithPatient = (patientId: string) => {
+    console.log('📄 [navigateToSessionsWithPatient] Navegando para sessões com filtro:', patientId);
     setShowAdminPanel(false);
     setShowPatientPanel(false);
     setShowSessionsPanel(true);
     setSelectedPatientFilter(patientId);
     setActiveRecordingSession(null);
+    console.log('✅ [navigateToSessionsWithPatient] Navegação concluída');
   };
 
   const navigateToRecording = (patientId: string, title: string) => {
+    console.log('🎤 [navigateToRecording] Navegando para gravação:', { patientId, title });
     setActiveRecordingSession({ patientId, title });
     setShowAdminPanel(false);
     setShowPatientPanel(false);
     setShowSessionsPanel(false);
+    console.log('✅ [navigateToRecording] Navegação concluída');
   };
 
   const handleRecordingComplete = () => {
+    console.log('✅ [handleRecordingComplete] Gravação concluída');
     setActiveRecordingSession(null);
     // Optionally navigate to sessions list
     navigateToSessions();
+    console.log('✅ [handleRecordingComplete] Redirecionamento concluído');
   };
 
   const handleRecordingCancel = () => {
+    console.log('❌ [handleRecordingCancel] Gravação cancelada');
     setActiveRecordingSession(null);
+    console.log('✅ [handleRecordingCancel] Cancelamento concluído');
   };
 
   const getCurrentSection = () => {
-    if (showAdminPanel) return 'admin';
-    if (showPatientPanel) return 'patients';
-    if (showSessionsPanel) return 'sessions';
-    return 'dashboard';
+    const section = showAdminPanel ? 'admin' : 
+                   showPatientPanel ? 'patients' : 
+                   showSessionsPanel ? 'sessions' : 'dashboard';
+    console.log('🔍 [getCurrentSection] Seção atual:', section);
+    return section;
   };
 
   // Loading state
