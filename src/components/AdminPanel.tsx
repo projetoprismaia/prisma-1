@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Users, Shield, UserCheck, UserX, Search, Filter, Plus, Edit, Trash2, Phone, AlertTriangle } from 'lucide-react';
+import { Users, Shield, UserCheck, UserX, Search, Filter, Plus, Edit, Trash2, Phone, AlertTriangle, User } from 'lucide-react';
 import { supabase } from '../lib/supabase';
 import { UserProfile, UserRole } from '../types/user';
 import UserFormModal, { UserFormData } from './UserFormModal';
@@ -10,6 +10,7 @@ interface AdminPanelProps {
 
 export default function AdminPanel({ currentUser }: AdminPanelProps) {
   const [users, setUsers] = useState<UserProfile[]>([]);
+  const [patientCounts, setPatientCounts] = useState<Record<string, number>>({});
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
   const [roleFilter, setRoleFilter] = useState<'all' | UserRole>('all');
@@ -25,13 +26,39 @@ export default function AdminPanel({ currentUser }: AdminPanelProps) {
 
   const fetchUsers = async () => {
     try {
-      const { data, error } = await supabase
+      // Buscar usuários
+      const { data: usersData, error: usersError } = await supabase
         .from('profiles')
         .select('*')
         .order('created_at', { ascending: false });
 
-      if (error) throw error;
-      setUsers(data || []);
+      if (usersError) throw usersError;
+      setUsers(usersData || []);
+
+      // Buscar contagem de pacientes para cada usuário
+      if (usersData && usersData.length > 0) {
+        const { data: patientsData, error: patientsError } = await supabase
+          .from('patients')
+          .select('user_id');
+
+        if (patientsError) {
+          console.error('Erro ao buscar pacientes:', patientsError);
+        } else {
+          // Contar pacientes por usuário
+          const counts: Record<string, number> = {};
+          usersData.forEach(user => {
+            counts[user.id] = 0;
+          });
+          
+          patientsData?.forEach(patient => {
+            if (counts.hasOwnProperty(patient.user_id)) {
+              counts[patient.user_id]++;
+            }
+          });
+          
+          setPatientCounts(counts);
+        }
+      }
     } catch (error) {
       console.error('Erro ao buscar usuários:', error);
     } finally {
@@ -271,11 +298,11 @@ export default function AdminPanel({ currentUser }: AdminPanelProps) {
           </div>
           <div className="bg-green-50 p-4 rounded-lg">
             <div className="flex items-center space-x-2">
-              <Users className="h-5 w-5 text-green-600" />
-              <span className="text-sm font-medium text-green-800">Profissionais</span>
+              <User className="h-5 w-5 text-green-600" />
+              <span className="text-sm font-medium text-green-800">Total de Pacientes</span>
             </div>
             <p className="text-2xl font-bold text-green-900 mt-1">
-              {users.filter(u => u.role === 'user').length}
+              {Object.values(patientCounts).reduce((sum, count) => sum + count, 0)}
             </p>
           </div>
         </div>
@@ -310,9 +337,13 @@ export default function AdminPanel({ currentUser }: AdminPanelProps) {
                           {user.whatsapp}
                         </p>
                       )}
-                      <p className="text-xs text-gray-500">
-                        Criado em: {new Date(user.created_at).toLocaleDateString('pt-BR')}
-                      </p>
+                      <div className="flex items-center space-x-4 text-xs text-gray-500 mt-1">
+                        <p>Criado em: {new Date(user.created_at).toLocaleDateString('pt-BR')}</p>
+                        <p className="flex items-center">
+                          <Users className="h-3 w-3 mr-1" />
+                          {patientCounts[user.id] || 0} paciente{(patientCounts[user.id] || 0) !== 1 ? 's' : ''}
+                        </p>
+                      </div>
                     </div>
                   </div>
 
