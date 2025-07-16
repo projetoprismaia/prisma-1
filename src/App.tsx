@@ -184,6 +184,21 @@ function App() {
     setShowPatientPanel(false);
   };
 
+  const navigateToHome = () => {
+    setShowAdminPanel(false);
+    setShowPatientPanel(false);
+  };
+
+  const navigateToAdmin = () => {
+    setShowAdminPanel(true);
+    setShowPatientPanel(false);
+  };
+
+  const navigateToPatients = () => {
+    setShowAdminPanel(false);
+    setShowPatientPanel(true);
+  };
+
   // Loading state
   if (loading) {
     return (
@@ -237,7 +252,7 @@ function App() {
               </div>
               <div className="flex items-center space-x-4">
                 <button
-                  onClick={() => setShowAdminPanel(false)}
+                  onClick={navigateToHome}
                   className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg text-sm transition-colors"
                 >
                   Voltar ao App
@@ -274,7 +289,7 @@ function App() {
               </div>
               <div className="flex items-center space-x-4">
                 <button
-                  onClick={() => setShowPatientPanel(false)}
+                  onClick={navigateToHome}
                   className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg text-sm transition-colors"
                 >
                   Voltar ao App
@@ -312,24 +327,50 @@ function App() {
                 <Clock className="h-4 w-4" />
                 <span className="font-mono font-semibold">{duration}</span>
               </div>
-              {isAdmin() && (
+              
+              {/* Navigation Menu */}
+              <nav className="flex items-center space-x-1 bg-gray-100 rounded-lg p-1">
                 <button
-                  onClick={() => setShowAdminPanel(true)}
-                  className="flex items-center space-x-2 bg-purple-600 hover:bg-purple-700 text-white px-3 py-2 rounded-lg text-sm transition-colors"
+                  onClick={navigateToHome}
+                  className={`flex items-center space-x-2 px-3 py-2 rounded-md text-sm font-medium transition-colors ${
+                    !showAdminPanel && !showPatientPanel
+                      ? 'bg-blue-600 text-white shadow-sm'
+                      : 'text-gray-600 hover:text-gray-900 hover:bg-white'
+                  }`}
                 >
-                  <Settings className="h-4 w-4" />
-                  <span>Admin</span>
+                  <Mic className="h-4 w-4" />
+                  <span>Transcrição</span>
                 </button>
-              )}
-              {!isAdmin() && (
-                <button
-                  onClick={() => setShowPatientPanel(true)}
-                  className="flex items-center space-x-2 bg-green-600 hover:bg-green-700 text-white px-3 py-2 rounded-lg text-sm transition-colors"
-                >
-                  <Users className="h-4 w-4" />
-                  <span>Pacientes</span>
-                </button>
-              )}
+                
+                {!isAdmin() && (
+                  <button
+                    onClick={navigateToPatients}
+                    className={`flex items-center space-x-2 px-3 py-2 rounded-md text-sm font-medium transition-colors ${
+                      showPatientPanel
+                        ? 'bg-green-600 text-white shadow-sm'
+                        : 'text-gray-600 hover:text-gray-900 hover:bg-white'
+                    }`}
+                  >
+                    <Users className="h-4 w-4" />
+                    <span>Pacientes</span>
+                  </button>
+                )}
+                
+                {isAdmin() && (
+                  <button
+                    onClick={navigateToAdmin}
+                    className={`flex items-center space-x-2 px-3 py-2 rounded-md text-sm font-medium transition-colors ${
+                      showAdminPanel
+                        ? 'bg-purple-600 text-white shadow-sm'
+                        : 'text-gray-600 hover:text-gray-900 hover:bg-white'
+                    }`}
+                  >
+                    <Settings className="h-4 w-4" />
+                    <span>Admin</span>
+                  </button>
+                )}
+              </nav>
+              
               <UserProfile user={user} onSignOut={handleSignOut} />
             </div>
           </div>
