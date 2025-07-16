@@ -63,13 +63,36 @@ export function useAuth() {
     try {
       console.log('👤 Buscando perfil do usuário:', authUser.id);
       
-      const { data: profile, error } = await supabase
+      // First, let's check if the profile exists, if not create it
+      let { data: profile, error } = await supabase
         .from('profiles')
         .select('*')
         .eq('id', authUser.id)
         .single();
 
-      if (error) {
+      if (error && error.code === 'PGRST116') {
+        // Profile doesn't exist, create it
+        console.log('📝 Perfil não existe, criando...');
+        const { data: newProfile, error: insertError } = await supabase
+          .from('profiles')
+          .insert({
+            id: authUser.id,
+            email: authUser.email,
+            role: 'user'
+          })
+          .select()
+          .single();
+
+        if (insertError) {
+          console.error('❌ Erro ao criar perfil:', insertError);
+          setError(`Erro ao criar perfil: ${insertError.message}`);
+          setLoading(false);
+          return;
+        }
+
+        profile = newProfile;
+        console.log('✅ Perfil criado com sucesso:', profile);
+      } else if (error) {
         console.error('❌ Erro ao buscar perfil:', error);
         setError(`Erro de perfil: ${error.message}`);
         setLoading(false);

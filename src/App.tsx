@@ -200,21 +200,21 @@ function App() {
       <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 flex items-center justify-center p-4">
         <div className="bg-white rounded-xl shadow-xl p-8 max-w-md text-center">
           <div className="text-red-500 text-6xl mb-4">⚠️</div>
-          <h1 className="text-2xl font-bold text-gray-800 mb-4">Erro de Configuração</h1>
+          <h1 className="text-2xl font-bold text-gray-800 mb-4">Erro na Aplicação</h1>
           <p className="text-gray-600 mb-4">
-            O Supabase não está configurado. Você precisa conectar ao Supabase para usar o aplicativo.
+            Ocorreu um erro ao inicializar a aplicação. Verifique os detalhes abaixo.
           </p>
-          <div className="text-left bg-gray-50 p-4 rounded-lg text-sm">
-            <p className="font-semibold mb-2">Para resolver:</p>
-            <ol className="list-decimal list-inside space-y-1 text-gray-700">
-              <li>Clique em "Connect to Supabase" no canto superior direito</li>
-              <li>Configure seu projeto Supabase</li>
-              <li>Verifique se as variáveis de ambiente estão corretas</li>
-            </ol>
-          </div>
           <div className="mt-4 p-3 bg-red-50 border border-red-200 rounded-lg">
             <p className="text-red-700 text-sm font-medium">Erro técnico:</p>
             <p className="text-red-600 text-xs mt-1">{error}</p>
+          </div>
+          <div className="text-left bg-gray-50 p-4 rounded-lg text-sm mt-4">
+            <p className="font-semibold mb-2">Possíveis soluções:</p>
+            <ol className="list-decimal list-inside space-y-1 text-gray-700">
+              <li>Verifique se o Supabase está configurado corretamente</li>
+              <li>Confirme se as migrações do banco foram aplicadas</li>
+              <li>Verifique as políticas RLS no Supabase</li>
+            </ol>
           </div>
           <button
             onClick={() => window.location.reload()}
