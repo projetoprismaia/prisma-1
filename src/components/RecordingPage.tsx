@@ -286,6 +286,7 @@ export default function RecordingPage({
       setInterimTranscript('');
       setIsRecording(true);
       setIsPaused(false);
+      setHasStarted(true);
       setStartTime(new Date());
       setDuration('00:00:00');
       
@@ -591,16 +592,15 @@ export default function RecordingPage({
                   </button>
                 ) : (
                   <>
-                    {!isPaused ? (
+                    {isRecording && !isPaused ? (
                       <button
                         onClick={pauseRecording}
-                        disabled={!isRecording}
                         className="bg-yellow-600 hover:bg-yellow-700 disabled:bg-gray-400 text-white px-6 py-3 rounded-lg flex items-center space-x-2 transition-colors duration-200 shadow-md"
                       >
                         <Pause className="h-5 w-5" />
                         <span>Pausar</span>
                       </button>
-                    ) : (
+                    ) : isPaused ? (
                       <button
                         onClick={resumeRecording}
                         className="bg-green-600 hover:bg-green-700 text-white px-6 py-3 rounded-lg flex items-center space-x-2 transition-colors duration-200 shadow-md"
@@ -608,16 +608,17 @@ export default function RecordingPage({
                         <Play className="h-5 w-5" />
                         <span>Retomar</span>
                       </button>
-                    )}
+                    ) : null}
                     
-                    <button
-                      onClick={stopRecording}
-                      disabled={!isRecording}
-                      className="bg-red-600 hover:bg-red-700 disabled:bg-gray-400 text-white px-6 py-3 rounded-lg flex items-center space-x-2 transition-colors duration-200 shadow-md"
-                    >
-                      <Square className="h-5 w-5" />
-                      <span>Finalizar</span>
-                    </button>
+                    {hasStarted && (
+                      <button
+                        onClick={stopRecording}
+                        className="bg-red-600 hover:bg-red-700 text-white px-6 py-3 rounded-lg flex items-center space-x-2 transition-colors duration-200 shadow-md"
+                      >
+                        <Square className="h-5 w-5" />
+                        <span>Finalizar</span>
+                      </button>
+                    )}
                   </>
                 )}
               </div>
