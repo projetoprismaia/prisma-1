@@ -193,6 +193,7 @@ function App() {
               onNavigateToPatients={navigateToPatients}
               onNavigateToSessions={navigateToSessions}
               onNavigateToAdmin={isAdmin() ? navigateToAdmin : undefined}
+              onStartRecording={navigateToRecording}
             />
           )}
         </div>
