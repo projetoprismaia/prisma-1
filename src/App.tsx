@@ -5,13 +5,8 @@ import AuthForm from './components/AuthForm';
 import UserProfile from './components/UserProfile';
 import AdminPanel from './components/AdminPanel';
 import PatientList from './components/PatientList';
-
-interface Transcription {
-  id: string;
-  timestamp: string;
-  content: string;
-  duration: string;
-}
+import SessionListPage from './components/SessionListPage';
+import { Session } from './types/session';
 
 function App() {
   const { user, loading, error, signOut, isAdmin } = useAuth();
@@ -23,10 +18,10 @@ function App() {
   const [isSupported, setIsSupported] = useState(false);
   const [startTime, setStartTime] = useState<Date | null>(null);
   const [duration, setDuration] = useState('00:00:00');
-  const [savedTranscriptions, setSavedTranscriptions] = useState<Transcription[]>([]);
-  const [selectedTranscription, setSelectedTranscription] = useState<Transcription | null>(null);
   const [showAdminPanel, setShowAdminPanel] = useState(false);
   const [showPatientPanel, setShowPatientPanel] = useState(false);
+  const [showSessionsPanel, setShowSessionsPanel] = useState(false);
+  const [currentSession, setCurrentSession] = useState<Session | null>(null);
   
   const recognitionRef = useRef<SpeechRecognition | null>(null);
   const intervalRef = useRef<NodeJS.Timeout | null>(null);
@@ -66,16 +61,6 @@ function App() {
     }
   }, []);
 
-  // Load saved transcriptions
-  useEffect(() => {
-    if (user) {
-      const saved = localStorage.getItem(`prisma-transcriptions-${user.profile.id}`);
-      if (saved) {
-        setSavedTranscriptions(JSON.parse(saved));
-      }
-    }
-  }, [user]);
-
   // Timer effect
   useEffect(() => {
     if (isRecording && !isPaused && startTime) {
@@ -98,14 +83,46 @@ function App() {
     };
   }, [isRecording, isPaused, startTime]);
 
-  const startRecording = () => {
+  const startRecording = (patientId?: string, title?: string) => {
     if (recognitionRef.current && isSupported) {
+      // If no patient selected, we need to show the start session modal
+      if (!patientId || !title) {
+        // This will be handled by the SessionListPage component
+        return;
+      }
+
+      // Create session in database
+      createSession(patientId, title);
+      
       setTranscript('');
       setIsRecording(true);
       setIsPaused(false);
       setStartTime(new Date());
       setDuration('00:00:00');
       recognitionRef.current.start();
+    }
+  };
+
+  const createSession = async (patientId: string, title: string) => {
+    if (!user) return;
+
+    try {
+      const { data, error } = await supabase
+        .from('sessions')
+        .insert({
+          patient_id: patientId,
+          user_id: user.id,
+          title: title,
+          status: 'recording',
+          start_time: new Date().toISOString()
+        })
+        .select()
+        .single();
+
+      if (error) throw error;
+      setCurrentSession(data);
+    } catch (error) {
+      console.error('Erro ao criar sessão:', error);
     }
   };
 
@@ -131,74 +148,89 @@ function App() {
       if (intervalRef.current) {
         clearInterval(intervalRef.current);
       }
+      
+      // Update session status
+      if (currentSession) {
+        updateSessionStatus('completed');
+      }
+    }
+  };
+
+  const updateSessionStatus = async (status: 'recording' | 'paused' | 'completed') => {
+    if (!currentSession) return;
+
+    try {
+      const updateData: any = { status };
+      
+      if (status === 'completed') {
+        updateData.end_time = new Date().toISOString();
+        updateData.duration = duration;
+        updateData.transcription_content = transcript;
+      }
+
+      const { error } = await supabase
+        .from('sessions')
+        .update(updateData)
+        .eq('id', currentSession.id);
+
+      if (error) throw error;
+      
+      if (status === 'completed') {
+        // Clear current session and transcript
+        setCurrentSession(null);
+        setTranscript('');
+        setDuration('00:00:00');
+        setStartTime(null);
+      }
+    } catch (error) {
+      console.error('Erro ao atualizar sessão:', error);
     }
   };
 
   const saveTranscription = () => {
-    if (transcript.trim() && startTime && user) {
-      const newTranscription: Transcription = {
-        id: Date.now().toString(),
-        timestamp: startTime.toLocaleString('pt-BR'),
-        content: transcript,
-        duration: duration
-      };
-      
-      const updated = [...savedTranscriptions, newTranscription];
-      setSavedTranscriptions(updated);
-      localStorage.setItem(`prisma-transcriptions-${user.profile.id}`, JSON.stringify(updated));
-      
-      // Clear current transcript
-      setTranscript('');
-      setDuration('00:00:00');
-      setStartTime(null);
+    if (currentSession && transcript.trim()) {
+      updateSessionStatus('completed');
     }
   };
 
-  const exportTranscription = (transcription: Transcription) => {
-    const element = document.createElement('a');
-    const file = new Blob([`Sessão: ${transcription.timestamp}\nDuração: ${transcription.duration}\n\n${transcription.content}`], {
-      type: 'text/plain'
-    });
-    element.href = URL.createObjectURL(file);
-    element.download = `prisma-ia-${transcription.timestamp.replace(/[/,:\s]/g, '-')}.txt`;
-    document.body.appendChild(element);
-    element.click();
-    document.body.removeChild(element);
-  };
-
-  const loadTranscription = (transcription: Transcription) => {
-    setSelectedTranscription(transcription);
-    setTranscript(transcription.content);
-  };
-
-  const formatTime = (time: string) => {
-    return time.split(' ')[1].substring(0, 5);
+  const handleStartSession = (patientId: string, title: string) => {
+    setShowSessionsPanel(false);
+    startRecording(patientId, title);
   };
 
   const handleSignOut = () => {
     signOut().then(() => {
       // Forçar limpeza adicional do estado local após logout
-      setSavedTranscriptions([]);
       setTranscript('');
-      setSelectedTranscription(null);
       setShowAdminPanel(false);
       setShowPatientPanel(false);
+      setShowSessionsPanel(false);
+      setCurrentSession(null);
     });
   };
 
   const navigateToHome = () => {
     setShowAdminPanel(false);
     setShowPatientPanel(false);
+    setShowSessionsPanel(false);
   };
 
   const navigateToAdmin = () => {
     setShowAdminPanel(true);
     setShowPatientPanel(false);
+    setShowSessionsPanel(false);
   };
 
   const navigateToPatients = () => {
     setShowAdminPanel(false);
     setShowPatientPanel(true);
+    setShowSessionsPanel(false);
+  };
+
+  const navigateToSessions = () => {
+    setShowAdminPanel(false);
+    setShowPatientPanel(false);
+    setShowSessionsPanel(true);
   };
 
   // Loading state
@@ -309,6 +341,43 @@ function App() {
     );
   }
 
+  // Show sessions panel if requested
+  if (showSessionsPanel) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100">
+        {/* Header */}
+        <header className="bg-white shadow-lg border-b border-blue-200">
+          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center space-x-3">
+                <div className="bg-blue-600 p-2 rounded-lg">
+                  <Mic className="h-6 w-6 text-white" />
+                </div>
+                <div>
+                  <h1 className="text-2xl font-bold text-gray-900">Prisma IA</h1>
+                  <p className="text-sm text-gray-600">Sessões de Transcrição</p>
+                </div>
+              </div>
+              <div className="flex items-center space-x-4">
+                <button
+                  onClick={navigateToHome}
+                  className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg text-sm transition-colors"
+                >
+                  Voltar ao App
+                </button>
+                <UserProfile user={user} onSignOut={signOut} />
+              </div>
+            </div>
+          </div>
+        </header>
+
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+          <SessionListPage currentUser={user} onStartSession={handleStartSession} />
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100">
       {/* Header */}
@@ -358,6 +427,18 @@ function App() {
                   </button>
                 )}
                 
+                <button
+                  onClick={navigateToSessions}
+                  className={`flex items-center space-x-2 px-3 py-2 rounded-md text-sm font-medium transition-colors ${
+                    showSessionsPanel
+                      ? 'bg-indigo-600 text-white shadow-sm'
+                      : 'text-gray-600 hover:text-gray-900 hover:bg-white'
+                  }`}
+                >
+                  <FileText className="h-4 w-4" />
+                  <span>Sessões</span>
+                </button>
+                
                 {isAdmin() && (
                   <button
                     onClick={navigateToAdmin}
@@ -401,11 +482,11 @@ function App() {
               <div className="flex items-center justify-center space-x-4">
                 {!isRecording ? (
                   <button
-                    onClick={startRecording}
+                    onClick={navigateToSessions}
                     className="bg-blue-600 hover:bg-blue-700 text-white px-6 py-3 rounded-lg flex items-center space-x-2 transition-colors duration-200 shadow-md"
                   >
                     <Mic className="h-5 w-5" />
-                    <span>Iniciar Gravação</span>
+                    <span>Nova Sessão</span>
                   </button>
                 ) : (
                   <div className="flex space-x-3">
@@ -462,57 +543,34 @@ function App() {
                 style={{ fontFamily: 'monospace' }}
               />
             </div>
+            
+            {/* Current Session Info */}
+            {currentSession && (
+              <p className="text-sm text-gray-600 mt-2">Sessão atual: {currentSession.title}</p>
+            )}
           </div>
 
-          {/* Sidebar - Saved Transcriptions */}
+          {/* Sidebar - Quick Actions */}
           <div className="bg-white rounded-xl shadow-lg p-6">
-            <h2 className="text-xl font-semibold text-gray-800 mb-4">Sessões Salvas</h2>
+            <h2 className="text-xl font-semibold text-gray-800 mb-4">Ações Rápidas</h2>
             
-            {savedTranscriptions.length === 0 ? (
-              <div className="text-center py-8">
-                <FileText className="h-12 w-12 text-gray-400 mx-auto mb-3" />
-                <p className="text-gray-500">Nenhuma sessão salva ainda</p>
-              </div>
-            ) : (
-              <div className="space-y-3 max-h-96 overflow-y-auto">
-                {savedTranscriptions.map((transcription) => (
-                  <div
-                    key={transcription.id}
-                    className={`p-4 border rounded-lg cursor-pointer transition-colors duration-200 ${
-                      selectedTranscription?.id === transcription.id
-                        ? 'border-blue-500 bg-blue-50'
-                        : 'border-gray-200 hover:border-gray-300'
-                    }`}
-                    onClick={() => loadTranscription(transcription)}
-                  >
-                    <div className="flex items-center justify-between mb-2">
-                      <span className="text-sm font-medium text-gray-800">
-                        {transcription.timestamp.split(' ')[0]}
-                      </span>
-                      <span className="text-xs text-gray-500">
-                        {formatTime(transcription.timestamp)}
-                      </span>
-                    </div>
-                    <p className="text-sm text-gray-600 mb-2">
-                      Duração: {transcription.duration}
-                    </p>
-                    <p className="text-sm text-gray-700 line-clamp-2">
-                      {transcription.content.substring(0, 100)}...
-                    </p>
-                    <button
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        exportTranscription(transcription);
-                      }}
-                      className="mt-2 text-blue-600 hover:text-blue-800 text-sm flex items-center space-x-1"
-                    >
-                      <Download className="h-3 w-3" />
-                      <span>Exportar</span>
-                    </button>
-                  </div>
-                ))}
-              </div>
-            )}
+            <div className="space-y-3">
+              <button
+                onClick={navigateToSessions}
+                className="w-full bg-indigo-600 hover:bg-indigo-700 text-white px-4 py-3 rounded-lg flex items-center space-x-2 transition-colors"
+              >
+                <FileText className="h-4 w-4" />
+                <span>Ver Todas as Sessões</span>
+              </button>
+              
+              <button
+                onClick={navigateToPatients}
+                className="w-full bg-green-600 hover:bg-green-700 text-white px-4 py-3 rounded-lg flex items-center space-x-2 transition-colors"
+              >
+                <Users className="h-4 w-4" />
+                <span>Gerenciar Pacientes</span>
+              </button>
+            </div>
           </div>
         </div>
       </div>
