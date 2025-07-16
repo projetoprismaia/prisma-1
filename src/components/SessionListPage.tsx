@@ -33,6 +33,13 @@ export default function SessionListPage({ currentUser, onStartRecording }: Sessi
     fetchPatients();
   }, []);
 
+  // Update selected patient when initialPatientFilter changes
+  useEffect(() => {
+    if (initialPatientFilter) {
+      setSelectedPatient(initialPatientFilter);
+    }
+  }, [initialPatientFilter]);
+
   const fetchSessions = async () => {
     try {
       log('Iniciando busca de sessões...');

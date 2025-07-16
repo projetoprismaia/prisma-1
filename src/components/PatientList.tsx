@@ -268,6 +268,10 @@ export default function PatientList({ currentUser, onNavigateToSessions }: Patie
                 <div className="flex space-x-2">
                   <button
                     onClick={() => openEditModal(patient)}
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      openEditModal(patient);
+                    }}
                     className="p-2 text-blue-600 hover:bg-blue-100 rounded-lg transition-colors"
                     title="Editar paciente"
                   >
@@ -275,7 +279,10 @@ export default function PatientList({ currentUser, onNavigateToSessions }: Patie
                   </button>
 
                   <button
-                    onClick={() => setDeleteConfirm(patient.id)}
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      setDeleteConfirm(patient.id);
+                    }}
                     className="p-2 text-red-600 hover:bg-red-100 rounded-lg transition-colors"
                     title="Deletar paciente"
                   >
