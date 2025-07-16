@@ -8,6 +8,7 @@ import StartSessionModal from './StartSessionModal';
 interface SessionListPageProps {
   currentUser: AuthUser;
   onStartRecording: (patientId: string, title: string) => void;
+  initialPatientFilter?: string;
 }
 
 // Add debug logging
@@ -18,7 +19,7 @@ const log = (message: string, data?: any) => {
   }
 }
 
-export default function SessionListPage({ currentUser, onStartRecording }: SessionListPageProps) {
+export default function SessionListPage({ currentUser, onStartRecording, initialPatientFilter }: SessionListPageProps) {
   const [sessions, setSessions] = useState<Session[]>([]);
   const [patients, setPatients] = useState<Patient[]>([]);
   const [loading, setLoading] = useState(true);
