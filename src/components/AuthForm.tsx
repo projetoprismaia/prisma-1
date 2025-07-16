@@ -2,11 +2,7 @@ import React, { useState } from 'react';
 import { Mail, Lock, Eye, EyeOff, UserPlus, LogIn, AlertCircle } from 'lucide-react';
 import { supabase } from '../lib/supabase';
 
-interface AuthFormProps {
-  onAuthSuccess: () => void;
-}
-
-export default function AuthForm({ onAuthSuccess }: AuthFormProps) {
+export default function AuthForm() {
   const [isLogin, setIsLogin] = useState(true);
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -33,8 +29,6 @@ export default function AuthForm({ onAuthSuccess }: AuthFormProps) {
         });
         if (error) throw error;
       }
-      
-      onAuthSuccess();
     } catch (error: any) {
       setError(error.message);
     } finally {

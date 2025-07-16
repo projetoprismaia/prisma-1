@@ -1,8 +1,9 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { Mic, MicOff, Play, Pause, Square, Save, Download, Clock, FileText } from 'lucide-react';
-import { supabase } from './lib/supabase';
+import { Mic, MicOff, Play, Pause, Square, Save, Download, Clock, FileText, Settings } from 'lucide-react';
+import { useAuth } from './hooks/useAuth';
 import AuthForm from './components/AuthForm';
 import UserProfile from './components/UserProfile';
+import AdminPanel from './components/AdminPanel';
 
 interface Transcription {
   id: string;
@@ -12,10 +13,7 @@ interface Transcription {
 }
 
 function App() {
-  // Auth states
-  const [user, setUser] = useState<any>(null);
-  const [session, setSession] = useState<any>(null);
-  const [loading, setLoading] = useState(true);
+  const { user, loading, signOut, isAdmin } = useAuth();
 
   // Recording states
   const [isRecording, setIsRecording] = useState(false);
@@ -26,30 +24,10 @@ function App() {
   const [duration, setDuration] = useState('00:00:00');
   const [savedTranscriptions, setSavedTranscriptions] = useState<Transcription[]>([]);
   const [selectedTranscription, setSelectedTranscription] = useState<Transcription | null>(null);
+  const [showAdminPanel, setShowAdminPanel] = useState(false);
   
   const recognitionRef = useRef<SpeechRecognition | null>(null);
   const intervalRef = useRef<NodeJS.Timeout | null>(null);
-
-  // Auth effect
-  useEffect(() => {
-    // Get initial session
-    supabase.auth.getSession().then(({ data: { session } }) => {
-      setSession(session);
-      setUser(session?.user ?? null);
-      setLoading(false);
-    });
-
-    // Listen for auth changes
-    const {
-      data: { subscription },
-    } = supabase.auth.onAuthStateChange((_event, session) => {
-      setSession(session);
-      setUser(session?.user ?? null);
-      setLoading(false);
-    });
-
-    return () => subscription.unsubscribe();
-  }, []);
 
   // Speech recognition setup
   useEffect(() => {
@@ -89,7 +67,7 @@ function App() {
   // Load saved transcriptions
   useEffect(() => {
     if (user) {
-      const saved = localStorage.getItem(`prisma-transcriptions-${user.id}`);
+      const saved = localStorage.getItem(`prisma-transcriptions-${user.profile.id}`);
       if (saved) {
         setSavedTranscriptions(JSON.parse(saved));
       }
@@ -165,7 +143,7 @@ function App() {
       
       const updated = [...savedTranscriptions, newTranscription];
       setSavedTranscriptions(updated);
-      localStorage.setItem(`prisma-transcriptions-${user.id}`, JSON.stringify(updated));
+      localStorage.setItem(`prisma-transcriptions-${user.profile.id}`, JSON.stringify(updated));
       
       // Clear current transcript
       setTranscript('');
@@ -195,16 +173,12 @@ function App() {
     return time.split(' ')[1].substring(0, 5);
   };
 
-  const handleAuthSuccess = () => {
-    // Auth state will be updated by the auth listener
-  };
-
   const handleSignOut = () => {
-    setUser(null);
-    setSession(null);
+    signOut();
     setSavedTranscriptions([]);
     setTranscript('');
     setSelectedTranscription(null);
+    setShowAdminPanel(false);
   };
 
   // Loading state
@@ -218,7 +192,7 @@ function App() {
 
   // Show auth form if not authenticated
   if (!user) {
-    return <AuthForm onAuthSuccess={handleAuthSuccess} />;
+    return <AuthForm />;
   }
 
   // Browser support check
@@ -232,6 +206,43 @@ function App() {
             Seu navegador não suporta a API de reconhecimento de voz. 
             Por favor, use o Google Chrome ou Microsoft Edge.
           </p>
+        </div>
+      </div>
+    );
+  }
+
+  // Show admin panel if requested
+  if (showAdminPanel && isAdmin()) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100">
+        {/* Header */}
+        <header className="bg-white shadow-lg border-b border-blue-200">
+          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center space-x-3">
+                <div className="bg-blue-600 p-2 rounded-lg">
+                  <Mic className="h-6 w-6 text-white" />
+                </div>
+                <div>
+                  <h1 className="text-2xl font-bold text-gray-900">Prisma IA</h1>
+                  <p className="text-sm text-gray-600">Painel Administrativo</p>
+                </div>
+              </div>
+              <div className="flex items-center space-x-4">
+                <button
+                  onClick={() => setShowAdminPanel(false)}
+                  className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg text-sm transition-colors"
+                >
+                  Voltar ao App
+                </button>
+                <UserProfile user={user} onSignOut={handleSignOut} />
+              </div>
+            </div>
+          </div>
+        </header>
+
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+          <AdminPanel currentUser={user} />
         </div>
       </div>
     );
@@ -257,6 +268,15 @@ function App() {
                 <Clock className="h-4 w-4" />
                 <span className="font-mono font-semibold">{duration}</span>
               </div>
+              {isAdmin() && (
+                <button
+                  onClick={() => setShowAdminPanel(true)}
+                  className="flex items-center space-x-2 bg-purple-600 hover:bg-purple-700 text-white px-3 py-2 rounded-lg text-sm transition-colors"
+                >
+                  <Settings className="h-4 w-4" />
+                  <span>Admin</span>
+                </button>
+              )}
               <UserProfile user={user} onSignOut={handleSignOut} />
             </div>
           </div>
