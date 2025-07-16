@@ -257,7 +257,7 @@ function App() {
                 >
                   Voltar ao App
                 </button>
-                <UserProfile user={user} onSignOut={handleSignOut} />
+                <UserProfile user={user} onSignOut={signOut} />
               </div>
             </div>
           </div>
@@ -294,7 +294,7 @@ function App() {
                 >
                   Voltar ao App
                 </button>
-                <UserProfile user={user} onSignOut={handleSignOut} />
+                <UserProfile user={user} onSignOut={signOut} />
               </div>
             </div>
           </div>
@@ -371,7 +371,7 @@ function App() {
                 )}
               </nav>
               
-              <UserProfile user={user} onSignOut={handleSignOut} />
+              <UserProfile user={user} onSignOut={signOut} />
             </div>
           </div>
         </div>
