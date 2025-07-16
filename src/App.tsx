@@ -1,5 +1,8 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { Mic, MicOff, Play, Pause, Square, Save, Download, Clock, FileText } from 'lucide-react';
+import { supabase } from './lib/supabase';
+import AuthForm from './components/AuthForm';
+import UserProfile from './components/UserProfile';
 
 interface Transcription {
   id: string;
@@ -9,6 +12,12 @@ interface Transcription {
 }
 
 function App() {
+  // Auth states
+  const [user, setUser] = useState<any>(null);
+  const [session, setSession] = useState<any>(null);
+  const [loading, setLoading] = useState(true);
+
+  // Recording states
   const [isRecording, setIsRecording] = useState(false);
   const [isPaused, setIsPaused] = useState(false);
   const [transcript, setTranscript] = useState('');
@@ -21,6 +30,28 @@ function App() {
   const recognitionRef = useRef<SpeechRecognition | null>(null);
   const intervalRef = useRef<NodeJS.Timeout | null>(null);
 
+  // Auth effect
+  useEffect(() => {
+    // Get initial session
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      setSession(session);
+      setUser(session?.user ?? null);
+      setLoading(false);
+    });
+
+    // Listen for auth changes
+    const {
+      data: { subscription },
+    } = supabase.auth.onAuthStateChange((_event, session) => {
+      setSession(session);
+      setUser(session?.user ?? null);
+      setLoading(false);
+    });
+
+    return () => subscription.unsubscribe();
+  }, []);
+
+  // Speech recognition setup
   useEffect(() => {
     if ('webkitSpeechRecognition' in window || 'SpeechRecognition' in window) {
       setIsSupported(true);
@@ -53,14 +84,19 @@ function App() {
         };
       }
     }
-    
-    // Load saved transcriptions from localStorage
-    const saved = localStorage.getItem('prisma-transcriptions');
-    if (saved) {
-      setSavedTranscriptions(JSON.parse(saved));
-    }
   }, []);
 
+  // Load saved transcriptions
+  useEffect(() => {
+    if (user) {
+      const saved = localStorage.getItem(`prisma-transcriptions-${user.id}`);
+      if (saved) {
+        setSavedTranscriptions(JSON.parse(saved));
+      }
+    }
+  }, [user]);
+
+  // Timer effect
   useEffect(() => {
     if (isRecording && !isPaused && startTime) {
       intervalRef.current = setInterval(() => {
@@ -119,7 +155,7 @@ function App() {
   };
 
   const saveTranscription = () => {
-    if (transcript.trim() && startTime) {
+    if (transcript.trim() && startTime && user) {
       const newTranscription: Transcription = {
         id: Date.now().toString(),
         timestamp: startTime.toLocaleString('pt-BR'),
@@ -129,7 +165,7 @@ function App() {
       
       const updated = [...savedTranscriptions, newTranscription];
       setSavedTranscriptions(updated);
-      localStorage.setItem('prisma-transcriptions', JSON.stringify(updated));
+      localStorage.setItem(`prisma-transcriptions-${user.id}`, JSON.stringify(updated));
       
       // Clear current transcript
       setTranscript('');
@@ -159,6 +195,33 @@ function App() {
     return time.split(' ')[1].substring(0, 5);
   };
 
+  const handleAuthSuccess = () => {
+    // Auth state will be updated by the auth listener
+  };
+
+  const handleSignOut = () => {
+    setUser(null);
+    setSession(null);
+    setSavedTranscriptions([]);
+    setTranscript('');
+    setSelectedTranscription(null);
+  };
+
+  // Loading state
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 flex items-center justify-center">
+        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
+      </div>
+    );
+  }
+
+  // Show auth form if not authenticated
+  if (!user) {
+    return <AuthForm onAuthSuccess={handleAuthSuccess} />;
+  }
+
+  // Browser support check
   if (!isSupported) {
     return (
       <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 flex items-center justify-center p-4">
@@ -189,9 +252,12 @@ function App() {
                 <p className="text-sm text-gray-600">Transcrição de Consultas Psiquiátricas</p>
               </div>
             </div>
-            <div className="flex items-center space-x-2 text-sm text-gray-600">
-              <Clock className="h-4 w-4" />
-              <span className="font-mono font-semibold">{duration}</span>
+            <div className="flex items-center space-x-4">
+              <div className="flex items-center space-x-2 text-sm text-gray-600">
+                <Clock className="h-4 w-4" />
+                <span className="font-mono font-semibold">{duration}</span>
+              </div>
+              <UserProfile user={user} onSignOut={handleSignOut} />
             </div>
           </div>
         </div>
