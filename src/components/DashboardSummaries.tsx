@@ -246,46 +246,48 @@ export default function DashboardSummaries({
         </div>
 
         {/* Total de Sessões */}
-        <div className="space-y-4">
-          <div 
-            onClick={onNavigateToSessions}
-            className="glass-card rounded-xl shadow-lg p-6 hover:shadow-xl transition-all duration-200 cursor-pointer hover:scale-105"
+        <div 
+          onClick={onNavigateToSessions}
+          className="glass-card rounded-xl shadow-lg p-6 hover:shadow-xl transition-all duration-200 cursor-pointer hover:scale-105"
+        >
+          <div className="flex items-center justify-between">
+            <div>
+              <p className="text-sm font-medium text-indigo-600 mb-1">
+                {isAdmin ? 'Total de Sessões' : 'Minhas Sessões'}
+              </p>
+              <p className="text-3xl font-bold text-gray-900">{data.totalSessions}</p>
+            </div>
+            <div className="bg-indigo-100 p-3 rounded-full">
+              <FileText className="h-6 w-6 text-indigo-600" />
+            </div>
+          </div>
+          <div className="mt-4 flex items-center text-sm text-indigo-600">
+            <TrendingUp className="h-4 w-4 mr-1" />
+            <span>Ver todas</span>
+          </div>
+        </div>
+        
+        {/* Botão Nova Gravação - apenas para usuários não-admin */}
+        {!isAdmin && onStartRecording && (
+          <button
+            onClick={onStartRecording}
+            className="rounded-xl shadow-lg p-6 hover:shadow-xl transition-all duration-200 hover:scale-105 bg-gradient-to-r from-purple-600 to-indigo-700 text-white border-0"
           >
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-sm font-medium text-indigo-600 mb-1">
-                  {isAdmin ? 'Total de Sessões' : 'Minhas Sessões'}
-                </p>
-                <p className="text-3xl font-bold text-gray-900">{data.totalSessions}</p>
+                <p className="text-sm font-medium text-white mb-1">Nova Gravação</p>
+                <p className="text-3xl font-bold text-white">🎤</p>
               </div>
-              <div className="bg-indigo-100 p-3 rounded-full">
-                <FileText className="h-6 w-6 text-indigo-600" />
+              <div className="bg-white/20 p-3 rounded-full">
+                <Mic className="h-6 w-6 text-white" />
               </div>
             </div>
-            <div className="mt-4 flex items-center text-sm text-indigo-600">
+            <div className="mt-4 flex items-center text-sm text-white">
               <TrendingUp className="h-4 w-4 mr-1" />
-              <span>Ver todas</span>
+              <span>Iniciar nova sessão</span>
             </div>
-          </div>
-          
-          {/* Botão Nova Gravação - apenas para usuários não-admin */}
-          {!isAdmin && onStartRecording && (
-            <button
-              onClick={onStartRecording}
-              className="w-full glass-card rounded-xl shadow-lg p-4 hover:shadow-xl transition-all duration-200 hover:scale-105 bg-gradient-to-r from-red-500 to-red-600 text-white border-0"
-            >
-              <div className="flex items-center justify-center space-x-3">
-                <div className="bg-white/20 p-2 rounded-full">
-                  <Mic className="h-5 w-5 text-white" />
-                </div>
-                <div className="text-left">
-                  <p className="font-semibold">Nova Gravação</p>
-                  <p className="text-sm text-red-100">Iniciar nova sessão</p>
-                </div>
-              </div>
-            </button>
-          )}
-        </div>
+          </button>
+        )}
       </div>
 
       {/* Sessões Recentes */}
