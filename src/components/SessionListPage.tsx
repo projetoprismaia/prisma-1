@@ -174,7 +174,7 @@ export default function SessionListPage({ currentUser, onStartRecording, initial
               <FileText className="h-6 w-6 text-white" />
             </div>
             <div>
-              <h2 className="text-xl font-semibold text-gray-800">Sessões de Transcrição</h2>
+              <h2 className="text-xl font-semibold text-gray-800">Sessões</h2>
               <p className="text-sm text-gray-600">Gerencie suas sessões de consulta</p>
             </div>
           </div>
