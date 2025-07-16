@@ -687,7 +687,6 @@ export default function RecordingPage({
                       ✅ {filteredPatients.length} paciente(s) encontrado(s)
                     </p>
                   ) : null}
-                  )}
                 </div>
                 {/* Session Title */}
                 <div>
