@@ -1,9 +1,10 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { Mic, MicOff, Play, Pause, Square, Save, Download, Clock, FileText, Settings } from 'lucide-react';
+import { Mic, MicOff, Play, Pause, Square, Save, Download, Clock, FileText, Settings, Users } from 'lucide-react';
 import { useAuth } from './hooks/useAuth';
 import AuthForm from './components/AuthForm';
 import UserProfile from './components/UserProfile';
 import AdminPanel from './components/AdminPanel';
+import PatientList from './components/PatientList';
 
 interface Transcription {
   id: string;
@@ -25,6 +26,7 @@ function App() {
   const [savedTranscriptions, setSavedTranscriptions] = useState<Transcription[]>([]);
   const [selectedTranscription, setSelectedTranscription] = useState<Transcription | null>(null);
   const [showAdminPanel, setShowAdminPanel] = useState(false);
+  const [showPatientPanel, setShowPatientPanel] = useState(false);
   
   const recognitionRef = useRef<SpeechRecognition | null>(null);
   const intervalRef = useRef<NodeJS.Timeout | null>(null);
@@ -179,6 +181,7 @@ function App() {
     setTranscript('');
     setSelectedTranscription(null);
     setShowAdminPanel(false);
+    setShowPatientPanel(false);
   };
 
   // Loading state
@@ -252,6 +255,43 @@ function App() {
     );
   }
 
+  // Show patient panel if requested
+  if (showPatientPanel && !isAdmin()) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100">
+        {/* Header */}
+        <header className="bg-white shadow-lg border-b border-blue-200">
+          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center space-x-3">
+                <div className="bg-blue-600 p-2 rounded-lg">
+                  <Mic className="h-6 w-6 text-white" />
+                </div>
+                <div>
+                  <h1 className="text-2xl font-bold text-gray-900">Prisma IA</h1>
+                  <p className="text-sm text-gray-600">Gerenciamento de Pacientes</p>
+                </div>
+              </div>
+              <div className="flex items-center space-x-4">
+                <button
+                  onClick={() => setShowPatientPanel(false)}
+                  className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg text-sm transition-colors"
+                >
+                  Voltar ao App
+                </button>
+                <UserProfile user={user} onSignOut={handleSignOut} />
+              </div>
+            </div>
+          </div>
+        </header>
+
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+          <PatientList currentUser={user} />
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100">
       {/* Header */}
@@ -279,6 +319,15 @@ function App() {
                 >
                   <Settings className="h-4 w-4" />
                   <span>Admin</span>
+                </button>
+              )}
+              {!isAdmin() && (
+                <button
+                  onClick={() => setShowPatientPanel(true)}
+                  className="flex items-center space-x-2 bg-green-600 hover:bg-green-700 text-white px-3 py-2 rounded-lg text-sm transition-colors"
+                >
+                  <Users className="h-4 w-4" />
+                  <span>Pacientes</span>
                 </button>
               )}
               <UserProfile user={user} onSignOut={handleSignOut} />
