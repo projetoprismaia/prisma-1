@@ -84,7 +84,7 @@ export function useAuth() {
         .single();
 
       if (error) {
-        console.error('❌ Erro ao buscar perfil:', error);
+        console.error('❌ Erro ao buscar perfil:', error.message);
         
         // Se o usuário não existe no banco (foi deletado), fazer logout
         if (error.code === 'PGRST116' || error.message?.includes('No rows found')) {
@@ -94,13 +94,14 @@ export function useAuth() {
         }
 
         // Para outros erros, tentar criar perfil
-        console.log('📝 Tentando criar perfil...');
+        console.log('📝 Perfil não encontrado, criando novo perfil...');
         const { data: newProfile, error: insertError } = await supabase
           .from('profiles')
           .insert({
             id: authUser.id,
             email: authUser.email,
             role: 'user',
+            full_name: authUser.user_metadata?.full_name || null,
             created_at: new Date().toISOString(),
             updated_at: new Date().toISOString()
           })
@@ -108,10 +109,30 @@ export function useAuth() {
           .single();
 
         if (insertError) {
-          console.error('❌ Erro ao criar perfil:', insertError);
-          // Se não conseguir criar, também fazer logout
-          console.log('🚪 Não foi possível criar perfil, fazendo logout...');
-          await forceSignOut();
+          console.error('❌ Erro ao criar perfil:', insertError.message);
+          
+          // Se for erro de recursão ou política, fazer logout
+          if (insertError.message?.includes('infinite recursion') || 
+              insertError.message?.includes('policy')) {
+            console.log('🚪 Erro de política RLS, fazendo logout...');
+            await forceSignOut();
+            return;
+          }
+          
+          // Para outros erros, criar perfil temporário
+          console.log('⚠️ Usando perfil temporário...');
+          setUser({
+            id: authUser.id,
+            email: authUser.email,
+            profile: {
+              id: authUser.id,
+              email: authUser.email,
+              role: 'user',
+              full_name: null,
+              created_at: new Date().toISOString(),
+              updated_at: new Date().toISOString()
+            }
+          });
           return;
         }
 
