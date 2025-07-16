@@ -141,6 +141,61 @@ function App() {
                   </div>
                 </div>
                 <div className="flex items-center space-x-4">
+                  {/* Navigation Menu */}
+                  <nav className="flex items-center space-x-1 bg-gray-100 rounded-lg p-1">
+                    <button
+                      onClick={navigateToHome}
+                      className={`flex items-center space-x-2 px-3 py-2 rounded-md text-sm font-medium transition-colors ${
+                        !showAdminPanel && !showPatientPanel && !showSessionsPanel
+                          ? 'bg-blue-600 text-white shadow-sm'
+                          : 'text-gray-600 hover:text-gray-900 hover:bg-white'
+                      }`}
+                    >
+                      <BarChart3 className="h-4 w-4" />
+                      <span>Dashboard</span>
+                    </button>
+                    
+                    {!isAdmin() && (
+                      <button
+                        onClick={navigateToPatients}
+                        className={`flex items-center space-x-2 px-3 py-2 rounded-md text-sm font-medium transition-colors ${
+                          showPatientPanel
+                            ? 'bg-green-600 text-white shadow-sm'
+                            : 'text-gray-600 hover:text-gray-900 hover:bg-white'
+                        }`}
+                      >
+                        <Users className="h-4 w-4" />
+                        <span>Pacientes</span>
+                      </button>
+                    )}
+                    
+                    <button
+                      onClick={navigateToSessions}
+                      className={`flex items-center space-x-2 px-3 py-2 rounded-md text-sm font-medium transition-colors ${
+                        showSessionsPanel
+                          ? 'bg-indigo-600 text-white shadow-sm'
+                          : 'text-gray-600 hover:text-gray-900 hover:bg-white'
+                      }`}
+                    >
+                      <FileText className="h-4 w-4" />
+                      <span>Sessões</span>
+                    </button>
+                    
+                    {isAdmin() && (
+                      <button
+                        onClick={navigateToAdmin}
+                        className={`flex items-center space-x-2 px-3 py-2 rounded-md text-sm font-medium transition-colors ${
+                          showAdminPanel
+                            ? 'bg-purple-600 text-white shadow-sm'
+                            : 'text-gray-600 hover:text-gray-900 hover:bg-white'
+                        }`}
+                      >
+                        <Settings className="h-4 w-4" />
+                        <span>Admin</span>
+                      </button>
+                    )}
+                  </nav>
+                  
                   <UserProfile user={user} onSignOut={signOut} />
                 </div>
               </div>
@@ -175,6 +230,61 @@ function App() {
                   </div>
                 </div>
                 <div className="flex items-center space-x-4">
+                  {/* Navigation Menu */}
+                  <nav className="flex items-center space-x-1 bg-gray-100 rounded-lg p-1">
+                    <button
+                      onClick={navigateToHome}
+                      className={`flex items-center space-x-2 px-3 py-2 rounded-md text-sm font-medium transition-colors ${
+                        !showAdminPanel && !showPatientPanel && !showSessionsPanel
+                          ? 'bg-blue-600 text-white shadow-sm'
+                          : 'text-gray-600 hover:text-gray-900 hover:bg-white'
+                      }`}
+                    >
+                      <BarChart3 className="h-4 w-4" />
+                      <span>Dashboard</span>
+                    </button>
+                    
+                    {!isAdmin() && (
+                      <button
+                        onClick={navigateToPatients}
+                        className={`flex items-center space-x-2 px-3 py-2 rounded-md text-sm font-medium transition-colors ${
+                          showPatientPanel
+                            ? 'bg-green-600 text-white shadow-sm'
+                            : 'text-gray-600 hover:text-gray-900 hover:bg-white'
+                        }`}
+                      >
+                        <Users className="h-4 w-4" />
+                        <span>Pacientes</span>
+                      </button>
+                    )}
+                    
+                    <button
+                      onClick={navigateToSessions}
+                      className={`flex items-center space-x-2 px-3 py-2 rounded-md text-sm font-medium transition-colors ${
+                        showSessionsPanel
+                          ? 'bg-indigo-600 text-white shadow-sm'
+                          : 'text-gray-600 hover:text-gray-900 hover:bg-white'
+                      }`}
+                    >
+                      <FileText className="h-4 w-4" />
+                      <span>Sessões</span>
+                    </button>
+                    
+                    {isAdmin() && (
+                      <button
+                        onClick={navigateToAdmin}
+                        className={`flex items-center space-x-2 px-3 py-2 rounded-md text-sm font-medium transition-colors ${
+                          showAdminPanel
+                            ? 'bg-purple-600 text-white shadow-sm'
+                            : 'text-gray-600 hover:text-gray-900 hover:bg-white'
+                        }`}
+                      >
+                        <Settings className="h-4 w-4" />
+                        <span>Admin</span>
+                      </button>
+                    )}
+                  </nav>
+                  
                   <UserProfile user={user} onSignOut={signOut} />
                 </div>
               </div>
@@ -209,6 +319,61 @@ function App() {
                   </div>
                 </div>
                 <div className="flex items-center space-x-4">
+                  {/* Navigation Menu */}
+                  <nav className="flex items-center space-x-1 bg-gray-100 rounded-lg p-1">
+                    <button
+                      onClick={navigateToHome}
+                      className={`flex items-center space-x-2 px-3 py-2 rounded-md text-sm font-medium transition-colors ${
+                        !showAdminPanel && !showPatientPanel && !showSessionsPanel
+                          ? 'bg-blue-600 text-white shadow-sm'
+                          : 'text-gray-600 hover:text-gray-900 hover:bg-white'
+                      }`}
+                    >
+                      <BarChart3 className="h-4 w-4" />
+                      <span>Dashboard</span>
+                    </button>
+                    
+                    {!isAdmin() && (
+                      <button
+                        onClick={navigateToPatients}
+                        className={`flex items-center space-x-2 px-3 py-2 rounded-md text-sm font-medium transition-colors ${
+                          showPatientPanel
+                            ? 'bg-green-600 text-white shadow-sm'
+                            : 'text-gray-600 hover:text-gray-900 hover:bg-white'
+                        }`}
+                      >
+                        <Users className="h-4 w-4" />
+                        <span>Pacientes</span>
+                      </button>
+                    )}
+                    
+                    <button
+                      onClick={navigateToSessions}
+                      className={`flex items-center space-x-2 px-3 py-2 rounded-md text-sm font-medium transition-colors ${
+                        showSessionsPanel
+                          ? 'bg-indigo-600 text-white shadow-sm'
+                          : 'text-gray-600 hover:text-gray-900 hover:bg-white'
+                      }`}
+                    >
+                      <FileText className="h-4 w-4" />
+                      <span>Sessões</span>
+                    </button>
+                    
+                    {isAdmin() && (
+                      <button
+                        onClick={navigateToAdmin}
+                        className={`flex items-center space-x-2 px-3 py-2 rounded-md text-sm font-medium transition-colors ${
+                          showAdminPanel
+                            ? 'bg-purple-600 text-white shadow-sm'
+                            : 'text-gray-600 hover:text-gray-900 hover:bg-white'
+                        }`}
+                      >
+                        <Settings className="h-4 w-4" />
+                        <span>Admin</span>
+                      </button>
+                    )}
+                  </nav>
+                  
                   <UserProfile user={user} onSignOut={signOut} />
                 </div>
               </div>
