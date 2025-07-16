@@ -13,6 +13,7 @@ import { useNotification } from './hooks/useNotification';
 
 function App() {
   const { user, loading, error, signOut, isAdmin } = useAuth();
+  const { notification, hideNotification } = useNotification();
   const [showAdminPanel, setShowAdminPanel] = useState(false);
   const [showPatientPanel, setShowPatientPanel] = useState(false);
   const [showSessionsPanel, setShowSessionsPanel] = useState(false);
