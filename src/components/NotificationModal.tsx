@@ -62,7 +62,7 @@ export default function NotificationModal({
 
   return (
     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
-      <div className="bg-white rounded-xl shadow-2xl w-full max-w-md">
+      <div className="glass-card rounded-xl shadow-2xl w-full max-w-md border border-white/20">
         {/* Header */}
         <div className={`${config.bgColor} p-6 rounded-t-xl border-b border-gray-200`}>
           <div className="flex items-center justify-between">

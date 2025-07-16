@@ -562,7 +562,7 @@ export default function RecordingPage({
   if (!isSupported) {
     return (
       <div className="min-h-screen flex items-center justify-center p-4">
-        <div className="bg-white rounded-xl shadow-xl p-8 max-w-md text-center">
+        <div className="glass-card rounded-xl shadow-xl p-8 max-w-md text-center border border-white/20">
           <div className="text-red-500 text-6xl mb-4">⚠️</div>
           <h1 className="text-2xl font-bold text-gray-800 mb-4">Navegador não suportado</h1>
           <p className="text-gray-600 mb-6">
@@ -583,7 +583,7 @@ export default function RecordingPage({
   if (microphonePermission === 'denied') {
     return (
       <div className="min-h-screen flex items-center justify-center p-4">
-        <div className="bg-white rounded-xl shadow-xl p-8 max-w-md text-center">
+        <div className="glass-card rounded-xl shadow-xl p-8 max-w-md text-center border border-white/20">
           <div className="text-red-500 text-6xl mb-4">🎤</div>
           <h1 className="text-2xl font-bold text-gray-800 mb-4">Permissão do Microfone Necessária</h1>
           <p className="text-gray-600 mb-6">
@@ -612,7 +612,7 @@ export default function RecordingPage({
   return (
     <div className="min-h-screen">
       {/* Header */}
-      <header className="bg-white shadow-lg border-b border-blue-200">
+      <header className="glass-card shadow-lg border-b border-blue-200">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
           <div className="flex items-center justify-between">
             <div className="flex items-center space-x-4">
@@ -662,7 +662,7 @@ export default function RecordingPage({
           {/* Main Recording Area */}
           <div className="lg:col-span-2 space-y-6">
             {/* Session Info */}
-            <div className="bg-white rounded-xl shadow-lg p-6">
+            <div className="glass-card rounded-xl shadow-lg p-6">
               <div className="flex items-center space-x-4 mb-4">
                 <div className="bg-blue-100 p-3 rounded-full">
                   <User className="h-6 w-6 text-blue-600" />
@@ -696,7 +696,7 @@ export default function RecordingPage({
             </div>
 
             {/* Recording Controls */}
-            <div className="bg-white rounded-xl shadow-lg p-6">
+            <div className="glass-card rounded-xl shadow-lg p-6">
               <h2 className="text-xl font-semibold text-gray-800 mb-6">Controles de Gravação</h2>
               
               <div className="flex items-center justify-center space-x-4 flex-wrap gap-2">
@@ -776,7 +776,7 @@ export default function RecordingPage({
             </div>
 
             {/* Transcript Area */}
-            <div className="bg-white rounded-xl shadow-lg p-6">
+            <div className="glass-card rounded-xl shadow-lg p-6">
               <div className="flex items-center justify-between mb-4">
                 <h2 className="text-xl font-semibold text-gray-800">Transcrição em Tempo Real</h2>
                 <div className="flex items-center space-x-2">
@@ -814,7 +814,7 @@ export default function RecordingPage({
 
           {/* Sidebar - Recording Info */}
           <div className="space-y-6">
-            <div className="bg-white rounded-xl shadow-lg p-6">
+            <div className="glass-card rounded-xl shadow-lg p-6">
               <h3 className="text-lg font-semibold text-gray-800 mb-4">Informações da Gravação</h3>
               
               <div className="space-y-4">

@@ -49,7 +49,7 @@ export default function AuthForm() {
 
   return (
     <div className="min-h-screen flex items-center justify-center p-4 relative z-10">
-      <div className="glass-card rounded-2xl shadow-2xl p-8 w-full max-w-md">
+      <div className="glass-card rounded-2xl shadow-2xl p-8 w-full max-w-md border border-white/20">
         {/* Header */}
         <div className="text-center mb-8">
           <div className="bg-blue-600 p-3 rounded-full w-16 h-16 mx-auto mb-4 flex items-center justify-center">

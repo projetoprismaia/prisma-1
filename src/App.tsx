@@ -101,7 +101,7 @@ function App() {
   if (loading) {
     return (
       <div className="min-h-screen flex items-center justify-center p-4">
-        <div className="bg-white rounded-xl shadow-xl p-8 max-w-md text-center">
+        <div className="glass-card rounded-xl shadow-xl p-8 max-w-md text-center border border-white/20">
           <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
           <h2 className="text-xl font-semibold text-gray-800 mb-2">Verificando autenticação...</h2>
           <p className="text-gray-600 text-sm">Aguarde um momento</p>

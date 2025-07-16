@@ -203,7 +203,7 @@ export default function DashboardSummaries({
         {isAdmin && (
           <div 
             onClick={onNavigateToAdmin}
-            className="bg-white rounded-xl shadow-lg p-6 hover:shadow-xl transition-all duration-200 cursor-pointer hover:scale-105"
+            className="glass-card rounded-xl shadow-lg p-6 hover:shadow-xl transition-all duration-200 cursor-pointer hover:scale-105"
           >
             <div className="flex items-center justify-between">
               <div>
@@ -224,7 +224,7 @@ export default function DashboardSummaries({
         {/* Total de Pacientes */}
         <div 
           onClick={onNavigateToPatients}
-          className="bg-white rounded-xl shadow-lg p-6 hover:shadow-xl transition-all duration-200 cursor-pointer hover:scale-105"
+          className="glass-card rounded-xl shadow-lg p-6 hover:shadow-xl transition-all duration-200 cursor-pointer hover:scale-105"
         >
           <div className="flex items-center justify-between">
             <div>
@@ -246,7 +246,7 @@ export default function DashboardSummaries({
         {/* Total de Sessões */}
         <div 
           onClick={onNavigateToSessions}
-          className="bg-white rounded-xl shadow-lg p-6 hover:shadow-xl transition-all duration-200 cursor-pointer hover:scale-105"
+          className="glass-card rounded-xl shadow-lg p-6 hover:shadow-xl transition-all duration-200 cursor-pointer hover:scale-105"
         >
           <div className="flex items-center justify-between">
             <div>
@@ -268,7 +268,7 @@ export default function DashboardSummaries({
 
       {/* Sessões Recentes */}
       {data.recentSessions.length > 0 && (
-        <div className="bg-white rounded-xl shadow-lg p-6">
+        <div className="glass-card rounded-xl shadow-lg p-6">
           <div className="flex items-center justify-between mb-6">
             <div className="flex items-center space-x-3">
               <div className="bg-gray-100 p-2 rounded-full">

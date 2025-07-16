@@ -167,7 +167,7 @@ export default function SessionListPage({ currentUser, onStartRecording, initial
 
   return (
     <>
-      <div className="bg-white rounded-xl shadow-lg p-6">
+      <div className="glass-card rounded-xl shadow-lg p-6">
         <div className="flex items-center justify-between mb-6">
           <div className="flex items-center space-x-3">
             <div className="bg-indigo-600 p-2 rounded-lg">
@@ -347,7 +347,7 @@ export default function SessionListPage({ currentUser, onStartRecording, initial
       {/* Session Detail Modal */}
       {selectedSession && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
-          <div className="bg-white rounded-xl shadow-2xl w-full max-w-4xl max-h-[90vh] overflow-y-auto">
+          <div className="glass-card rounded-xl shadow-2xl w-full max-w-4xl max-h-[90vh] overflow-y-auto border border-white/20">
             <div className="flex items-center justify-between p-6 border-b border-gray-200">
               <div className="flex items-center space-x-3">
                 <div className="bg-indigo-600 p-2 rounded-lg">

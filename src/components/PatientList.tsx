@@ -172,7 +172,7 @@ export default function PatientList({ currentUser, onNavigateToSessions }: Patie
 
   return (
     <>
-      <div className="bg-white rounded-xl shadow-lg p-6">
+      <div className="glass-card rounded-xl shadow-lg p-6">
         <div className="flex items-center justify-between mb-6">
           <div className="flex items-center space-x-3">
             <div className="bg-green-600 p-2 rounded-lg">
@@ -317,7 +317,7 @@ export default function PatientList({ currentUser, onNavigateToSessions }: Patie
       {/* Delete Confirmation Modal */}
       {deleteConfirm && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
-          <div className="bg-white rounded-xl shadow-2xl p-6 max-w-md w-full">
+          <div className="glass-card rounded-xl shadow-2xl p-6 max-w-md w-full border border-white/20">
             <div className="flex items-center space-x-3 mb-4">
               <div className="bg-red-100 p-2 rounded-full">
                 <AlertTriangle className="h-6 w-6 text-red-600" />
