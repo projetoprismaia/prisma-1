@@ -9,40 +9,48 @@ export function useAuth() {
 
   console.log('🔍 [useAuth] Hook inicializado');
 
+  // Função para limpar todas as sessões - movida para escopo principal
+  const clearAllSessions = async () => {
+    try {
+      console.log('🧹 [clearAllSessions] Limpando todas as sessões...');
+      
+      // Limpar localStorage do Supabase
+      const keys = Object.keys(localStorage);
+      keys.forEach(key => {
+        if (key.startsWith('sb-') || key.includes('supabase')) {
+          localStorage.removeItem(key);
+          console.log('🗑️ [clearAllSessions] Removido do localStorage:', key);
+        }
+      });
+
+      // Limpar sessionStorage do Supabase
+      const sessionKeys = Object.keys(sessionStorage);
+      sessionKeys.forEach(key => {
+        if (key.startsWith('sb-') || key.includes('supabase')) {
+          sessionStorage.removeItem(key);
+          console.log('🗑️ [clearAllSessions] Removido do sessionStorage:', key);
+        }
+      });
+
+      // Forçar logout no Supabase
+      const { error } = await supabase.auth.signOut();
+      if (error) {
+        console.error('⚠️ [clearAllSessions] Erro no signOut do Supabase:', error);
+      } else {
+        console.log('✅ [clearAllSessions] SignOut do Supabase executado com sucesso');
+      }
+      
+      console.log('✅ [clearAllSessions] Todas as sessões foram limpas');
+    } catch (error) {
+      console.error('❌ [clearAllSessions] Erro ao limpar sessões:', error);
+    }
+  };
+
   useEffect(() => {
     let mounted = true;
     let isProcessing = false;
 
     console.log('🔍 [useAuth] useEffect iniciado');
-
-    const clearAllSessions = async () => {
-      try {
-        console.log('🧹 Limpando todas as sessões...');
-        
-        // Limpar localStorage do Supabase
-        const keys = Object.keys(localStorage);
-        keys.forEach(key => {
-          if (key.startsWith('sb-') || key.includes('supabase')) {
-            localStorage.removeItem(key);
-          }
-        });
-
-        // Limpar sessionStorage do Supabase
-        const sessionKeys = Object.keys(sessionStorage);
-        sessionKeys.forEach(key => {
-          if (key.startsWith('sb-') || key.includes('supabase')) {
-            sessionStorage.removeItem(key);
-          }
-        });
-
-        // Forçar logout no Supabase
-        await supabase.auth.signOut();
-        
-        console.log('✅ Todas as sessões foram limpas');
-      } catch (error) {
-        console.error('❌ Erro ao limpar sessões:', error);
-      }
-    };
 
     const initializeAuth = async () => {
       if (isProcessing || !mounted) return;
@@ -254,10 +262,12 @@ export function useAuth() {
       
       if (event === 'SIGNED_OUT' || !session?.user) {
         console.log('🚪 [onAuthStateChange] Usuário deslogado');
+        console.log('🔄 [onAuthStateChange] Definindo user como null...');
         if (mounted) {
           setUser(null);
           setError(null);
           setLoading(false);
+          console.log('✅ [onAuthStateChange] Estado do usuário limpo - deve mostrar tela de login');
         }
         return;
       }
@@ -274,34 +284,38 @@ export function useAuth() {
     };
   }, []);
 
+  // Log adicional para monitorar mudanças no estado do usuário
+  useEffect(() => {
+    console.log('👤 [useAuth] Estado do usuário mudou:', {
+      user: user ? `${user.email} (${user.id})` : 'NULL',
+      loading,
+      shouldShowLogin: !user && !loading
+    });
+    
+    if (!user && !loading) {
+      console.log('🔓 [useAuth] Usuário deslogado - App deve mostrar tela de login');
+    }
+  }, [user, loading]);
   const signOut = async () => {
     try {
       console.log('🔓 [signOut] Fazendo logout...');
+      console.log('🔍 [signOut] Estado atual do usuário:', user ? user.email : 'NULL');
       
-      // Limpar localStorage do Supabase
-      const keys = Object.keys(localStorage);
-      keys.forEach(key => {
-        if (key.startsWith('sb-') || key.includes('supabase')) {
-          localStorage.removeItem(key);
-        }
-      });
-
-      // Limpar sessionStorage do Supabase
-      const sessionKeys = Object.keys(sessionStorage);
-      sessionKeys.forEach(key => {
-        if (key.startsWith('sb-') || key.includes('supabase')) {
-          sessionStorage.removeItem(key);
-        }
-      });
-
-      // Logout do Supabase
-      await supabase.auth.signOut();
+      // Usar a função centralizada de limpeza
+      await clearAllSessions();
       
       console.log('✅ [signOut] Logout realizado com sucesso');
+      console.log('🔄 [signOut] Aguardando onAuthStateChange disparar...');
     } catch (error) {
       console.error('❌ [signOut] Erro ao fazer logout:', error);
       // Forçar limpeza do estado mesmo com erro
       await clearAllSessions();
+      
+      // Forçar atualização do estado se o onAuthStateChange não disparar
+      console.log('🔧 [signOut] Forçando limpeza do estado devido ao erro...');
+      setUser(null);
+      setError(null);
+      setLoading(false);
     }
   };
 
