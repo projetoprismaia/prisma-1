@@ -5,6 +5,7 @@ export interface UserProfile {
   email: string;
   role: UserRole;
   full_name?: string;
+  whatsapp?: string;
   created_at: string;
   updated_at: string;
 }
