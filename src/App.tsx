@@ -104,16 +104,9 @@ function App() {
   const handleRecordingComplete = () => {
     console.log('✅ [handleRecordingComplete] Gravação concluída');
     setActiveRecordingSession(null);
-    navigateToHome();
+    // Optionally navigate to sessions list
+    navigateToSessions();
     console.log('✅ [handleRecordingComplete] Redirecionamento concluído');
-  };
-
-  const handleFinishConsultation = (patientId: string) => {
-    console.log('✅ [handleFinishConsultation] Consulta finalizada para paciente:', patientId);
-    setActiveRecordingSession(null);
-    // Navigate to patient's sessions
-    navigateToSessionsWithPatient(patientId);
-    console.log('✅ [handleFinishConsultation] Redirecionamento para sessões do paciente concluído');
   };
 
   const handleRecordingCancel = () => {
@@ -165,7 +158,6 @@ function App() {
             currentUser={user}
             onComplete={handleRecordingComplete}
             onCancel={handleRecordingCancel}
-            onFinishConsultation={handleFinishConsultation}
           />
         </div>
       </>

@@ -17,14 +17,12 @@ interface RecordingPageProps {
   currentUser: AuthUser;
   onComplete: () => void;
   onCancel: () => void;
-  onFinishConsultation: (patientId: string) => void;
 }
 
 export default function RecordingPage({ 
   currentUser, 
   onComplete, 
-  onCancel,
-  onFinishConsultation
+  onCancel 
 }: RecordingPageProps) {
   const { showSuccess, showError } = useNotification();
   
@@ -36,15 +34,14 @@ export default function RecordingPage({
   const [startTime, setStartTime] = useState<Date | null>(null);
   const [duration, setDuration] = useState('00:00:00');
   const [currentSession, setCurrentSession] = useState<Session | null>(null);
-  const [patientName, setPatientName] = useState('');
-  const [microphonePermission, setMicrophonePermission] = useState<'granted' | 'denied' | 'prompt'>('prompt');
   const [patients, setPatients] = useState<Patient[]>([]);
-  const [selectedPatient, setSelectedPatient] = useState('');
+  const [selectedPatientId, setSelectedPatientId] = useState('');
   const [sessionTitle, setSessionTitle] = useState('');
-  const [sessionConfigured, setSessionConfigured] = useState(false);
-  const [loadingPatients, setLoadingPatients] = useState(true);
+  const [microphonePermission, setMicrophonePermission] = useState<'granted' | 'denied' | 'prompt'>('prompt');
   const [interimTranscript, setInterimTranscript] = useState('');
   const [hasStarted, setHasStarted] = useState(false);
+  const [loadingPatients, setLoadingPatients] = useState(true);
+  const [sessionConfigured, setSessionConfigured] = useState(false);
   
   const recognitionRef = useRef<SpeechRecognition | null>(null);
   const intervalRef = useRef<NodeJS.Timeout | null>(null);
@@ -55,7 +52,11 @@ export default function RecordingPage({
   useEffect(() => {
     initializeSpeechRecognition();
     requestMicrophonePermission();
+
+    // Fetch patients for selection
     fetchPatients();
+    
+    // Generate default title
     generateDefaultTitle();
 
     // Handle page visibility changes
@@ -137,7 +138,10 @@ export default function RecordingPage({
       setPatients(data || []);
     } catch (error) {
       console.error('Erro ao buscar pacientes:', error);
-      setPatients([]);
+      showError(
+        'Erro ao Carregar Pacientes',
+        'Não foi possível carregar a lista de pacientes.'
+      );
     } finally {
       setLoadingPatients(false);
     }
@@ -332,15 +336,7 @@ export default function RecordingPage({
     }
   };
 
-  const createSession = async () => {
-    if (!selectedPatient || !sessionTitle.trim()) {
-      showError(
-        'Dados Incompletos',
-        'Selecione um paciente e digite um título para a sessão.'
-      );
-      return;
-    }
-
+  const createSession = async (patientId: string, title: string) => {
     if (!isSupported) {
       showError(
         'Navegador Não Suportado',
@@ -350,14 +346,14 @@ export default function RecordingPage({
     }
 
     try {
-      console.log('🔄 Criando nova sessão...', { selectedPatient, sessionTitle });
+      console.log('🔄 Criando nova sessão...', { patientId, title });
       
       const { data, error } = await supabase
         .from('sessions')
         .insert({
-          patient_id: selectedPatient,
+          patient_id: patientId,
           user_id: currentUser.id,
-          title: sessionTitle,
+          title: title,
           status: 'recording',
           start_time: new Date().toISOString(),
           transcription_content: ''
@@ -373,10 +369,6 @@ export default function RecordingPage({
       console.log('✅ Sessão criada com sucesso:', data);
       setCurrentSession(data);
       
-      // Update patient name for display
-      const patient = patients.find(p => p.id === selectedPatient);
-      setPatientName(patient?.name || 'Paciente não encontrado');
-      
       setSessionConfigured(true);
     } catch (error) {
       console.error('Erro ao criar sessão:', error);
@@ -388,11 +380,20 @@ export default function RecordingPage({
   };
 
   const handleConfigureSession = () => {
-    if (!selectedPatient || !sessionTitle.trim()) {
-      showError('Dados Incompletos', 'Selecione um paciente e digite um título.');
+    if (!selectedPatientId || !sessionTitle.trim()) {
+      showError(
+        'Dados Incompletos',
+        'Por favor, selecione um paciente e digite um título para a sessão.'
+      );
       return;
     }
-    createSession();
+
+    createSession(selectedPatientId, sessionTitle.trim());
+  };
+
+  const getSelectedPatientName = () => {
+    const patient = patients.find(p => p.id === selectedPatientId);
+    return patient?.name || 'Selecione um paciente';
   };
 
   const startRecording = () => {
@@ -564,7 +565,7 @@ export default function RecordingPage({
       
       showSuccess(
         'Sessão Salva!',
-        'A sessão foi salva com sucesso!'
+        'A sessão foi salva com sucesso e está vinculada ao paciente.'
       );
       
       // Complete the recording session
@@ -578,14 +579,6 @@ export default function RecordingPage({
     }
   };
 
-  const handleFinishConsultation = () => {
-    if (currentSession?.patient_id) {
-      onFinishConsultation(currentSession.patient_id);
-    } else {
-      onComplete();
-    }
-  };
-
   const handleCancel = () => {
     if (isRecording && recognitionRef.current) {
       recognitionRef.current.stop();
@@ -595,6 +588,157 @@ export default function RecordingPage({
     }
     onCancel();
   };
+
+  // Show configuration screen if session not configured yet
+  if (!sessionConfigured) {
+    return (
+      <div className="min-h-screen">
+        {/* Header */}
+        <header className="glass-card shadow-lg border-b border-blue-200">
+          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center space-x-4">
+                <button
+                  onClick={handleCancel}
+                  className="flex items-center space-x-2 text-gray-600 hover:text-gray-900 transition-colors"
+                >
+                  <ArrowLeft className="h-5 w-5" />
+                  <span>Voltar</span>
+                </button>
+                
+                <div className="flex items-center space-x-3">
+                  <div className="bg-indigo-600 p-2 rounded-lg">
+                    <FileText className="h-6 w-6 text-white" />
+                  </div>
+                  <div>
+                    <h1 className="text-xl font-bold text-gray-900">Configurar Nova Sessão</h1>
+                    <p className="text-sm text-gray-600">Selecione o paciente e configure a sessão</p>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </header>
+
+        <div className="max-w-2xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+          <div className="glass-card rounded-xl shadow-lg p-8">
+            {loadingPatients ? (
+              <div className="text-center py-8">
+                <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-indigo-600 mx-auto mb-4"></div>
+                <p className="text-gray-600">Carregando pacientes...</p>
+              </div>
+            ) : (
+              <div className="space-y-6">
+                <div className="text-center mb-8">
+                  <div className="bg-indigo-100 p-4 rounded-full w-16 h-16 mx-auto mb-4 flex items-center justify-center">
+                    <User className="h-8 w-8 text-indigo-600" />
+                  </div>
+                  <h2 className="text-2xl font-bold text-gray-900 mb-2">Nova Sessão de Consulta</h2>
+                  <p className="text-gray-600">Configure os dados da sessão antes de iniciar a gravação</p>
+                </div>
+
+                {/* Patient Selection */}
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Paciente *
+                  </label>
+                  <div className="relative">
+                    <User className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
+                    <select
+                      value={selectedPatientId}
+                      onChange={(e) => setSelectedPatientId(e.target.value)}
+                      className="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent appearance-none bg-white"
+                    >
+                      <option value="">Selecione um paciente</option>
+                      {patients.map(patient => (
+                        <option key={patient.id} value={patient.id}>
+                          {patient.name}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+                  {patients.length === 0 && (
+                    <p className="mt-2 text-sm text-amber-600">
+                      ⚠️ Você precisa cadastrar pelo menos um paciente primeiro
+                    </p>
+                  )}
+                </div>
+
+                {/* Session Title */}
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Título da Sessão *
+                  </label>
+                  <div className="relative">
+                    <FileText className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
+                    <input
+                      type="text"
+                      value={sessionTitle}
+                      onChange={(e) => setSessionTitle(e.target.value)}
+                      className="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
+                      placeholder="Ex: Consulta de acompanhamento"
+                    />
+                  </div>
+                </div>
+
+                {/* Microphone Status */}
+                <div className={`rounded-lg p-4 ${
+                  microphonePermission === 'granted' 
+                    ? 'bg-green-50 border border-green-200' 
+                    : 'bg-red-50 border border-red-200'
+                }`}>
+                  <div className="flex items-center space-x-2 mb-2">
+                    <Mic className={`h-4 w-4 ${
+                      microphonePermission === 'granted' ? 'text-green-600' : 'text-red-600'
+                    }`} />
+                    <span className={`text-sm font-medium ${
+                      microphonePermission === 'granted' ? 'text-green-800' : 'text-red-800'
+                    }`}>
+                      Status do Microfone
+                    </span>
+                  </div>
+                  <p className={`text-sm ${
+                    microphonePermission === 'granted' ? 'text-green-700' : 'text-red-700'
+                  }`}>
+                    {microphonePermission === 'granted' 
+                      ? '✅ Microfone autorizado e pronto para uso'
+                      : '❌ Permissão do microfone necessária'
+                    }
+                  </p>
+                  {microphonePermission !== 'granted' && (
+                    <button
+                      onClick={requestMicrophonePermission}
+                      className="mt-2 text-sm text-blue-600 hover:text-blue-700 underline"
+                    >
+                      Permitir acesso ao microfone
+                    </button>
+                  )}
+                </div>
+
+                {/* Action Buttons */}
+                <div className="flex space-x-4 pt-4">
+                  <button
+                    onClick={handleCancel}
+                    className="flex-1 px-6 py-3 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors"
+                  >
+                    Cancelar
+                  </button>
+                  <button
+                    onClick={handleConfigureSession}
+                    disabled={!selectedPatientId || !sessionTitle.trim() || patients.length === 0 || microphonePermission !== 'granted'}
+                    className="flex-1 bg-indigo-600 hover:bg-indigo-700 disabled:bg-gray-400 text-white px-6 py-3 rounded-lg transition-colors flex items-center justify-center space-x-2"
+                  >
+                    <Play className="h-4 w-4" />
+                    <span>Configurar e Continuar</span>
+                  </button>
+                </div>
+              </div>
+            )}
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   if (!isSupported) {
     return (
@@ -640,122 +784,6 @@ export default function RecordingPage({
             >
               Tentar Novamente
             </button>
-          </div>
-        </div>
-      </div>
-    );
-  }
-
-  // Show session configuration if not configured yet
-  if (!sessionConfigured) {
-    return (
-      <div className="min-h-screen">
-        <OrganicBackground />
-        <div className="app-content">
-          {/* Header */}
-          <header className="glass-card shadow-lg border-b border-blue-200">
-            <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
-              <div className="flex items-center justify-between">
-                <div className="flex items-center space-x-4">
-                  <button
-                    onClick={handleCancel}
-                    className="flex items-center space-x-2 text-gray-600 hover:text-gray-900 transition-colors"
-                  >
-                    <ArrowLeft className="h-5 w-5" />
-                    <span>Voltar</span>
-                  </button>
-                  
-                  <div className="flex items-center space-x-3">
-                    <div className="bg-indigo-600 p-2 rounded-lg">
-                      <Mic className="h-6 w-6 text-white" />
-                    </div>
-                    <div>
-                      <h1 className="text-xl font-bold text-gray-900">Configurar Nova Sessão</h1>
-                      <p className="text-sm text-gray-600">Selecione o paciente e configure a sessão</p>
-                    </div>
-                  </div>
-                </div>
-              </div>
-            </div>
-          </header>
-
-          <div className="max-w-2xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-            <div className="glass-card rounded-xl shadow-lg p-8">
-              <h2 className="text-2xl font-semibold text-gray-800 mb-6 text-center">
-                Configurar Sessão de Gravação
-              </h2>
-              
-              {loadingPatients ? (
-                <div className="text-center py-8">
-                  <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-indigo-600 mx-auto mb-4"></div>
-                  <p className="text-gray-600">Carregando pacientes...</p>
-                </div>
-              ) : (
-                <div className="space-y-6">
-                  {/* Patient Selection */}
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
-                      Paciente *
-                    </label>
-                    <div className="relative">
-                      <User className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
-                      <select
-                        value={selectedPatient}
-                        onChange={(e) => setSelectedPatient(e.target.value)}
-                        className="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent appearance-none bg-white"
-                      >
-                        <option value="">Selecione um paciente</option>
-                        {patients.map(patient => (
-                          <option key={patient.id} value={patient.id}>
-                            {patient.name}
-                          </option>
-                        ))}
-                      </select>
-                    </div>
-                    {patients.length === 0 && (
-                      <p className="mt-2 text-sm text-amber-600">
-                        ⚠️ Você precisa cadastrar pelo menos um paciente primeiro
-                      </p>
-                    )}
-                  </div>
-
-                  {/* Session Title */}
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
-                      Título da Sessão *
-                    </label>
-                    <div className="relative">
-                      <FileText className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
-                      <input
-                        type="text"
-                        value={sessionTitle}
-                        onChange={(e) => setSessionTitle(e.target.value)}
-                        className="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
-                        placeholder="Ex: Consulta de acompanhamento"
-                      />
-                    </div>
-                  </div>
-
-                  {/* Actions */}
-                  <div className="flex space-x-4 pt-6">
-                    <button
-                      onClick={handleCancel}
-                      className="flex-1 px-6 py-3 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors"
-                    >
-                      Cancelar
-                    </button>
-                    <button
-                      onClick={handleConfigureSession}
-                      disabled={!selectedPatient || !sessionTitle.trim() || patients.length === 0}
-                      className="flex-1 bg-indigo-600 hover:bg-indigo-700 disabled:bg-gray-400 text-white px-6 py-3 rounded-lg transition-colors flex items-center justify-center space-x-2"
-                    >
-                      <Mic className="h-4 w-4" />
-                      <span>Iniciar Gravação</span>
-                    </button>
-                  </div>
-                </div>
-              )}
-            </div>
           </div>
         </div>
       </div>
@@ -822,7 +850,7 @@ export default function RecordingPage({
                 </div>
                 <div>
                   <h2 className="text-lg font-semibold text-gray-900">Sessão Ativa</h2>
-                  <p className="text-gray-600">{patientName}</p>
+                  <p className="text-gray-600">{getSelectedPatientName()}</p>
                 </div>
               </div>
               
@@ -888,7 +916,7 @@ export default function RecordingPage({
                         className="bg-red-600 hover:bg-red-700 text-white px-6 py-3 rounded-lg flex items-center space-x-2 transition-colors duration-200 shadow-md"
                       >
                         <Square className="h-5 w-5" />
-                        <span>Parar Gravação</span>
+                        <span>Finalizar</span>
                       </button>
                     )}
                   </>
@@ -963,18 +991,6 @@ export default function RecordingPage({
                 <span>{hasStarted ? 'Auto-save a cada 30 segundos' : 'Pronto para iniciar'}</span>
               </div>
             </div>
-
-            {/* Finish Consultation Button */}
-            {hasStarted && !isRecording && (
-              <div className="glass-card rounded-xl shadow-lg p-6">
-                <button
-                  onClick={handleFinishConsultation}
-                  className="w-full bg-green-600 hover:bg-green-700 text-white px-6 py-4 rounded-lg font-semibold text-lg transition-colors flex items-center justify-center space-x-2"
-                >
-                  <span>✅ Finalizar Consulta</span>
-                </button>
-              </div>
-            )}
           </div>
 
           {/* Sidebar - Recording Info */}
@@ -989,7 +1005,7 @@ export default function RecordingPage({
                   </div>
                   <div>
                     <p className="text-sm text-gray-600">Paciente</p>
-                    <p className="font-medium">{patientName}</p>
+                    <p className="font-medium">{getSelectedPatientName()}</p>
                   </div>
                 </div>
                 
@@ -999,7 +1015,7 @@ export default function RecordingPage({
                   </div>
                   <div>
                     <p className="text-sm text-gray-600">Sessão</p>
-                    <p className="font-medium">{sessionTitle}</p>
+                    <p className="font-medium">{currentSession?.title || sessionTitle}</p>
                   </div>
                 </div>
                 
