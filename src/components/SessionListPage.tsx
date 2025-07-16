@@ -278,18 +278,18 @@ export default function SessionListPage({ currentUser, onStartRecording, initial
                     <FileText className="h-4 w-4 text-gray-600" />
                   </div>
                   <div className="flex-1">
-                    <div className="flex items-center space-x-2 mb-1">
-                      <p className="font-medium text-gray-900">{session.title}</p>
+                    <p className="text-lg font-semibold text-gray-900 flex items-center mb-1">
+                      <User className="h-5 w-5 mr-2" />
+                      {session.patient?.name}
+                    </p>
+                    <div className="flex items-center space-x-2 mb-2">
+                      <p className="text-sm text-gray-600">{session.title}</p>
                       <span className={`px-2 py-1 rounded-full text-xs font-medium border flex items-center space-x-1 ${getStatusColor(session.status)}`}>
                         {getStatusIcon(session.status)}
                         <span>{getStatusText(session.status)}</span>
                       </span>
                     </div>
-                    <p className="text-sm text-gray-600 flex items-center">
-                      <User className="h-3 w-3 mr-1" />
-                      {session.patient?.name}
-                    </p>
-                    <div className="flex items-center space-x-4 text-xs text-gray-500 mt-1">
+                    <div className="flex items-center space-x-4 text-xs text-gray-500">
                       <p className="flex items-center">
                         <Calendar className="h-3 w-3 mr-1" />
                         {new Date(session.created_at).toLocaleDateString('pt-BR')}
