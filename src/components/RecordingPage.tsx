@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { Mic, MicOff, Play, Pause, Square, Save, ArrowLeft, Clock, User, FileText } from 'lucide-react';
+import { Mic, MicOff, Play, Pause, Square, Save, ArrowLeft, Clock, User, FileText, Search } from 'lucide-react';
 import { supabase } from '../lib/supabase';
 import { AuthUser } from '../types/user';
 import { Session } from '../types/session';
@@ -42,6 +42,7 @@ export default function RecordingPage({
   const [hasStarted, setHasStarted] = useState(false);
   const [loadingPatients, setLoadingPatients] = useState(true);
   const [sessionConfigured, setSessionConfigured] = useState(false);
+  const [patientSearchTerm, setPatientSearchTerm] = useState('');
   
   const recognitionRef = useRef<SpeechRecognition | null>(null);
   const intervalRef = useRef<NodeJS.Timeout | null>(null);
@@ -396,6 +397,10 @@ export default function RecordingPage({
     return patient?.name || 'Selecione um paciente';
   };
 
+  const filteredPatients = patients.filter(patient =>
+    patient.name.toLowerCase().includes(patientSearchTerm.toLowerCase())
+  );
+
   const startRecording = () => {
     if (!recognitionRef.current) {
       console.log('⚠️ Recognition não inicializado, inicializando...');
@@ -638,6 +643,20 @@ export default function RecordingPage({
                   <label className="block text-sm font-medium text-gray-700 mb-2">
                     Paciente *
                   </label>
+                  
+                  {/* Search Field */}
+                  <div className="relative mb-3">
+                    <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
+                    <input
+                      type="text"
+                      placeholder="Buscar paciente pelo nome..."
+                      value={patientSearchTerm}
+                      onChange={(e) => setPatientSearchTerm(e.target.value)}
+                      className="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
+                    />
+                  </div>
+                  
+                  {/* Patient Selector */}
                   <div className="relative">
                     <User className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
                     <select
@@ -646,17 +665,28 @@ export default function RecordingPage({
                       className="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent appearance-none bg-white"
                     >
                       <option value="">Selecione um paciente</option>
-                      {patients.map(patient => (
+                      {filteredPatients.map(patient => (
                         <option key={patient.id} value={patient.id}>
                           {patient.name}
                         </option>
                       ))}
                     </select>
                   </div>
-                  {patients.length === 0 && (
+                  
+                  {/* Status Messages */}
+                  {patients.length === 0 ? (
                     <p className="mt-2 text-sm text-amber-600">
                       ⚠️ Você precisa cadastrar pelo menos um paciente primeiro
                     </p>
+                  ) : filteredPatients.length === 0 && patientSearchTerm ? (
+                    <p className="mt-2 text-sm text-gray-600">
+                      🔍 Nenhum paciente encontrado com "{patientSearchTerm}"
+                    </p>
+                  ) : patientSearchTerm && filteredPatients.length > 0 ? (
+                    <p className="mt-2 text-sm text-green-600">
+                      ✅ {filteredPatients.length} paciente(s) encontrado(s)
+                    </p>
+                  ) : null}
                   )}
                 </div>
 
