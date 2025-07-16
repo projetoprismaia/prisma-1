@@ -44,17 +44,3 @@ export default function UserProfile({ user, onSignOut }: UserProfileProps) {
     </div>
   );
 }
-          {user.email}
-        </span>
-      </div>
-      <button
-        onClick={handleSignOut}
-        className="flex items-center space-x-1 text-gray-600 hover:text-red-600 transition-colors duration-200 px-3 py-2 rounded-lg hover:bg-red-50"
-        title="Sair"
-      >
-        <LogOut className="h-4 w-4" />
-        <span className="text-sm">Sair</span>
-      </button>
-    </div>
-  );
-}
