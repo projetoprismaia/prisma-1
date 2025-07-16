@@ -21,14 +21,13 @@ export function useAuth() {
         
         if (sessionError) {
           console.error('❌ Erro ao buscar sessão:', sessionError);
-          // Não é um erro crítico, apenas não há sessão
           setLoading(false);
           return;
         }
         
         if (session?.user) {
-          console.log('✅ Sessão encontrada, buscando perfil...');
-          await fetchUserProfile(session.user);
+          console.log('✅ Sessão encontrada, verificando usuário...');
+          await handleUserSession(session.user);
         } else {
           console.log('👤 Nenhuma sessão ativa, mostrando login');
           setLoading(false);
@@ -36,7 +35,6 @@ export function useAuth() {
       } catch (error) {
         console.error('❌ Erro na inicialização:', error);
         if (mounted) {
-          // Em caso de erro, mostrar login ao invés de travar
           setLoading(false);
         }
       }
@@ -52,7 +50,7 @@ export function useAuth() {
       
       try {
         if (session?.user) {
-          await fetchUserProfile(session.user);
+          await handleUserSession(session.user);
         } else {
           setUser(null);
           setError(null);
@@ -61,7 +59,6 @@ export function useAuth() {
       } catch (error) {
         console.error('❌ Erro na mudança de auth:', error);
         if (mounted) {
-          // Em caso de erro, limpar usuário e mostrar login
           setUser(null);
           setError(null);
           setLoading(false);
@@ -75,7 +72,7 @@ export function useAuth() {
     };
   }, []);
 
-  const fetchUserProfile = async (authUser: any) => {
+  const handleUserSession = async (authUser: any) => {
     try {
       console.log('👤 Buscando perfil do usuário:', authUser.id);
       
@@ -86,9 +83,18 @@ export function useAuth() {
         .eq('id', authUser.id)
         .single();
 
-      if (error && error.code === 'PGRST116') {
-        // Profile doesn't exist, create it
-        console.log('📝 Perfil não existe, criando...');
+      if (error) {
+        console.error('❌ Erro ao buscar perfil:', error);
+        
+        // Se o usuário não existe no banco (foi deletado), fazer logout
+        if (error.code === 'PGRST116' || error.message?.includes('No rows found')) {
+          console.log('🚪 Usuário não encontrado no banco, fazendo logout...');
+          await forceSignOut();
+          return;
+        }
+
+        // Para outros erros, tentar criar perfil
+        console.log('📝 Tentando criar perfil...');
         const { data: newProfile, error: insertError } = await supabase
           .from('profiles')
           .insert({
@@ -103,21 +109,9 @@ export function useAuth() {
 
         if (insertError) {
           console.error('❌ Erro ao criar perfil:', insertError);
-          // Se não conseguir criar perfil, criar um temporário
-          const tempProfile: UserProfile = {
-            id: authUser.id,
-            email: authUser.email,
-            role: 'user',
-            created_at: new Date().toISOString(),
-            updated_at: new Date().toISOString()
-          };
-          
-          setUser({
-            id: authUser.id,
-            email: authUser.email,
-            profile: tempProfile
-          });
-          setLoading(false);
+          // Se não conseguir criar, também fazer logout
+          console.log('🚪 Não foi possível criar perfil, fazendo logout...');
+          await forceSignOut();
           return;
         }
 
@@ -126,22 +120,6 @@ export function useAuth() {
           id: authUser.id,
           email: authUser.email,
           profile: newProfile as UserProfile
-        });
-      } else if (error) {
-        console.error('❌ Erro ao buscar perfil:', error);
-        // Se houver erro, criar perfil temporário
-        const tempProfile: UserProfile = {
-          id: authUser.id,
-          email: authUser.email,
-          role: 'user',
-          created_at: new Date().toISOString(),
-          updated_at: new Date().toISOString()
-        };
-        
-        setUser({
-          id: authUser.id,
-          email: authUser.email,
-          profile: tempProfile
         });
       } else {
         console.log('✅ Perfil encontrado');
@@ -155,35 +133,31 @@ export function useAuth() {
       setLoading(false);
     } catch (error) {
       console.error('❌ Erro crítico ao buscar perfil:', error);
-      // Em caso de erro crítico, criar usuário temporário
-      const tempProfile: UserProfile = {
-        id: authUser.id,
-        email: authUser.email,
-        role: 'user',
-        created_at: new Date().toISOString(),
-        updated_at: new Date().toISOString()
-      };
-      
-      setUser({
-        id: authUser.id,
-        email: authUser.email,
-        profile: tempProfile
-      });
-      setLoading(false);
+      // Em caso de erro crítico, fazer logout
+      console.log('🚪 Erro crítico, fazendo logout...');
+      await forceSignOut();
     }
   };
 
-  const signOut = async () => {
+  const forceSignOut = async () => {
     try {
+      console.log('🔓 Fazendo logout forçado...');
       await supabase.auth.signOut();
       setUser(null);
       setError(null);
+      setLoading(false);
+      console.log('✅ Logout realizado com sucesso');
     } catch (error) {
       console.error('❌ Erro ao fazer logout:', error);
       // Mesmo com erro, limpar o estado local
       setUser(null);
       setError(null);
+      setLoading(false);
     }
+  };
+
+  const signOut = async () => {
+    await forceSignOut();
   };
 
   const isAdmin = () => user?.profile?.role === 'admin';
@@ -194,6 +168,6 @@ export function useAuth() {
     error,
     signOut,
     isAdmin,
-    refreshProfile: () => user && fetchUserProfile({ id: user.id, email: user.email })
+    refreshProfile: () => user && handleUserSession({ id: user.id, email: user.email })
   };
 }
