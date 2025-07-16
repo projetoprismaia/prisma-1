@@ -45,6 +45,8 @@ export default function RecordingPage({
   
   const recognitionRef = useRef<SpeechRecognition | null>(null);
   const intervalRef = useRef<NodeJS.Timeout | null>(null);
+  const wasRecordingRef = useRef<boolean>(false);
+  const wasPausedRef = useRef<boolean>(false);
 
   // Speech recognition setup
   useEffect(() => {
@@ -57,8 +59,35 @@ export default function RecordingPage({
     // Create session but don't start recording automatically
     createSession();
 
+    // Handle page visibility changes
+    const handleVisibilityChange = () => {
+      console.log('👁️ Visibilidade da página mudou:', document.visibilityState);
+      
+      if (document.visibilityState === 'visible') {
+        console.log('🔄 Página voltou a ficar visível, verificando estado da gravação...');
+        
+        // Se estava gravando antes de sair da aba
+        if (wasRecordingRef.current && !wasPausedRef.current) {
+          console.log('🎤 Tentando restaurar gravação ativa...');
+          setTimeout(() => {
+            if (isRecording && !isPaused) {
+              reinitializeRecognition();
+            }
+          }, 500);
+        }
+      } else {
+        // Salvar estado atual quando sair da aba
+        wasRecordingRef.current = isRecording;
+        wasPausedRef.current = isPaused;
+        console.log('💾 Estado salvo:', { wasRecording: wasRecordingRef.current, wasPaused: wasPausedRef.current });
+      }
+    };
+
+    document.addEventListener('visibilitychange', handleVisibilityChange);
+
     // Cleanup
     return () => {
+      document.removeEventListener('visibilitychange', handleVisibilityChange);
       if (intervalRef.current) {
         clearInterval(intervalRef.current);
       }
@@ -67,6 +96,12 @@ export default function RecordingPage({
       }
     };
   }, []);
+
+  // Update refs when state changes
+  useEffect(() => {
+    wasRecordingRef.current = isRecording;
+    wasPausedRef.current = isPaused;
+  }, [isRecording, isPaused]);
 
   // Timer effect
   useEffect(() => {
@@ -110,6 +145,12 @@ export default function RecordingPage({
   };
 
   const initializeSpeechRecognition = () => {
+    // Se já existe uma instância ativa, não criar nova
+    if (recognitionRef.current && recognitionRef.current.readyState !== undefined) {
+      console.log('🎙️ Speech Recognition já inicializado');
+      return;
+    }
+
     if ('webkitSpeechRecognition' in window || 'SpeechRecognition' in window) {
       console.log('🎙️ Inicializando Speech Recognition...');
       setIsSupported(true);
@@ -199,15 +240,18 @@ export default function RecordingPage({
         
         recognitionRef.current.onend = () => {
           console.log('🔚 Speech Recognition finalizado');
+          
           // Restart recognition if still recording and not paused
           if (isRecording && !isPaused && microphonePermission === 'granted') {
             console.log('🔄 Reiniciando Speech Recognition...');
             setTimeout(() => {
-              if (recognitionRef.current && isRecording && !isPaused) {
+              if (isRecording && !isPaused) {
                 try {
-                  recognitionRef.current.start();
+                  restartRecognition();
                 } catch (error) {
                   console.error('Erro ao reiniciar recognition:', error);
+                  // Se falhar, tentar reinicializar completamente
+                  reinitializeRecognition();
                 }
               }
             }, 100);
@@ -217,6 +261,49 @@ export default function RecordingPage({
     } else {
       console.error('❌ Speech Recognition não suportado');
       setIsSupported(false);
+    }
+  };
+
+  const reinitializeRecognition = () => {
+    console.log('🔄 Reinicializando Speech Recognition completamente...');
+    
+    // Limpar instância anterior
+    if (recognitionRef.current) {
+      try {
+        recognitionRef.current.stop();
+      } catch (error) {
+        console.log('Erro ao parar recognition anterior:', error);
+      }
+      recognitionRef.current = null;
+    }
+    
+    // Criar nova instância
+    initializeSpeechRecognition();
+    
+    // Se estava gravando, tentar iniciar novamente
+    if (isRecording && !isPaused && microphonePermission === 'granted') {
+      setTimeout(() => {
+        restartRecognition();
+      }, 200);
+    }
+  };
+
+  const restartRecognition = () => {
+    if (!recognitionRef.current) {
+      console.log('⚠️ Recognition não existe, reinicializando...');
+      reinitializeRecognition();
+      return;
+    }
+
+    try {
+      console.log('🎤 Tentando iniciar recognition...');
+      recognitionRef.current.start();
+    } catch (error) {
+      console.error('❌ Erro ao iniciar recognition:', error);
+      // Se falhar, tentar reinicializar
+      setTimeout(() => {
+        reinitializeRecognition();
+      }, 500);
     }
   };
 
@@ -280,6 +367,17 @@ export default function RecordingPage({
   };
 
   const startRecording = () => {
+    if (!recognitionRef.current) {
+      console.log('⚠️ Recognition não inicializado, inicializando...');
+      initializeSpeechRecognition();
+      
+      // Aguardar inicialização antes de continuar
+      setTimeout(() => {
+        startRecording();
+      }, 300);
+      return;
+    }
+
     if (recognitionRef.current && isSupported && microphonePermission === 'granted') {
       console.log('▶️ Iniciando gravação...');
       setTranscript('');
@@ -291,13 +389,13 @@ export default function RecordingPage({
       setDuration('00:00:00');
       
       try {
-        recognitionRef.current.start();
+        restartRecognition();
       } catch (error) {
         console.error('Erro ao iniciar recognition:', error);
-        showError(
-          'Erro ao Iniciar',
-          'Não foi possível iniciar o reconhecimento de voz. Tente novamente.'
-        );
+        // Tentar reinicializar se falhar
+        setTimeout(() => {
+          reinitializeRecognition();
+        }, 500);
       }
     } else if (microphonePermission === 'denied') {
       showError(
@@ -313,10 +411,16 @@ export default function RecordingPage({
   };
 
   const pauseRecording = () => {
-    if (recognitionRef.current) {
+    if (recognitionRef.current && isRecording) {
       console.log('⏸️ Pausando gravação...');
       setIsPaused(true);
-      recognitionRef.current.stop();
+      
+      try {
+        recognitionRef.current.stop();
+      } catch (error) {
+        console.error('Erro ao pausar recognition:', error);
+      }
+      
       setInterimTranscript('');
       
       // Update session status to paused
@@ -327,14 +431,21 @@ export default function RecordingPage({
   };
 
   const resumeRecording = () => {
-    if (recognitionRef.current) {
+    if (!recognitionRef.current) {
+      console.log('⚠️ Recognition não existe ao retomar, reinicializando...');
+      reinitializeRecognition();
+      
+      setTimeout(() => {
+        resumeRecording();
+      }, 300);
+      return;
+    }
+
+    if (recognitionRef.current && isPaused) {
       console.log('▶️ Retomando gravação...');
       setIsPaused(false);
-      try {
-        recognitionRef.current.start();
-      } catch (error) {
-        console.error('Erro ao retomar recognition:', error);
-      }
+      
+      restartRecognition();
       
       // Update session status back to recording
       if (currentSession) {
@@ -346,10 +457,18 @@ export default function RecordingPage({
   const stopRecording = () => {
     if (recognitionRef.current) {
       console.log('⏹️ Parando gravação...');
-      recognitionRef.current.stop();
+      
+      try {
+        recognitionRef.current.stop();
+      } catch (error) {
+        console.error('Erro ao parar recognition:', error);
+      }
+      
       setIsRecording(false);
       setIsPaused(false);
+      setHasStarted(false);
       setInterimTranscript('');
+      
       if (intervalRef.current) {
         clearInterval(intervalRef.current);
       }
