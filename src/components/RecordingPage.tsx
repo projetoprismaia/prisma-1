@@ -744,6 +744,21 @@ export default function RecordingPage({
               
               {/* Status da gravação */}
               <div className="mt-4 text-center">
+                {/* Botão de diagnóstico para problemas */}
+                {hasStarted && (!recognitionRef.current || microphonePermission !== 'granted') && (
+                  <div className="mb-4 p-3 bg-yellow-50 border border-yellow-200 rounded-lg">
+                    <p className="text-sm text-yellow-800 mb-2">
+                      ⚠️ Problema detectado na gravação
+                    </p>
+                    <button
+                      onClick={reinitializeRecognition}
+                      className="bg-yellow-600 hover:bg-yellow-700 text-white px-4 py-2 rounded text-sm"
+                    >
+                      🔄 Reativar Gravação
+                    </button>
+                  </div>
+                )}
+                
                 {!hasStarted && microphonePermission === 'granted' && (
                   <p className="text-sm text-gray-600">
                     ✅ Tudo pronto! Clique em "Iniciar Gravação" para começar a transcrição.
@@ -862,17 +877,31 @@ export default function RecordingPage({
                 <span className={`text-sm font-medium ${
                   microphonePermission === 'granted' ? 'text-green-800' : 'text-red-800'
                 }`}>
-                  {isRecording && !isPaused ? 'Ouvindo...' : isPaused ? 'Pausado' : hasStarted ? 'Parado' : 'Aguardando início'}
+                  {isRecording && !isPaused && recognitionRef.current ? 'Ouvindo...' : 
+                   isPaused ? 'Pausado' : 
+                   hasStarted && !recognitionRef.current ? 'Reconexão necessária' :
+                   hasStarted ? 'Parado' : 'Aguardando início'}
                 </span>
               </div>
               <p className={`text-sm ${
                 microphonePermission === 'granted' ? 'text-green-700' : 'text-red-700'
               }`}>
-                {microphonePermission === 'granted' 
-                  ? '✅ Microfone autorizado e funcionando' 
+                {microphonePermission === 'granted' && recognitionRef.current
+                  ? '✅ Microfone autorizado e funcionando'
+                  : microphonePermission === 'granted' && !recognitionRef.current
+                  ? '⚠️ Microfone autorizado, reconectando...'
                   : '❌ Microfone não autorizado'
                 }
               </p>
+              
+              {/* Debug info */}
+              {hasStarted && (
+                <div className="mt-2 text-xs text-gray-500">
+                  <p>Estado: {isRecording ? 'Gravando' : 'Parado'} | {isPaused ? 'Pausado' : 'Ativo'}</p>
+                  <p>Recognition: {recognitionRef.current ? 'OK' : 'Desconectado'}</p>
+                  <p>Aba ativa: {document.visibilityState}</p>
+                </div>
+              )}
             </div>
           </div>
         </div>
