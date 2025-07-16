@@ -94,130 +94,226 @@ function App() {
   // Show auth form if not authenticated
   if (!user) {
     return (
-      <div className="app-content">
+      <>
         <OrganicBackground />
-        <AuthForm />
-      </div>
+        <div className="app-content">
+          <AuthForm />
+        </div>
+      </>
     );
   }
 
   // Show recording page if active
   if (activeRecordingSession) {
     return (
-      <div className="app-content">
+      <>
         <OrganicBackground />
-        <RecordingPage
-          currentUser={user}
-          patientId={activeRecordingSession.patientId}
-          sessionTitle={activeRecordingSession.title}
-          onComplete={handleRecordingComplete}
-          onCancel={handleRecordingCancel}
-        />
-      </div>
+        <div className="app-content">
+          <RecordingPage
+            currentUser={user}
+            patientId={activeRecordingSession.patientId}
+            sessionTitle={activeRecordingSession.title}
+            onComplete={handleRecordingComplete}
+            onCancel={handleRecordingCancel}
+          />
+        </div>
+      </>
     );
   }
 
   // Show admin panel if requested
   if (showAdminPanel && isAdmin()) {
     return (
-      <div className="app-content min-h-screen">
+      <>
         <OrganicBackground />
-        {/* Header */}
-        <header className="glass-card shadow-lg border-b border-blue-200 relative z-20">
-          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
-            <div className="flex items-center justify-between">
-              <div className="flex items-center space-x-3">
-                <div className="bg-blue-600 p-2 rounded-lg">
-                  <Mic className="h-6 w-6 text-white" />
+        <div className="app-content min-h-screen">
+          {/* Header */}
+          <header className="glass-card shadow-lg border-b border-blue-200 relative z-20">
+            <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center space-x-3">
+                  <div className="bg-blue-600 p-2 rounded-lg">
+                    <BarChart3 className="h-6 w-6 text-white" />
+                  </div>
+                  <div>
+                    <h1 className="text-2xl font-bold text-gray-900">Prisma IA</h1>
+                    <p className="text-sm text-gray-600">Painel Administrativo</p>
+                  </div>
                 </div>
-                <div>
-                  <h1 className="text-2xl font-bold text-gray-900">Prisma IA</h1>
-                  <p className="text-sm text-gray-600">Painel Administrativo</p>
+                <div className="flex items-center space-x-4">
+                  <button
+                    onClick={navigateToHome}
+                    className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg text-sm transition-colors"
+                  >
+                    Voltar ao App
+                  </button>
+                  <UserProfile user={user} onSignOut={signOut} />
                 </div>
-              </div>
-              <div className="flex items-center space-x-4">
-                <button
-                  onClick={navigateToHome}
-                  className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg text-sm transition-colors"
-                >
-                  Voltar ao App
-                </button>
-                <UserProfile user={user} onSignOut={signOut} />
               </div>
             </div>
-          </div>
-        </header>
+          </header>
 
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-          <AdminPanel currentUser={user} />
+          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+            <AdminPanel currentUser={user} />
+          </div>
         </div>
-      </div>
+      </>
     );
   }
 
   // Show patient panel if requested
   if (showPatientPanel && !isAdmin()) {
     return (
-      <div className="app-content min-h-screen">
+      <>
         <OrganicBackground />
-        {/* Header */}
-        <header className="glass-card shadow-lg border-b border-blue-200 relative z-20">
-          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
-            <div className="flex items-center justify-between">
-              <div className="flex items-center space-x-3">
-                <div className="bg-blue-600 p-2 rounded-lg">
-                  <Mic className="h-6 w-6 text-white" />
+        <div className="app-content min-h-screen">
+          {/* Header */}
+          <header className="glass-card shadow-lg border-b border-blue-200 relative z-20">
+            <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center space-x-3">
+                  <div className="bg-blue-600 p-2 rounded-lg">
+                    <BarChart3 className="h-6 w-6 text-white" />
+                  </div>
+                  <div>
+                    <h1 className="text-2xl font-bold text-gray-900">Prisma IA</h1>
+                    <p className="text-sm text-gray-600">Gerenciamento de Pacientes</p>
+                  </div>
                 </div>
-                <div>
-                  <h1 className="text-2xl font-bold text-gray-900">Prisma IA</h1>
-                  <p className="text-sm text-gray-600">Gerenciamento de Pacientes</p>
+                <div className="flex items-center space-x-4">
+                  <button
+                    onClick={navigateToHome}
+                    className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg text-sm transition-colors"
+                  >
+                    Voltar ao App
+                  </button>
+                  <UserProfile user={user} onSignOut={signOut} />
                 </div>
-              </div>
-              <div className="flex items-center space-x-4">
-                <button
-                  onClick={navigateToHome}
-                  className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg text-sm transition-colors"
-                >
-                  Voltar ao App
-                </button>
-                <UserProfile user={user} onSignOut={signOut} />
               </div>
             </div>
-          </div>
-        </header>
+          </header>
 
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-          <PatientList currentUser={user} />
+          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+            <PatientList currentUser={user} />
+          </div>
         </div>
-      </div>
+      </>
     );
   }
 
   // Show sessions panel if requested
   if (showSessionsPanel) {
     return (
-      <div className="app-content min-h-screen">
+      <>
         <OrganicBackground />
+        <div className="app-content min-h-screen">
+          {/* Header */}
+          <header className="glass-card shadow-lg border-b border-blue-200 relative z-20">
+            <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center space-x-3">
+                  <div className="bg-blue-600 p-2 rounded-lg">
+                    <BarChart3 className="h-6 w-6 text-white" />
+                  </div>
+                  <div>
+                    <h1 className="text-2xl font-bold text-gray-900">Prisma IA</h1>
+                    <p className="text-sm text-gray-600">Sessões de Transcrição</p>
+                  </div>
+                </div>
+                <div className="flex items-center space-x-4">
+                  <button
+                    onClick={navigateToHome}
+                    className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg text-sm transition-colors"
+                  >
+                    Voltar ao App
+                  </button>
+                  <UserProfile user={user} onSignOut={signOut} />
+                </div>
+              </div>
+            </div>
+          </header>
+
+          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+            <SessionListPage currentUser={user} onStartRecording={navigateToRecording} />
+          </div>
+        </div>
+      </>
+    );
+  }
+
+  return (
+    <>
+      <OrganicBackground />
+      <div className="app-content min-h-screen">
         {/* Header */}
         <header className="glass-card shadow-lg border-b border-blue-200 relative z-20">
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
             <div className="flex items-center justify-between">
               <div className="flex items-center space-x-3">
                 <div className="bg-blue-600 p-2 rounded-lg">
-                  <Mic className="h-6 w-6 text-white" />
+                  <BarChart3 className="h-6 w-6 text-white" />
                 </div>
                 <div>
                   <h1 className="text-2xl font-bold text-gray-900">Prisma IA</h1>
-                  <p className="text-sm text-gray-600">Sessões de Transcrição</p>
+                  <p className="text-sm text-gray-600">Sistema de Transcrição Psiquiátrica</p>
                 </div>
               </div>
               <div className="flex items-center space-x-4">
-                <button
-                  onClick={navigateToHome}
-                  className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg text-sm transition-colors"
-                >
-                  Voltar ao App
-                </button>
+                {/* Navigation Menu */}
+                <nav className="flex items-center space-x-1 bg-gray-100 rounded-lg p-1">
+                  <button
+                    onClick={navigateToHome}
+                    className={`flex items-center space-x-2 px-3 py-2 rounded-md text-sm font-medium transition-colors ${
+                      !showAdminPanel && !showPatientPanel && !showSessionsPanel
+                        ? 'bg-blue-600 text-white shadow-sm'
+                        : 'text-gray-600 hover:text-gray-900 hover:bg-white'
+                    }`}
+                  >
+                    <BarChart3 className="h-4 w-4" />
+                    <span>Dashboard</span>
+                  </button>
+                  
+                  {!isAdmin() && (
+                    <button
+                      onClick={navigateToPatients}
+                      className={`flex items-center space-x-2 px-3 py-2 rounded-md text-sm font-medium transition-colors ${
+                        showPatientPanel
+                          ? 'bg-green-600 text-white shadow-sm'
+                          : 'text-gray-600 hover:text-gray-900 hover:bg-white'
+                      }`}
+                    >
+                      <Users className="h-4 w-4" />
+                      <span>Pacientes</span>
+                    </button>
+                  )}
+                  
+                  <button
+                    onClick={navigateToSessions}
+                    className={`flex items-center space-x-2 px-3 py-2 rounded-md text-sm font-medium transition-colors ${
+                      showSessionsPanel
+                        ? 'bg-indigo-600 text-white shadow-sm'
+                        : 'text-gray-600 hover:text-gray-900 hover:bg-white'
+                    }`}
+                  >
+                    <FileText className="h-4 w-4" />
+                    <span>Sessões</span>
+                  </button>
+                  
+                  {isAdmin() && (
+                    <button
+                      onClick={navigateToAdmin}
+                      className={`flex items-center space-x-2 px-3 py-2 rounded-md text-sm font-medium transition-colors ${
+                        showAdminPanel
+                          ? 'bg-purple-600 text-white shadow-sm'
+                          : 'text-gray-600 hover:text-gray-900 hover:bg-white'
+                      }`}
+                    >
+                      <Settings className="h-4 w-4" />
+                      <span>Admin</span>
+                    </button>
+                  )}
+                </nav>
+                
                 <UserProfile user={user} onSignOut={signOut} />
               </div>
             </div>
@@ -225,108 +321,24 @@ function App() {
         </header>
 
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-          <SessionListPage currentUser={user} onStartRecording={navigateToRecording} />
+          <DashboardSummaries
+            currentUser={user}
+            onNavigateToPatients={navigateToPatients}
+            onNavigateToSessions={navigateToSessions}
+            onNavigateToAdmin={isAdmin() ? navigateToAdmin : undefined}
+          />
         </div>
-      </div>
-    );
-  }
 
-  return (
-    <div className="app-content min-h-screen">
-      <OrganicBackground />
-      {/* Header */}
-      <header className="glass-card shadow-lg border-b border-blue-200 relative z-20">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center space-x-3">
-              <div className="bg-blue-600 p-2 rounded-lg">
-                <BarChart3 className="h-6 w-6 text-white" />
-              </div>
-              <div>
-                <h1 className="text-2xl font-bold text-gray-900">Prisma IA</h1>
-                <p className="text-sm text-gray-600">Sistema de Transcrição Psiquiátrica</p>
-              </div>
-            </div>
-            <div className="flex items-center space-x-4">
-              {/* Navigation Menu */}
-              <nav className="flex items-center space-x-1 bg-gray-100 rounded-lg p-1">
-                <button
-                  onClick={navigateToHome}
-                  className={`flex items-center space-x-2 px-3 py-2 rounded-md text-sm font-medium transition-colors ${
-                    !showAdminPanel && !showPatientPanel && !showSessionsPanel
-                      ? 'bg-blue-600 text-white shadow-sm'
-                      : 'text-gray-600 hover:text-gray-900 hover:bg-white'
-                  }`}
-                >
-                  <BarChart3 className="h-4 w-4" />
-                  <span>Dashboard</span>
-                </button>
-                
-                {!isAdmin() && (
-                  <button
-                    onClick={navigateToPatients}
-                    className={`flex items-center space-x-2 px-3 py-2 rounded-md text-sm font-medium transition-colors ${
-                      showPatientPanel
-                        ? 'bg-green-600 text-white shadow-sm'
-                        : 'text-gray-600 hover:text-gray-900 hover:bg-white'
-                    }`}
-                  >
-                    <Users className="h-4 w-4" />
-                    <span>Pacientes</span>
-                  </button>
-                )}
-                
-                <button
-                  onClick={navigateToSessions}
-                  className={`flex items-center space-x-2 px-3 py-2 rounded-md text-sm font-medium transition-colors ${
-                    showSessionsPanel
-                      ? 'bg-indigo-600 text-white shadow-sm'
-                      : 'text-gray-600 hover:text-gray-900 hover:bg-white'
-                  }`}
-                >
-                  <FileText className="h-4 w-4" />
-                  <span>Sessões</span>
-                </button>
-                
-                {isAdmin() && (
-                  <button
-                    onClick={navigateToAdmin}
-                    className={`flex items-center space-x-2 px-3 py-2 rounded-md text-sm font-medium transition-colors ${
-                      showAdminPanel
-                        ? 'bg-purple-600 text-white shadow-sm'
-                        : 'text-gray-600 hover:text-gray-900 hover:bg-white'
-                    }`}
-                  >
-                    <Settings className="h-4 w-4" />
-                    <span>Admin</span>
-                  </button>
-                )}
-              </nav>
-              
-              <UserProfile user={user} onSignOut={signOut} />
-            </div>
-          </div>
-        </div>
-      </header>
-
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        <DashboardSummaries
-          currentUser={user}
-          onNavigateToPatients={navigateToPatients}
-          onNavigateToSessions={navigateToSessions}
-          onNavigateToAdmin={isAdmin() ? navigateToAdmin : undefined}
+        {/* Notification Modal */}
+        <NotificationModal
+          isOpen={notification.isOpen}
+          type={notification.type}
+          title={notification.title}
+          message={notification.message}
+          onClose={hideNotification}
         />
       </div>
-
-      {/* Notification Modal */}
-      <NotificationModal
-        isOpen={notification.isOpen}
-        type={notification.type}
-        title={notification.title}
-        message={notification.message}
-        onClose={hideNotification}
-      />
-    </div>
+    </>
   );
 }
 
