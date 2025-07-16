@@ -258,18 +258,11 @@ export function useAuth() {
       // Logout do Supabase
       await supabase.auth.signOut();
       
-      // Limpar estado
-      setUser(null);
-      setError(null);
-      setLoading(false);
-      
       console.log('✅ Logout realizado com sucesso');
     } catch (error) {
       console.error('❌ Erro ao fazer logout:', error);
-      // Mesmo com erro, limpar o estado local
-      setUser(null);
-      setError(null);
-      setLoading(false);
+      // Forçar limpeza do estado mesmo com erro
+      await clearAllSessions();
     }
   };
 

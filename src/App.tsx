@@ -176,12 +176,14 @@ function App() {
   };
 
   const handleSignOut = () => {
-    signOut();
-    setSavedTranscriptions([]);
-    setTranscript('');
-    setSelectedTranscription(null);
-    setShowAdminPanel(false);
-    setShowPatientPanel(false);
+    signOut().then(() => {
+      // Forçar limpeza adicional do estado local após logout
+      setSavedTranscriptions([]);
+      setTranscript('');
+      setSelectedTranscription(null);
+      setShowAdminPanel(false);
+      setShowPatientPanel(false);
+    });
   };
 
   const navigateToHome = () => {
