@@ -228,22 +228,13 @@ export default function SessionListPage({ currentUser, onStartRecording, initial
         </div>
 
         {/* Estatísticas */}
-        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-6">
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-6">
           <div className="bg-indigo-50 p-4 rounded-lg">
             <div className="flex items-center space-x-2">
               <FileText className="h-5 w-5 text-indigo-600" />
               <span className="text-sm font-medium text-indigo-800">Total</span>
             </div>
             <p className="text-2xl font-bold text-indigo-900 mt-1">{sessions.length}</p>
-          </div>
-          <div className="bg-yellow-50 p-4 rounded-lg">
-            <div className="flex items-center space-x-2">
-              <Pause className="h-5 w-5 text-yellow-600" />
-              <span className="text-sm font-medium text-yellow-800">Pausadas</span>
-            </div>
-            <p className="text-2xl font-bold text-yellow-900 mt-1">
-              {sessions.filter(s => s.status === 'paused').length}
-            </p>
           </div>
           <div className="bg-green-50 p-4 rounded-lg">
             <div className="flex items-center space-x-2">
