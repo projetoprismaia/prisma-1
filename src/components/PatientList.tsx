@@ -142,6 +142,12 @@ export default function PatientList({ currentUser, onNavigateToSessions }: Patie
     setShowPatientFormModal(true);
   };
 
+  const handlePatientClick = (patientId: string) => {
+    if (onNavigateToSessions) {
+      onNavigateToSessions(patientId);
+    }
+  };
+
   const filteredPatients = patients.filter(patient => {
     const searchLower = searchTerm.toLowerCase();
     return patient.name.toLowerCase().includes(searchLower) ||
@@ -239,7 +245,8 @@ export default function PatientList({ currentUser, onNavigateToSessions }: Patie
             filteredPatients.map((patient) => (
               <div
                 key={patient.id}
-                className="flex items-center justify-between p-4 border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors"
+                className="flex items-center justify-between p-4 border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors cursor-pointer"
+                onClick={() => handlePatientClick(patient.id)}
               >
                 <div className="flex items-center space-x-3">
                   <div className="bg-gray-100 p-2 rounded-full">
