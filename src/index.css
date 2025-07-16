@@ -216,3 +216,128 @@ html, body, #root {
     height: 6px;
   }
 }
+
+/* Menu Floating Bar */
+.floating-menu {
+  position: fixed;
+  top: 30px;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 100;
+  background: rgba(255, 255, 255, 0.1);
+  backdrop-filter: blur(20px) saturate(180%);
+  -webkit-backdrop-filter: blur(20px) saturate(180%);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  border-radius: 180px;
+  padding: 8px 12px;
+  box-shadow: 
+    0 8px 32px rgba(0, 0, 0, 0.1),
+    inset 0 1px 0 rgba(255, 255, 255, 0.2);
+  animation: menuFadeIn 1.5s ease-out;
+}
+
+.menu-items {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.menu-item {
+  padding: 12px 24px;
+  border-radius: 180px;
+  font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+  font-size: 14px;
+  font-weight: 500;
+  color: #4a5568;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  text-decoration: none;
+  background: transparent;
+  border: none;
+  white-space: nowrap;
+  letter-spacing: 0.5px;
+  display: flex;
+  align-items: center;
+}
+
+.menu-item:hover {
+  background: rgba(255, 255, 255, 0.15);
+  color: #2d3748;
+  transform: translateY(-1px);
+}
+
+.menu-item.active {
+  background: #8b5cf6;
+  color: #ffffff;
+  box-shadow: 0 4px 12px rgba(139, 92, 246, 0.3);
+}
+
+.menu-item:active {
+  transform: translateY(0);
+}
+
+/* Separador visual */
+.menu-separator {
+  width: 1px;
+  height: 20px;
+  background: rgba(74, 85, 104, 0.3);
+  margin: 0 4px;
+}
+
+/* Estilo especial para nome do usuário */
+.user-name {
+  color: #2d3748 !important;
+  font-weight: 600;
+  pointer-events: none;
+}
+
+/* Estilo especial para botão sair */
+.menu-item.logout {
+  background: #8b5cf6;
+  color: #ffffff;
+}
+
+.menu-item.logout:hover {
+  background: #7c3aed;
+  color: #ffffff;
+  transform: translateY(-1px);
+}
+
+@keyframes menuFadeIn {
+  from {
+    opacity: 0;
+    transform: translateX(-50%) translateY(-20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(-50%) translateY(0);
+  }
+}
+
+/* Responsividade */
+@media (max-width: 768px) {
+  .floating-menu {
+    top: 20px;
+    padding: 6px 8px;
+    max-width: 95vw;
+    overflow-x: auto;
+  }
+  
+  .menu-items {
+    gap: 4px;
+  }
+  
+  .menu-item {
+    padding: 10px 14px;
+    font-size: 12px;
+  }
+  
+  .user-name {
+    padding: 10px 12px;
+  }
+}
+
+/* Ajuste para conteúdo principal */
+.app-content {
+  padding-top: 100px;
+}

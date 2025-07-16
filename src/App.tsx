@@ -1,9 +1,8 @@
 import React, { useState } from 'react';
-import { BarChart3, FileText, Settings, Users } from 'lucide-react';
 import { useAuth } from './hooks/useAuth';
 import OrganicBackground from './components/OrganicBackground';
 import AuthForm from './components/AuthForm';
-import UserProfile from './components/UserProfile';
+import FloatingMenu from './components/FloatingMenu';
 import AdminPanel from './components/AdminPanel';
 import PatientList from './components/PatientList';
 import SessionListPage from './components/SessionListPage';
@@ -91,6 +90,13 @@ function App() {
     setActiveRecordingSession(null);
   };
 
+  const getCurrentSection = () => {
+    if (showAdminPanel) return 'admin';
+    if (showPatientPanel) return 'patients';
+    if (showSessionsPanel) return 'sessions';
+    return 'dashboard';
+  };
+
   // Loading state
   if (loading) {
     return (
@@ -140,80 +146,16 @@ function App() {
       <>
         <OrganicBackground />
         <div className="app-content min-h-screen">
-          {/* Header */}
-          <header className="glass-card shadow-lg border-b border-blue-200 relative z-20">
-            <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
-              <div className="flex items-center justify-between">
-                <div className="flex items-center space-x-3">
-                  <div className="bg-blue-600 p-2 rounded-lg">
-                    <BarChart3 className="h-6 w-6 text-white" />
-                  </div>
-                  <div>
-                    <h1 className="text-2xl font-bold text-gray-900">Prisma IA</h1>
-                    <p className="text-sm text-gray-600">Painel Administrativo</p>
-                  </div>
-                </div>
-                <div className="flex items-center space-x-4">
-                  {/* Navigation Menu */}
-                  <nav className="flex items-center space-x-1 bg-gray-100 rounded-lg p-1">
-                    <button
-                      onClick={navigateToHome}
-                      className={`flex items-center space-x-2 px-3 py-2 rounded-md text-sm font-medium transition-colors ${
-                        !showAdminPanel && !showPatientPanel && !showSessionsPanel
-                          ? 'bg-blue-600 text-white shadow-sm'
-                          : 'text-gray-600 hover:text-gray-900 hover:bg-white'
-                      }`}
-                    >
-                      <BarChart3 className="h-4 w-4" />
-                      <span>Dashboard</span>
-                    </button>
-                    
-                    {!isAdmin() && (
-                      <button
-                        onClick={navigateToPatients}
-                        className={`flex items-center space-x-2 px-3 py-2 rounded-md text-sm font-medium transition-colors ${
-                          showPatientPanel
-                            ? 'bg-green-600 text-white shadow-sm'
-                            : 'text-gray-600 hover:text-gray-900 hover:bg-white'
-                        }`}
-                      >
-                        <Users className="h-4 w-4" />
-                        <span>Pacientes</span>
-                      </button>
-                    )}
-                    
-                    <button
-                      onClick={navigateToSessions}
-                      className={`flex items-center space-x-2 px-3 py-2 rounded-md text-sm font-medium transition-colors ${
-                        showSessionsPanel
-                          ? 'bg-indigo-600 text-white shadow-sm'
-                          : 'text-gray-600 hover:text-gray-900 hover:bg-white'
-                      }`}
-                    >
-                      <FileText className="h-4 w-4" />
-                      <span>Sessões</span>
-                    </button>
-                    
-                    {isAdmin() && (
-                      <button
-                        onClick={navigateToAdmin}
-                        className={`flex items-center space-x-2 px-3 py-2 rounded-md text-sm font-medium transition-colors ${
-                          showAdminPanel
-                            ? 'bg-purple-600 text-white shadow-sm'
-                            : 'text-gray-600 hover:text-gray-900 hover:bg-white'
-                        }`}
-                      >
-                        <Settings className="h-4 w-4" />
-                        <span>Admin</span>
-                      </button>
-                    )}
-                  </nav>
-                  
-                  <UserProfile user={user} onSignOut={signOut} />
-                </div>
-              </div>
-            </div>
-          </header>
+          <FloatingMenu
+            currentUser={user}
+            activeSection={getCurrentSection()}
+            onNavigateToHome={navigateToHome}
+            onNavigateToPatients={navigateToPatients}
+            onNavigateToSessions={navigateToSessions}
+            onNavigateToAdmin={navigateToAdmin}
+            onSignOut={handleSignOut}
+            isAdmin={isAdmin()}
+          />
 
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
             <AdminPanel currentUser={user} />
@@ -229,80 +171,16 @@ function App() {
       <>
         <OrganicBackground />
         <div className="app-content min-h-screen">
-          {/* Header */}
-          <header className="glass-card shadow-lg border-b border-blue-200 relative z-20">
-            <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
-              <div className="flex items-center justify-between">
-                <div className="flex items-center space-x-3">
-                  <div className="bg-blue-600 p-2 rounded-lg">
-                    <BarChart3 className="h-6 w-6 text-white" />
-                  </div>
-                  <div>
-                    <h1 className="text-2xl font-bold text-gray-900">Prisma IA</h1>
-                    <p className="text-sm text-gray-600">Gerenciamento de Pacientes</p>
-                  </div>
-                </div>
-                <div className="flex items-center space-x-4">
-                  {/* Navigation Menu */}
-                  <nav className="flex items-center space-x-1 bg-gray-100 rounded-lg p-1">
-                    <button
-                      onClick={navigateToHome}
-                      className={`flex items-center space-x-2 px-3 py-2 rounded-md text-sm font-medium transition-colors ${
-                        !showAdminPanel && !showPatientPanel && !showSessionsPanel
-                          ? 'bg-blue-600 text-white shadow-sm'
-                          : 'text-gray-600 hover:text-gray-900 hover:bg-white'
-                      }`}
-                    >
-                      <BarChart3 className="h-4 w-4" />
-                      <span>Dashboard</span>
-                    </button>
-                    
-                    {!isAdmin() && (
-                      <button
-                        onClick={navigateToPatients}
-                        className={`flex items-center space-x-2 px-3 py-2 rounded-md text-sm font-medium transition-colors ${
-                          showPatientPanel
-                            ? 'bg-green-600 text-white shadow-sm'
-                            : 'text-gray-600 hover:text-gray-900 hover:bg-white'
-                        }`}
-                      >
-                        <Users className="h-4 w-4" />
-                        <span>Pacientes</span>
-                      </button>
-                    )}
-                    
-                    <button
-                      onClick={navigateToSessions}
-                      className={`flex items-center space-x-2 px-3 py-2 rounded-md text-sm font-medium transition-colors ${
-                        showSessionsPanel
-                          ? 'bg-indigo-600 text-white shadow-sm'
-                          : 'text-gray-600 hover:text-gray-900 hover:bg-white'
-                      }`}
-                    >
-                      <FileText className="h-4 w-4" />
-                      <span>Sessões</span>
-                    </button>
-                    
-                    {isAdmin() && (
-                      <button
-                        onClick={navigateToAdmin}
-                        className={`flex items-center space-x-2 px-3 py-2 rounded-md text-sm font-medium transition-colors ${
-                          showAdminPanel
-                            ? 'bg-purple-600 text-white shadow-sm'
-                            : 'text-gray-600 hover:text-gray-900 hover:bg-white'
-                        }`}
-                      >
-                        <Settings className="h-4 w-4" />
-                        <span>Admin</span>
-                      </button>
-                    )}
-                  </nav>
-                  
-                  <UserProfile user={user} onSignOut={signOut} />
-                </div>
-              </div>
-            </div>
-          </header>
+          <FloatingMenu
+            currentUser={user}
+            activeSection={getCurrentSection()}
+            onNavigateToHome={navigateToHome}
+            onNavigateToPatients={navigateToPatients}
+            onNavigateToSessions={navigateToSessions}
+            onNavigateToAdmin={navigateToAdmin}
+            onSignOut={handleSignOut}
+            isAdmin={isAdmin()}
+          />
 
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
             <PatientList 
@@ -321,80 +199,16 @@ function App() {
       <>
         <OrganicBackground />
         <div className="app-content min-h-screen">
-          {/* Header */}
-          <header className="glass-card shadow-lg border-b border-blue-200 relative z-20">
-            <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
-              <div className="flex items-center justify-between">
-                <div className="flex items-center space-x-3">
-                  <div className="bg-blue-600 p-2 rounded-lg">
-                    <BarChart3 className="h-6 w-6 text-white" />
-                  </div>
-                  <div>
-                    <h1 className="text-2xl font-bold text-gray-900">Prisma IA</h1>
-                    <p className="text-sm text-gray-600">Sessões de Transcrição</p>
-                  </div>
-                </div>
-                <div className="flex items-center space-x-4">
-                  {/* Navigation Menu */}
-                  <nav className="flex items-center space-x-1 bg-gray-100 rounded-lg p-1">
-                    <button
-                      onClick={navigateToHome}
-                      className={`flex items-center space-x-2 px-3 py-2 rounded-md text-sm font-medium transition-colors ${
-                        !showAdminPanel && !showPatientPanel && !showSessionsPanel
-                          ? 'bg-blue-600 text-white shadow-sm'
-                          : 'text-gray-600 hover:text-gray-900 hover:bg-white'
-                      }`}
-                    >
-                      <BarChart3 className="h-4 w-4" />
-                      <span>Dashboard</span>
-                    </button>
-                    
-                    {!isAdmin() && (
-                      <button
-                        onClick={navigateToPatients}
-                        className={`flex items-center space-x-2 px-3 py-2 rounded-md text-sm font-medium transition-colors ${
-                          showPatientPanel
-                            ? 'bg-green-600 text-white shadow-sm'
-                            : 'text-gray-600 hover:text-gray-900 hover:bg-white'
-                        }`}
-                      >
-                        <Users className="h-4 w-4" />
-                        <span>Pacientes</span>
-                      </button>
-                    )}
-                    
-                    <button
-                      onClick={navigateToSessions}
-                      className={`flex items-center space-x-2 px-3 py-2 rounded-md text-sm font-medium transition-colors ${
-                        showSessionsPanel
-                          ? 'bg-indigo-600 text-white shadow-sm'
-                          : 'text-gray-600 hover:text-gray-900 hover:bg-white'
-                      }`}
-                    >
-                      <FileText className="h-4 w-4" />
-                      <span>Sessões</span>
-                    </button>
-                    
-                    {isAdmin() && (
-                      <button
-                        onClick={navigateToAdmin}
-                        className={`flex items-center space-x-2 px-3 py-2 rounded-md text-sm font-medium transition-colors ${
-                          showAdminPanel
-                            ? 'bg-purple-600 text-white shadow-sm'
-                            : 'text-gray-600 hover:text-gray-900 hover:bg-white'
-                        }`}
-                      >
-                        <Settings className="h-4 w-4" />
-                        <span>Admin</span>
-                      </button>
-                    )}
-                  </nav>
-                  
-                  <UserProfile user={user} onSignOut={signOut} />
-                </div>
-              </div>
-            </div>
-          </header>
+          <FloatingMenu
+            currentUser={user}
+            activeSection={getCurrentSection()}
+            onNavigateToHome={navigateToHome}
+            onNavigateToPatients={navigateToPatients}
+            onNavigateToSessions={navigateToSessions}
+            onNavigateToAdmin={navigateToAdmin}
+            onSignOut={handleSignOut}
+            isAdmin={isAdmin()}
+          />
 
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
             <SessionListPage 
@@ -412,80 +226,16 @@ function App() {
     <>
       <OrganicBackground />
       <div className="app-content min-h-screen">
-        {/* Header */}
-        <header className="glass-card shadow-lg border-b border-blue-200 relative z-20">
-          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
-            <div className="flex items-center justify-between">
-              <div className="flex items-center space-x-3">
-                <div className="bg-blue-600 p-2 rounded-lg">
-                  <BarChart3 className="h-6 w-6 text-white" />
-                </div>
-                <div>
-                  <h1 className="text-2xl font-bold text-gray-900">Prisma IA</h1>
-                  <p className="text-sm text-gray-600">Sistema de Transcrição Psiquiátrica</p>
-                </div>
-              </div>
-              <div className="flex items-center space-x-4">
-                {/* Navigation Menu */}
-                <nav className="flex items-center space-x-1 bg-gray-100 rounded-lg p-1">
-                  <button
-                    onClick={navigateToHome}
-                    className={`flex items-center space-x-2 px-3 py-2 rounded-md text-sm font-medium transition-colors ${
-                      !showAdminPanel && !showPatientPanel && !showSessionsPanel
-                        ? 'bg-blue-600 text-white shadow-sm'
-                        : 'text-gray-600 hover:text-gray-900 hover:bg-white'
-                    }`}
-                  >
-                    <BarChart3 className="h-4 w-4" />
-                    <span>Dashboard</span>
-                  </button>
-                  
-                  {!isAdmin() && (
-                    <button
-                      onClick={navigateToPatients}
-                      className={`flex items-center space-x-2 px-3 py-2 rounded-md text-sm font-medium transition-colors ${
-                        showPatientPanel
-                          ? 'bg-green-600 text-white shadow-sm'
-                          : 'text-gray-600 hover:text-gray-900 hover:bg-white'
-                      }`}
-                    >
-                      <Users className="h-4 w-4" />
-                      <span>Pacientes</span>
-                    </button>
-                  )}
-                  
-                  <button
-                    onClick={navigateToSessions}
-                    className={`flex items-center space-x-2 px-3 py-2 rounded-md text-sm font-medium transition-colors ${
-                      showSessionsPanel
-                        ? 'bg-indigo-600 text-white shadow-sm'
-                        : 'text-gray-600 hover:text-gray-900 hover:bg-white'
-                    }`}
-                  >
-                    <FileText className="h-4 w-4" />
-                    <span>Sessões</span>
-                  </button>
-                  
-                  {isAdmin() && (
-                    <button
-                      onClick={navigateToAdmin}
-                      className={`flex items-center space-x-2 px-3 py-2 rounded-md text-sm font-medium transition-colors ${
-                        showAdminPanel
-                          ? 'bg-purple-600 text-white shadow-sm'
-                          : 'text-gray-600 hover:text-gray-900 hover:bg-white'
-                      }`}
-                    >
-                      <Settings className="h-4 w-4" />
-                      <span>Admin</span>
-                    </button>
-                  )}
-                </nav>
-                
-                <UserProfile user={user} onSignOut={signOut} />
-              </div>
-            </div>
-          </div>
-        </header>
+        <FloatingMenu
+          currentUser={user}
+          activeSection={getCurrentSection()}
+          onNavigateToHome={navigateToHome}
+          onNavigateToPatients={navigateToPatients}
+          onNavigateToSessions={navigateToSessions}
+          onNavigateToAdmin={navigateToAdmin}
+          onSignOut={handleSignOut}
+          isAdmin={isAdmin()}
+        />
 
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
           <DashboardSummaries
