@@ -116,7 +116,8 @@ function App() {
   };
 
   const getCurrentSection = () => {
-    const section = showAdminPanel ? 'admin' : 
+    const section = activeRecordingSession ? 'sessions' :
+                   showAdminPanel ? 'admin' : 
                    showPatientPanel ? 'patients' : 
                    showSessionsPanel ? 'sessions' : 'dashboard';
     console.log('🔍 [getCurrentSection] Seção atual:', section);
@@ -149,103 +150,7 @@ function App() {
   }
 
   // Show recording page if active
-  if (activeRecordingSession) {
-    return (
-      <>
-        <OrganicBackground />
-        <div className="app-content">
-          <RecordingPage
-            currentUser={user}
-            onComplete={handleRecordingComplete}
-            onCancel={handleRecordingCancel}
-          />
-        </div>
-      </>
-    );
-  }
-
-  // Show admin panel if requested
-  if (showAdminPanel && isAdmin()) {
-    return (
-      <>
-        <OrganicBackground />
-        <div className="app-content min-h-screen">
-          <FloatingMenu
-            currentUser={user}
-            activeSection={getCurrentSection()}
-            onNavigateToHome={navigateToHome}
-            onNavigateToPatients={navigateToPatients}
-            onNavigateToSessions={navigateToSessions}
-            onNavigateToAdmin={navigateToAdmin}
-            onSignOut={handleSignOut}
-            isAdmin={isAdmin()}
-          />
-
-          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-            <AdminPanel currentUser={user} />
-          </div>
-        </div>
-      </>
-    );
-  }
-
-  // Show patient panel if requested
-  if (showPatientPanel && !isAdmin()) {
-    return (
-      <>
-        <OrganicBackground />
-        <div className="app-content min-h-screen">
-          <FloatingMenu
-            currentUser={user}
-            activeSection={getCurrentSection()}
-            onNavigateToHome={navigateToHome}
-            onNavigateToPatients={navigateToPatients}
-            onNavigateToSessions={navigateToSessions}
-            onNavigateToAdmin={navigateToAdmin}
-            onSignOut={handleSignOut}
-            isAdmin={isAdmin()}
-          />
-
-          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-            <PatientList 
-              currentUser={user} 
-              onNavigateToSessions={navigateToSessionsWithPatient}
-            />
-          </div>
-        </div>
-      </>
-    );
-  }
-
-  // Show sessions panel if requested
-  if (showSessionsPanel) {
-    return (
-      <>
-        <OrganicBackground />
-        <div className="app-content min-h-screen">
-          <FloatingMenu
-            currentUser={user}
-            activeSection={getCurrentSection()}
-            onNavigateToHome={navigateToHome}
-            onNavigateToPatients={navigateToPatients}
-            onNavigateToSessions={navigateToSessions}
-            onNavigateToAdmin={navigateToAdmin}
-            onSignOut={handleSignOut}
-            isAdmin={isAdmin()}
-          />
-
-          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-            <SessionListPage 
-              currentUser={user} 
-              onStartRecording={navigateToRecording}
-              initialPatientFilter={selectedPatientFilter}
-            />
-          </div>
-        </div>
-      </>
-    );
-  }
-
+  // Main authenticated user layout with FloatingMenu always visible
   return (
     <>
       <OrganicBackground />
@@ -262,12 +167,34 @@ function App() {
         />
 
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-          <DashboardSummaries
-            currentUser={user}
-            onNavigateToPatients={navigateToPatients}
-            onNavigateToSessions={navigateToSessions}
-            onNavigateToAdmin={isAdmin() ? navigateToAdmin : undefined}
-          />
+          {/* Render content based on current state */}
+          {activeRecordingSession ? (
+            <RecordingPage
+              currentUser={user}
+              onComplete={handleRecordingComplete}
+              onCancel={handleRecordingCancel}
+            />
+          ) : showAdminPanel && isAdmin() ? (
+            <AdminPanel currentUser={user} />
+          ) : showPatientPanel && !isAdmin() ? (
+            <PatientList 
+              currentUser={user} 
+              onNavigateToSessions={navigateToSessionsWithPatient}
+            />
+          ) : showSessionsPanel ? (
+            <SessionListPage 
+              currentUser={user} 
+              onStartRecording={navigateToRecording}
+              initialPatientFilter={selectedPatientFilter}
+            />
+          ) : (
+            <DashboardSummaries
+              currentUser={user}
+              onNavigateToPatients={navigateToPatients}
+              onNavigateToSessions={navigateToSessions}
+              onNavigateToAdmin={isAdmin() ? navigateToAdmin : undefined}
+            />
+          )}
         </div>
 
         {/* Notification Modal */}
