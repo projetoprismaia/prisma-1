@@ -26,11 +26,6 @@ export default function UserProfile({ user, onSignOut }: UserProfileProps) {
           }`}>
             {user.email}
           </span>
-          <span className={`text-xs ${
-            isAdmin ? 'text-purple-600' : 'text-blue-600'
-          }`}>
-            {isAdmin ? 'Administrador' : 'Usuário'}
-          </span>
         </div>
       </div>
       <button
