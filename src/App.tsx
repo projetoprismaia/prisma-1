@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { BarChart3, FileText, Settings, Users } from 'lucide-react';
 import { useAuth } from './hooks/useAuth';
+import OrganicBackground from './components/OrganicBackground';
 import AuthForm from './components/AuthForm';
 import UserProfile from './components/UserProfile';
 import AdminPanel from './components/AdminPanel';
@@ -92,28 +93,37 @@ function App() {
 
   // Show auth form if not authenticated
   if (!user) {
-    return <AuthForm />;
+    return (
+      <div className="app-content">
+        <OrganicBackground />
+        <AuthForm />
+      </div>
+    );
   }
 
   // Show recording page if active
   if (activeRecordingSession) {
     return (
-      <RecordingPage
-        currentUser={user}
-        patientId={activeRecordingSession.patientId}
-        sessionTitle={activeRecordingSession.title}
-        onComplete={handleRecordingComplete}
-        onCancel={handleRecordingCancel}
-      />
+      <div className="app-content">
+        <OrganicBackground />
+        <RecordingPage
+          currentUser={user}
+          patientId={activeRecordingSession.patientId}
+          sessionTitle={activeRecordingSession.title}
+          onComplete={handleRecordingComplete}
+          onCancel={handleRecordingCancel}
+        />
+      </div>
     );
   }
 
   // Show admin panel if requested
   if (showAdminPanel && isAdmin()) {
     return (
-      <div className="min-h-screen">
+      <div className="app-content min-h-screen">
+        <OrganicBackground />
         {/* Header */}
-        <header className="bg-white shadow-lg border-b border-blue-200">
+        <header className="glass-card shadow-lg border-b border-blue-200 relative z-20">
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
             <div className="flex items-center justify-between">
               <div className="flex items-center space-x-3">
@@ -148,9 +158,10 @@ function App() {
   // Show patient panel if requested
   if (showPatientPanel && !isAdmin()) {
     return (
-      <div className="min-h-screen">
+      <div className="app-content min-h-screen">
+        <OrganicBackground />
         {/* Header */}
-        <header className="bg-white shadow-lg border-b border-blue-200">
+        <header className="glass-card shadow-lg border-b border-blue-200 relative z-20">
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
             <div className="flex items-center justify-between">
               <div className="flex items-center space-x-3">
@@ -185,9 +196,10 @@ function App() {
   // Show sessions panel if requested
   if (showSessionsPanel) {
     return (
-      <div className="min-h-screen">
+      <div className="app-content min-h-screen">
+        <OrganicBackground />
         {/* Header */}
-        <header className="bg-white shadow-lg border-b border-blue-200">
+        <header className="glass-card shadow-lg border-b border-blue-200 relative z-20">
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
             <div className="flex items-center justify-between">
               <div className="flex items-center space-x-3">
@@ -220,9 +232,10 @@ function App() {
   }
 
   return (
-    <div className="min-h-screen">
+    <div className="app-content min-h-screen">
+      <OrganicBackground />
       {/* Header */}
-      <header className="bg-white shadow-lg border-b border-blue-200">
+      <header className="glass-card shadow-lg border-b border-blue-200 relative z-20">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
           <div className="flex items-center justify-between">
             <div className="flex items-center space-x-3">
