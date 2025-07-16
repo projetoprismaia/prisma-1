@@ -41,9 +41,67 @@ export default function AdminPanel({ currentUser }: AdminPanelProps) {
       // Buscar contagem de pacientes para cada usuário
       if (usersData && usersData.length > 0) {
         console.log('🔍 Buscando pacientes...');
-        const { data: patientsData, error: patientsError } = await supabase
+        
+        // Tentar buscar pacientes como admin
+        let patientsData = null;
+        let patientsError = null;
+        
+        // Primeira tentativa: buscar todos os pacientes (admin)
+        const { data: allPatients, error: allPatientsError } = await supabase
           .from('patients')
-          .select('user_id, name');
+          .select('user_id');
+          
+        if (allPatientsError) {
+          console.log('⚠️ Erro ao buscar todos os pacientes:', allPatientsError.message);
+          
+          // Segunda tentativa: usar RPC se disponível
+          const { data: rpcData, error: rpcError } = await supabase
+            .rpc('count_patients_by_user')
+            .catch(() => ({ data: null, error: { message: 'RPC não disponível' } }));
+            
+          if (rpcError || !rpcData) {
+            console.log('⚠️ RPC também falhou, usando contagem manual...');
+            
+            // Terceira tentativa: contar manualmente para cada usuário
+            const counts: Record<string, number> = {};
+            
+            for (const user of usersData) {
+              const { count, error: countError } = await supabase
+                .from('patients')
+                .select('*', { count: 'exact', head: true })
+                .eq('user_id', user.id);
+                
+              if (countError) {
+                console.error(`Erro ao contar pacientes para ${user.email}:`, countError);
+                counts[user.id] = 0;
+              } else {
+                counts[user.id] = count || 0;
+                console.log(`👤 ${user.email}: ${count || 0} pacientes`);
+              }
+            }
+            
+            console.log('📈 Contagem final por usuário:', counts);
+            setPatientCounts(counts);
+            return;
+          } else {
+            // RPC funcionou
+            const counts: Record<string, number> = {};
+            usersData.forEach(user => {
+              counts[user.id] = 0;
+            });
+            
+            rpcData.forEach((item: any) => {
+              counts[item.user_id] = item.patient_count;
+            });
+            
+            console.log('📈 Contagem via RPC:', counts);
+            setPatientCounts(counts);
+            return;
+          }
+        } else {
+          patientsData = allPatients;
+          patientsError = null;
+        }
 
         if (patientsError) {
           console.error('Erro ao buscar pacientes:', patientsError);
