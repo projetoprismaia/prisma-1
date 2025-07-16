@@ -10,57 +10,60 @@ export function useAuth() {
   useEffect(() => {
     let mounted = true;
 
-    // Get initial session
-    const getInitialSession = async () => {
+    const initializeAuth = async () => {
       try {
-        console.log('🔍 Buscando sessão inicial...');
+        console.log('🔍 Inicializando autenticação...');
+        
+        // Get initial session
         const { data: { session }, error: sessionError } = await supabase.auth.getSession();
         
         if (!mounted) return;
         
         if (sessionError) {
           console.error('❌ Erro ao buscar sessão:', sessionError);
-          setError(`Erro de sessão: ${sessionError.message}`);
+          // Não é um erro crítico, apenas não há sessão
           setLoading(false);
           return;
         }
         
-        console.log('✅ Sessão obtida:', session ? 'Usuário logado' : 'Sem usuário');
-        
         if (session?.user) {
+          console.log('✅ Sessão encontrada, buscando perfil...');
           await fetchUserProfile(session.user);
         } else {
-          console.log('👤 Nenhum usuário logado');
-          if (mounted) setLoading(false);
+          console.log('👤 Nenhuma sessão ativa, mostrando login');
+          setLoading(false);
         }
       } catch (error) {
-        console.error('❌ Erro crítico na inicialização:', error);
+        console.error('❌ Erro na inicialização:', error);
         if (mounted) {
-          setError(`Erro de inicialização: ${error instanceof Error ? error.message : 'Erro desconhecido'}`);
+          // Em caso de erro, mostrar login ao invés de travar
           setLoading(false);
         }
       }
     };
 
-    getInitialSession();
+    initializeAuth();
 
     // Listen for auth changes
     const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
       if (!mounted) return;
       
+      console.log('🔄 Mudança de autenticação:', event);
+      
       try {
-        console.log('🔄 Mudança de autenticação:', event, session ? 'com usuário' : 'sem usuário');
-        
         if (session?.user) {
           await fetchUserProfile(session.user);
         } else {
           setUser(null);
+          setError(null);
           setLoading(false);
         }
       } catch (error) {
         console.error('❌ Erro na mudança de auth:', error);
         if (mounted) {
-          setError(`Erro de autenticação: ${error instanceof Error ? error.message : 'Erro desconhecido'}`);
+          // Em caso de erro, limpar usuário e mostrar login
+          setUser(null);
+          setError(null);
           setLoading(false);
         }
       }
@@ -76,11 +79,8 @@ export function useAuth() {
     try {
       console.log('👤 Buscando perfil do usuário:', authUser.id);
       
-      // First, check if profiles table exists by trying to create it
-      await ensureProfilesTableExists();
-      
       // Try to get existing profile
-      let { data: profile, error } = await supabase
+      const { data: profile, error } = await supabase
         .from('profiles')
         .select('*')
         .eq('id', authUser.id)
@@ -103,58 +103,87 @@ export function useAuth() {
 
         if (insertError) {
           console.error('❌ Erro ao criar perfil:', insertError);
-          setError(`Erro ao criar perfil: ${insertError.message}`);
+          // Se não conseguir criar perfil, criar um temporário
+          const tempProfile: UserProfile = {
+            id: authUser.id,
+            email: authUser.email,
+            role: 'user',
+            created_at: new Date().toISOString(),
+            updated_at: new Date().toISOString()
+          };
+          
+          setUser({
+            id: authUser.id,
+            email: authUser.email,
+            profile: tempProfile
+          });
           setLoading(false);
           return;
         }
 
-        profile = newProfile;
-        console.log('✅ Perfil criado com sucesso:', profile);
+        console.log('✅ Perfil criado com sucesso');
+        setUser({
+          id: authUser.id,
+          email: authUser.email,
+          profile: newProfile as UserProfile
+        });
       } else if (error) {
         console.error('❌ Erro ao buscar perfil:', error);
-        setError(`Erro de perfil: ${error.message}`);
-        setLoading(false);
-        return;
+        // Se houver erro, criar perfil temporário
+        const tempProfile: UserProfile = {
+          id: authUser.id,
+          email: authUser.email,
+          role: 'user',
+          created_at: new Date().toISOString(),
+          updated_at: new Date().toISOString()
+        };
+        
+        setUser({
+          id: authUser.id,
+          email: authUser.email,
+          profile: tempProfile
+        });
+      } else {
+        console.log('✅ Perfil encontrado');
+        setUser({
+          id: authUser.id,
+          email: authUser.email,
+          profile: profile as UserProfile
+        });
       }
-
-      console.log('✅ Perfil encontrado:', profile);
-      
-      setUser({
-        id: authUser.id,
-        email: authUser.email,
-        profile: profile as UserProfile
-      });
       
       setLoading(false);
     } catch (error) {
       console.error('❌ Erro crítico ao buscar perfil:', error);
-      setError(`Erro crítico: ${error instanceof Error ? error.message : 'Erro desconhecido'}`);
+      // Em caso de erro crítico, criar usuário temporário
+      const tempProfile: UserProfile = {
+        id: authUser.id,
+        email: authUser.email,
+        role: 'user',
+        created_at: new Date().toISOString(),
+        updated_at: new Date().toISOString()
+      };
+      
+      setUser({
+        id: authUser.id,
+        email: authUser.email,
+        profile: tempProfile
+      });
       setLoading(false);
     }
   };
 
-  const ensureProfilesTableExists = async () => {
-    try {
-      // Try to create the profiles table if it doesn't exist
-      const { error } = await supabase.rpc('create_profiles_table_if_not_exists');
-      
-      if (error && !error.message.includes('already exists')) {
-        console.log('⚠️ Tentando criar tabela via SQL direto...');
-        
-        // Fallback: try to create table directly
-        await supabase.from('profiles').select('id').limit(1);
-      }
-    } catch (error) {
-      console.log('ℹ️ Tabela profiles pode não existir, tentando criar...');
-      
-      // Create a simple profile structure in memory if database fails
-      // This is a fallback for development
-    }
-  };
-
   const signOut = async () => {
-    await supabase.auth.signOut();
-    setUser(null);
+    try {
+      await supabase.auth.signOut();
+      setUser(null);
+      setError(null);
+    } catch (error) {
+      console.error('❌ Erro ao fazer logout:', error);
+      // Mesmo com erro, limpar o estado local
+      setUser(null);
+      setError(null);
+    }
   };
 
   const isAdmin = () => user?.profile?.role === 'admin';

@@ -184,44 +184,11 @@ function App() {
   // Loading state
   if (loading) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 flex items-center justify-center">
-        <div className="bg-white rounded-xl shadow-xl p-8 max-w-md text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
-          <h2 className="text-xl font-semibold text-gray-800 mb-2">Carregando...</h2>
-          <p className="text-gray-600 text-sm">Inicializando aplicação</p>
-        </div>
-      </div>
-    );
-  }
-
-  // Error state - Supabase não configurado
-  if (error) {
-    return (
       <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 flex items-center justify-center p-4">
         <div className="bg-white rounded-xl shadow-xl p-8 max-w-md text-center">
-          <div className="text-red-500 text-6xl mb-4">⚠️</div>
-          <h1 className="text-2xl font-bold text-gray-800 mb-4">Erro na Aplicação</h1>
-          <p className="text-gray-600 mb-4">
-            Problema na configuração do banco de dados. Vamos tentar resolver automaticamente.
-          </p>
-          <div className="mt-4 p-3 bg-red-50 border border-red-200 rounded-lg">
-            <p className="text-red-700 text-sm font-medium">Erro técnico:</p>
-            <p className="text-red-600 text-xs mt-1">{error}</p>
-          </div>
-          <div className="text-left bg-gray-50 p-4 rounded-lg text-sm mt-4">
-            <p className="font-semibold mb-2">Possíveis soluções:</p>
-            <ol className="list-decimal list-inside space-y-1 text-gray-700">
-              <li>Clique em "Tentar Novamente" para recriar a estrutura</li>
-              <li>Verifique se o Supabase está online</li>
-              <li>Confirme se as permissões estão corretas</li>
-            </ol>
-          </div>
-          <button
-            onClick={() => window.location.reload()}
-            className="mt-4 bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg transition-colors"
-          >
-            Tentar Novamente
-          </button>
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
+          <h2 className="text-xl font-semibold text-gray-800 mb-2">Verificando autenticação...</h2>
+          <p className="text-gray-600 text-sm">Aguarde um momento</p>
         </div>
       </div>
     );
