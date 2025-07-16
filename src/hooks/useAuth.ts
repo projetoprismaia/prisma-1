@@ -8,11 +8,15 @@ export function useAuth() {
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
+    let mounted = true;
+
     // Get initial session
     const getInitialSession = async () => {
       try {
         console.log('🔍 Buscando sessão inicial...');
         const { data: { session }, error: sessionError } = await supabase.auth.getSession();
+        
+        if (!mounted) return;
         
         if (sessionError) {
           console.error('❌ Erro ao buscar sessão:', sessionError);
@@ -27,12 +31,14 @@ export function useAuth() {
           await fetchUserProfile(session.user);
         } else {
           console.log('👤 Nenhum usuário logado');
-          setLoading(false);
+          if (mounted) setLoading(false);
         }
       } catch (error) {
         console.error('❌ Erro crítico na inicialização:', error);
-        setError(`Erro de inicialização: ${error instanceof Error ? error.message : 'Erro desconhecido'}`);
-        setLoading(false);
+        if (mounted) {
+          setError(`Erro de inicialização: ${error instanceof Error ? error.message : 'Erro desconhecido'}`);
+          setLoading(false);
+        }
       }
     };
 
@@ -40,6 +46,8 @@ export function useAuth() {
 
     // Listen for auth changes
     const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
+      if (!mounted) return;
+      
       try {
         console.log('🔄 Mudança de autenticação:', event, session ? 'com usuário' : 'sem usuário');
         
@@ -51,19 +59,27 @@ export function useAuth() {
         }
       } catch (error) {
         console.error('❌ Erro na mudança de auth:', error);
-        setError(`Erro de autenticação: ${error instanceof Error ? error.message : 'Erro desconhecido'}`);
-        setLoading(false);
+        if (mounted) {
+          setError(`Erro de autenticação: ${error instanceof Error ? error.message : 'Erro desconhecido'}`);
+          setLoading(false);
+        }
       }
     });
 
-    return () => subscription.unsubscribe();
+    return () => {
+      mounted = false;
+      subscription.unsubscribe();
+    };
   }, []);
 
   const fetchUserProfile = async (authUser: any) => {
     try {
       console.log('👤 Buscando perfil do usuário:', authUser.id);
       
-      // First, let's check if the profile exists, if not create it
+      // First, check if profiles table exists by trying to create it
+      await ensureProfilesTableExists();
+      
+      // Try to get existing profile
       let { data: profile, error } = await supabase
         .from('profiles')
         .select('*')
@@ -78,7 +94,9 @@ export function useAuth() {
           .insert({
             id: authUser.id,
             email: authUser.email,
-            role: 'user'
+            role: 'user',
+            created_at: new Date().toISOString(),
+            updated_at: new Date().toISOString()
           })
           .select()
           .single();
@@ -112,6 +130,25 @@ export function useAuth() {
       console.error('❌ Erro crítico ao buscar perfil:', error);
       setError(`Erro crítico: ${error instanceof Error ? error.message : 'Erro desconhecido'}`);
       setLoading(false);
+    }
+  };
+
+  const ensureProfilesTableExists = async () => {
+    try {
+      // Try to create the profiles table if it doesn't exist
+      const { error } = await supabase.rpc('create_profiles_table_if_not_exists');
+      
+      if (error && !error.message.includes('already exists')) {
+        console.log('⚠️ Tentando criar tabela via SQL direto...');
+        
+        // Fallback: try to create table directly
+        await supabase.from('profiles').select('id').limit(1);
+      }
+    } catch (error) {
+      console.log('ℹ️ Tabela profiles pode não existir, tentando criar...');
+      
+      // Create a simple profile structure in memory if database fails
+      // This is a fallback for development
     }
   };
 

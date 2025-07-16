@@ -202,7 +202,7 @@ function App() {
           <div className="text-red-500 text-6xl mb-4">⚠️</div>
           <h1 className="text-2xl font-bold text-gray-800 mb-4">Erro na Aplicação</h1>
           <p className="text-gray-600 mb-4">
-            Ocorreu um erro ao inicializar a aplicação. Verifique os detalhes abaixo.
+            Problema na configuração do banco de dados. Vamos tentar resolver automaticamente.
           </p>
           <div className="mt-4 p-3 bg-red-50 border border-red-200 rounded-lg">
             <p className="text-red-700 text-sm font-medium">Erro técnico:</p>
@@ -211,9 +211,9 @@ function App() {
           <div className="text-left bg-gray-50 p-4 rounded-lg text-sm mt-4">
             <p className="font-semibold mb-2">Possíveis soluções:</p>
             <ol className="list-decimal list-inside space-y-1 text-gray-700">
-              <li>Verifique se o Supabase está configurado corretamente</li>
-              <li>Confirme se as migrações do banco foram aplicadas</li>
-              <li>Verifique as políticas RLS no Supabase</li>
+              <li>Clique em "Tentar Novamente" para recriar a estrutura</li>
+              <li>Verifique se o Supabase está online</li>
+              <li>Confirme se as permissões estão corretas</li>
             </ol>
           </div>
           <button
