@@ -34,6 +34,31 @@ export default function PatientList({ currentUser, refreshTrigger, onNavigateToS
     }
   }, [refreshTrigger]);
 
+  // 🔧 CORREÇÃO: Recarregar dados quando a aba ganhar foco
+  useEffect(() => {
+    const handleFocus = () => {
+      console.log('Página ganhou foco, recarregando dados...');
+      fetchPatients();
+    };
+
+    const handleVisibilityChange = () => {
+      if (!document.hidden) {
+        console.log('Página ficou visível, recarregando dados...');
+        fetchPatients();
+      }
+    };
+
+    // Escuta quando a janela/aba ganha foco
+    window.addEventListener('focus', handleFocus);
+    // Escuta quando a aba fica visível (mudança de aba)
+    document.addEventListener('visibilitychange', handleVisibilityChange);
+
+    return () => {
+      window.removeEventListener('focus', handleFocus);
+      document.removeEventListener('visibilitychange', handleVisibilityChange);
+    };
+  }, []);
+
   const fetchPatients = async () => {
     try {
       setLoading(true);
@@ -47,7 +72,12 @@ export default function PatientList({ currentUser, refreshTrigger, onNavigateToS
       if (error) throw error;
       const patients = data || [];
       setPatients(patients);
+      
+      // 🔧 CORREÇÃO: Log para debug
+      console.log('Dados recarregados:', patients.length, 'pacientes encontrados');
     } catch (error) {
+      console.error('Erro ao carregar pacientes:', error);
+      showError('Erro ao Carregar', 'Não foi possível carregar os pacientes');
     } finally {
       setLoading(false);
     }
