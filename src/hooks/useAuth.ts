@@ -16,6 +16,7 @@ export function useAuth() {
         if (key.startsWith('sb-') || key.includes('supabase')) {
           localStorage.removeItem(key);
           console.log('🗑️ [clearAllSessions] Removido do localStorage:', key);
+        }
       });
 
       const sessionKeys = Object.keys(sessionStorage);
@@ -23,13 +24,16 @@ export function useAuth() {
         if (key.startsWith('sb-') || key.includes('supabase')) {
           sessionStorage.removeItem(key);
           console.log('🗑️ [clearAllSessions] Removido do sessionStorage:', key);
+        }
       });
 
       const { error } = await supabase.auth.signOut();
       if (error) {
         console.error('⚠️ [clearAllSessions] Erro no signOut do Supabase:', error);
-      
+      }
+    } catch (error) {
       console.error('❌ [clearAllSessions] Erro ao limpar sessões:', error);
+    }
   };
 
   useEffect(() => {
