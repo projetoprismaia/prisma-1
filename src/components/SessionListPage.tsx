@@ -22,7 +22,6 @@ const log = (message: string, data?: any) => {
   }
 };
 
-export default function SessionListPage({ currentUser, initialPatientFilter, onViewSession, onStartNewConsultation }: SessionListPageProps) {
 export default function SessionListPage({ currentUser, refreshTrigger, initialPatientFilter, onViewSession, onStartNewConsultation }: SessionListPageProps) {
   const [sessions, setSessions] = useState<Session[]>([]);
   const [patients, setPatients] = useState<Patient[]>([]);
