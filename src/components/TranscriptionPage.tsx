@@ -4,6 +4,7 @@ import { supabase } from '../lib/supabase';
 import { Patient } from '../types/patient';
 import { AuthUser } from '../types/user';
 import { useNotification } from '../hooks/useNotification';
+import { formatDateTimeShortToDDMMAAAA } from '../utils/dateFormatter';
 
 interface TranscriptionPageProps {
   currentUser: AuthUser;
@@ -35,6 +36,21 @@ export default function TranscriptionPage({ currentUser, onBack }: Transcription
   const streamRef = useRef<MediaStream | null>(null);
   const intervalRef = useRef<NodeJS.Timeout | null>(null);
   const recognitionRef = useRef<any>(null);
+
+  // Auto-generate session title when patient is selected
+  useEffect(() => {
+    if (selectedPatient) {
+      const selectedPatientData = patients.find(p => p.id === selectedPatient);
+      if (selectedPatientData) {
+        const now = new Date();
+        const formattedDateTime = formatDateTimeShortToDDMMAAAA(now);
+        const autoTitle = `${selectedPatientData.name} - ${formattedDateTime}`;
+        setSessionTitle(autoTitle);
+      }
+    } else {
+      setSessionTitle('');
+    }
+  }, [selectedPatient, patients]);
 
   useEffect(() => {
     fetchPatients();
@@ -152,8 +168,8 @@ export default function TranscriptionPage({ currentUser, onBack }: Transcription
 
   const startRecording = async () => {
     try {
-      if (!selectedPatient || !selectedDevice || !sessionTitle.trim()) {
-        showError('Campos Obrigatórios', 'Selecione um paciente, microfone e insira um título para a sessão.');
+      if (!selectedPatient || !selectedDevice) {
+        showError('Campos Obrigatórios', 'Selecione um paciente e um microfone para iniciar a sessão.');
         return;
       }
 
@@ -377,15 +393,16 @@ export default function TranscriptionPage({ currentUser, onBack }: Transcription
           {/* Session Title */}
           <div className="mt-6">
             <label className="block text-sm font-medium text-gray-700 mb-2">
-              Título da Sessão *
+              Título da Sessão
             </label>
-            <input
-              type="text"
-              value={sessionTitle}
-              onChange={(e) => setSessionTitle(e.target.value)}
-              placeholder="Ex: Consulta de acompanhamento - 17/01/aaaa"
-              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
-            />
+            <div className="w-full px-4 py-2 border border-gray-200 rounded-lg bg-gray-50">
+              <p className="text-gray-800 font-medium">
+                {sessionTitle || 'Selecione um paciente para gerar o título automaticamente'}
+              </p>
+            </div>
+            <p className="text-xs text-gray-500 mt-1">
+              Título gerado automaticamente com nome do paciente e data/hora
+            </p>
           </div>
 
           {/* Start Button */}
