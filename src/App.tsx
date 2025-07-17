@@ -157,8 +157,7 @@ function App() {
               currentUser={user}
               onBack={navigateToSessions}
             />
-          ) : activeRecordingSession ? (
-          showAdminPanel && isAdmin() ? (
+          ) : showAdminPanel && isAdmin() ? (
             <AdminPanel currentUser={user} />
           ) : showPatientPanel && !isAdmin() ? (
             <PatientList 
