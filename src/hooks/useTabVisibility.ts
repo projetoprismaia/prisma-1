@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 
 interface UseTabVisibilityReturn {
   isTabVisible: boolean;
@@ -9,24 +9,31 @@ interface UseTabVisibilityReturn {
 export function useTabVisibility(): UseTabVisibilityReturn {
   const [isTabVisible, setIsTabVisible] = useState(!document.hidden);
   const [wasTabHidden, setWasTabHidden] = useState(false);
-  const callbacksRef = useRef<(() => void)[]>([]);
+  const [visibilityCallbacks, setVisibilityCallbacks] = useState<(() => void)[]>([]);
 
   useEffect(() => {
     const handleVisibilityChange = () => {
       const isVisible = !document.hidden;
       
+      console.log('🔍 [useTabVisibility] Mudança de visibilidade:', {
+        isVisible,
+        previousState: isTabVisible,
+      });
+      
       if (!isTabVisible && isVisible) {
+        console.log('👁️ [useTabVisibility] Aba ficou visível novamente');
         setWasTabHidden(true);
         
         // Executar todos os callbacks registrados
-        callbacksRef.current.forEach(callback => {
+        visibilityCallbacks.forEach(callback => {
           try {
             callback();
           } catch (error) {
-            console.error('Erro no callback de visibilidade:', error);
+            console.error('❌ [useTabVisibility] Erro ao executar callback:', error);
           }
         });
       } else if (isTabVisible && !isVisible) {
+        console.log('🙈 [useTabVisibility] Aba ficou oculta');
         setWasTabHidden(false);
       }
       setIsTabVisible(isVisible);
@@ -56,11 +63,11 @@ export function useTabVisibility(): UseTabVisibilityReturn {
       window.removeEventListener('focus', handleFocus);
       window.removeEventListener('blur', handleBlur);
     };
-  }, [isTabVisible]); // Apenas isTabVisible como dependência
+  }, [isTabVisible, visibilityCallbacks]);
 
-  const onTabVisible = (callback: () => void) => {
-    callbacksRef.current.push(callback);
-  };
+  const onTabVisible = useCallback((callback: () => void) => {
+    setVisibilityCallbacks(prev => [...prev, callback]);
+  }, []);
 
   // Limpar flag após um tempo
   useEffect(() => {

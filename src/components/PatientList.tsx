@@ -23,28 +23,44 @@ export default function PatientList({ currentUser, refreshTrigger, onNavigateToS
   const [formLoading, setFormLoading] = useState(false);
   const [deleteConfirm, setDeleteConfirm] = useState<string | null>(null);
 
-  console.log('🔍 PATIENT LIST:', {
-    userId: currentUser.id,
-    userEmail: currentUser.email,
-    refreshTrigger
-  });
-
   useEffect(() => {
-    console.log('🔍 PATIENT LIST: Initial fetch');
     fetchPatients();
   }, []);
 
   // Recarregar dados quando refreshTrigger mudar
   useEffect(() => {
     if (refreshTrigger > 0) {
-      console.log('🔍 PATIENT LIST: Refresh trigger =', refreshTrigger);
       fetchPatients();
     }
   }, [refreshTrigger]);
 
+  // 🔧 CORREÇÃO: Recarregar dados quando a aba ganhar foco
+  useEffect(() => {
+    const handleFocus = () => {
+      console.log('Página ganhou foco, recarregando dados...');
+      fetchPatients();
+    };
+
+    const handleVisibilityChange = () => {
+      if (!document.hidden) {
+        console.log('Página ficou visível, recarregando dados...');
+        fetchPatients();
+      }
+    };
+
+    // Escuta quando a janela/aba ganha foco
+    window.addEventListener('focus', handleFocus);
+    // Escuta quando a aba fica visível (mudança de aba)
+    document.addEventListener('visibilitychange', handleVisibilityChange);
+
+    return () => {
+      window.removeEventListener('focus', handleFocus);
+      document.removeEventListener('visibilitychange', handleVisibilityChange);
+    };
+  }, []);
+
   const fetchPatients = async () => {
     try {
-      console.log('🔍 FETCHING PATIENTS for user:', currentUser.id);
       setLoading(true);
       
       const { data, error } = await supabase
@@ -53,19 +69,14 @@ export default function PatientList({ currentUser, refreshTrigger, onNavigateToS
         .eq('user_id', currentUser.id)
         .order('created_at', { ascending: false });
 
-      console.log('🔍 PATIENTS QUERY RESULT:', {
-        hasData: !!data,
-        count: data?.length,
-        error: error?.message
-      });
-
       if (error) throw error;
       const patients = data || [];
-      console.log('✅ PATIENTS LOADED:', patients.length);
       setPatients(patients);
       
+      // 🔧 CORREÇÃO: Log para debug
+      console.log('Dados recarregados:', patients.length, 'pacientes encontrados');
     } catch (error) {
-      console.error('❌ FETCH PATIENTS ERROR:', error);
+      console.error('Erro ao carregar pacientes:', error);
       showError('Erro ao Carregar', 'Não foi possível carregar os pacientes');
     } finally {
       setLoading(false);
@@ -128,6 +139,7 @@ export default function PatientList({ currentUser, refreshTrigger, onNavigateToS
           : 'O novo paciente foi adicionado com sucesso.'
       );
     } catch (error: any) {
+      console.error('Erro ao salvar paciente:', error);
       showError(
         'Erro ao Salvar',
         `Não foi possível salvar o paciente: ${error.message}`
@@ -155,6 +167,7 @@ export default function PatientList({ currentUser, refreshTrigger, onNavigateToS
         'O paciente foi removido com sucesso do sistema.'
       );
     } catch (error: any) {
+      console.error('Erro ao deletar paciente:', error);
       showError(
         'Erro ao Deletar',
         `Não foi possível deletar o paciente: ${error.message}`

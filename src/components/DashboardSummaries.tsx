@@ -34,60 +34,59 @@ export default function DashboardSummaries({
   onNavigateToAdmin,
   onStartNewConsultation
 }: DashboardSummariesProps) {
-  console.log('🔍 DASHBOARD SUMMARIES:', {
-    userId: currentUser.id,
-    userEmail: currentUser.email,
-    userRole: currentUser.profile.role,
-    isAdmin,
-    refreshTrigger
+  const [data, setData] = useState<DashboardData>({
+    totalPatients: 0,
+    totalSessions: 0,
+    totalUsers: 0,
+    recentSessions: []
   });
+  const [loading, setLoading] = useState(true);
+
+  const isAdmin = currentUser.profile.role === 'admin';
+
+  useEffect(() => {
+    fetchDashboardData();
+  }, [currentUser]);
+
+  // Recarregar dados quando refreshTrigger mudar
+  useEffect(() => {
+    if (refreshTrigger > 0) {
+      fetchDashboardData();
+    }
+  }, [refreshTrigger]);
 
   const fetchDashboardData = async () => {
     try {
-      console.log('🔍 FETCHING DASHBOARD DATA...');
       setLoading(true);
       
       if (isAdmin) {
-        console.log('🔍 FETCHING ADMIN DATA...');
         await fetchAdminData();
       } else {
-        console.log('🔍 FETCHING USER DATA...');
         await fetchUserData();
       }
     } catch (error) {
-      console.error('❌ DASHBOARD DATA ERROR:', error);
-      // Silenciar erro - dados serão mostrados como 0
+      console.error('Erro ao buscar dados do dashboard:', error);
     } finally {
       setLoading(false);
     }
   };
 
   const fetchAdminData = async () => {
-    console.log('🔍 ADMIN DATA: Fetching users count...');
     // Buscar total de usuários
     const { count: usersCount } = await supabase
       .from('profiles')
       .select('*', { count: 'exact', head: true });
 
-    console.log('🔍 ADMIN DATA: Users count =', usersCount);
-
-    console.log('🔍 ADMIN DATA: Fetching patients count...');
     // Buscar total de pacientes
     const { count: patientsCount } = await supabase
       .from('patients')
       .select('*', { count: 'exact', head: true });
 
-    console.log('🔍 ADMIN DATA: Patients count =', patientsCount);
-
-    console.log('🔍 ADMIN DATA: Fetching sessions...');
     // Buscar sessões por status
     const { data: sessions } = await supabase
       .from('sessions')
       .select('id');
 
-    console.log('🔍 ADMIN DATA: Sessions count =', sessions?.length);
-
-    console.log('🔍 ADMIN DATA: Fetching recent sessions...');
     // Buscar sessões recentes
     const { data: recentSessions } = await supabase
       .from('sessions')
@@ -100,8 +99,6 @@ export default function DashboardSummaries({
       `)
       .order('created_at', { ascending: false })
       .limit(5);
-
-    console.log('🔍 ADMIN DATA: Recent sessions =', recentSessions?.length);
 
     const dashboardData = {
       totalUsers: usersCount || 0,
@@ -116,30 +113,22 @@ export default function DashboardSummaries({
       })) || []
     };
     
-    console.log('🔍 ADMIN DATA: Final data =', dashboardData);
     setData(dashboardData);
   };
 
   const fetchUserData = async () => {
-    console.log('🔍 USER DATA: Fetching patients for user', currentUser.id);
     // Buscar pacientes do usuário
     const { count: patientsCount } = await supabase
       .from('patients')
       .select('*', { count: 'exact', head: true })
       .eq('user_id', currentUser.id);
 
-    console.log('🔍 USER DATA: Patients count =', patientsCount);
-
-    console.log('🔍 USER DATA: Fetching sessions for user', currentUser.id);
     // Buscar sessões do usuário por status
     const { data: sessions } = await supabase
       .from('sessions')
       .select('id')
       .eq('user_id', currentUser.id);
 
-    console.log('🔍 USER DATA: Sessions count =', sessions?.length);
-
-    console.log('🔍 USER DATA: Fetching recent sessions for user', currentUser.id);
     // Buscar sessões recentes do usuário
     const { data: recentSessions } = await supabase
       .from('sessions')
@@ -154,8 +143,6 @@ export default function DashboardSummaries({
       .order('created_at', { ascending: false })
       .limit(5);
 
-    console.log('🔍 USER DATA: Recent sessions =', recentSessions?.length);
-
     const dashboardData = {
       totalPatients: patientsCount || 0,
       totalSessions: sessions?.length || 0,
@@ -168,7 +155,6 @@ export default function DashboardSummaries({
       })) || []
     };
     
-    console.log('🔍 USER DATA: Final data =', dashboardData);
     setData(dashboardData);
   };
 

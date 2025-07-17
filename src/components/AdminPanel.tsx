@@ -14,6 +14,28 @@ interface AdminPanelProps {
 export default function AdminPanel({ currentUser, refreshTrigger }: AdminPanelProps) {
   const [users, setUsers] = useState<UserProfile[]>([]);
   const { showSuccess, showError, showWarning } = useNotification();
+  const [patientCounts, setPatientCounts] = useState<Record<string, number>>({});
+  const [loading, setLoading] = useState(true);
+  const [searchTerm, setSearchTerm] = useState('');
+  const [roleFilter, setRoleFilter] = useState<'all' | UserRole>('all');
+  const [updating, setUpdating] = useState<string | null>(null);
+  const [showUserFormModal, setShowUserFormModal] = useState(false);
+  const [editingUser, setEditingUser] = useState<UserProfile | null>(null);
+  const [formLoading, setFormLoading] = useState(false);
+  const [deleteConfirm, setDeleteConfirm] = useState<string | null>(null);
+
+  useEffect(() => {
+    fetchUsers();
+  }, []);
+
+  // Recarregar dados quando refreshTrigger mudar
+  useEffect(() => {
+    if (refreshTrigger && refreshTrigger > 0) {
+      console.log('🔄 [AdminPanel] Recarregando dados devido ao refreshTrigger:', refreshTrigger);
+      fetchUsers();
+    }
+  }, [refreshTrigger]);
+
   const fetchUsers = async () => {
     try {
       setLoading(true);
@@ -102,6 +124,7 @@ export default function AdminPanel({ currentUser, refreshTrigger }: AdminPanelPr
           patientsData?.forEach(patient => {
             if (patient.user_id && counts.hasOwnProperty(patient.user_id)) {
               counts[patient.user_id]++;
+            } else if (patient.user_id) {
             }
           });
           
@@ -139,6 +162,7 @@ export default function AdminPanel({ currentUser, refreshTrigger }: AdminPanelPr
         user.id === userId ? { ...user, role: newRole } : user
       ));
     } catch (error) {
+      console.error('Erro ao atualizar role:', error);
       showError(
         'Erro ao Atualizar',
         'Não foi possível atualizar o role do usuário. Tente novamente.'

@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useAuth } from './hooks/useAuth';
+import { useTabVisibility } from './hooks/useTabVisibility';
 import OrganicBackground from './components/OrganicBackground';
 import AuthForm from './components/AuthForm';
 import FloatingMenu from './components/FloatingMenu';
@@ -11,11 +12,11 @@ import ConsultationPage from './components/ConsultationPage';
 import DashboardSummaries from './components/DashboardSummaries';
 import NotificationModal from './components/NotificationModal';
 import { useNotification } from './hooks/useNotification';
-import { testSupabaseConnection } from './lib/testConnection';
 
 function App() {
   const { user, loading, error, signOut, isAdmin, refreshProfile } = useAuth();
   const { notification, hideNotification } = useNotification();
+  const { isTabVisible, wasTabHidden, onTabVisible } = useTabVisibility();
   const [showAdminPanel, setShowAdminPanel] = useState(false);
   const [showPatientPanel, setShowPatientPanel] = useState(false);
   const [showSessionsPanel, setShowSessionsPanel] = useState(false);
@@ -24,41 +25,34 @@ function App() {
   const [showConsultationPage, setShowConsultationPage] = useState(false);
   const [refreshTrigger, setRefreshTrigger] = useState(0);
 
-  // 🔍 TESTE DE CONEXÃO NA INICIALIZAÇÃO
+  // Gerenciar recarregamento de dados quando aba volta a ficar visível
   useEffect(() => {
-    testSupabaseConnection();
-  }, []);
+    const handleTabVisible = async () => {
+      if (!user) return;
+      
+      
+      try {
+        // Pequeno delay para evitar múltiplas requisições
+        await new Promise(resolve => setTimeout(resolve, 500));
+        
+        // Revalidar sessão do usuário
+        await refreshProfile();
+        // Disparar recarregamento de dados nos componentes
+        setRefreshTrigger(prev => prev + 1);
+      } catch (error) {
+      }
+    };
 
-  console.log('🔍 APP STATE:', {
-    hasUser: !!user,
-    userEmail: user?.email,
-    loading,
-    error,
-    showAdminPanel,
-    showPatientPanel,
-    showSessionsPanel,
-    showConsultationPage,
-    viewingSessionId
-  });
+    // Registrar callback para quando aba voltar a ficar visível
+    if (user) {
+      onTabVisible(handleTabVisible);
+    }
+  }, [user, refreshProfile, onTabVisible]);
 
-  // Recarregar dados periodicamente (simplificado)
-  useEffect(() => {
-    if (!user) return;
-    
-    console.log('🔍 SETTING UP REFRESH INTERVAL');
-    const interval = setInterval(() => {
-      console.log('🔄 AUTO REFRESH TRIGGER');
-      setRefreshTrigger(prev => prev + 1);
-    }, 30000); // A cada 30 segundos
-    
-    return () => clearInterval(interval);
-  }, [user]);
-
+  
   const handleSignOut = () => {
-    console.log('🚪 HANDLE SIGN OUT');
     signOut().then(() => {
       // Forçar limpeza adicional do estado local após logout
-      console.log('🧹 CLEANING UP STATE AFTER LOGOUT');
       setShowAdminPanel(false);
       setShowPatientPanel(false);
       setShowSessionsPanel(false);
@@ -68,7 +62,6 @@ function App() {
   };
 
   const navigateToHome = () => {
-    console.log('🏠 NAVIGATE TO HOME');
     setShowAdminPanel(false);
     setShowPatientPanel(false);
     setShowSessionsPanel(false);
@@ -186,7 +179,7 @@ function App() {
           {showConsultationPage ? (
             <ConsultationPage
               currentUser={user}
-              isTabVisible={true}
+              isTabVisible={isTabVisible}
               onBack={navigateToSessions}
             />
           ) : viewingSessionId ? (

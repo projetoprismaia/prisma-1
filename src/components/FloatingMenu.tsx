@@ -23,17 +23,14 @@ export default function FloatingMenu({
   onSignOut,
   isAdmin
 }: FloatingMenuProps) {
-  console.log('🔍 FLOATING MENU:', {
-    userEmail: currentUser.email,
-    activeSection,
-    isAdmin
-  });
-
   return (
     <div className="floating-menu">
       <div className="menu-items">
         <button
           onClick={onNavigateToHome}
+          onClick={() => {
+            onNavigateToHome();
+          }}
           className={`menu-item ${activeSection === 'dashboard' ? 'active' : ''}`}
         >
           <BarChart3 className="h-4 w-4 mr-2" />
@@ -42,7 +39,9 @@ export default function FloatingMenu({
         
         {!isAdmin && (
           <button
-            onClick={onNavigateToPatients}
+            onClick={() => {
+              onNavigateToPatients();
+            }}
             className={`menu-item ${activeSection === 'patients' ? 'active' : ''}`}
           >
             <Users className="h-4 w-4 mr-2" />
@@ -51,7 +50,9 @@ export default function FloatingMenu({
         )}
         
         <button
-          onClick={onNavigateToSessions}
+          onClick={() => {
+            onNavigateToSessions();
+          }}
           className={`menu-item ${activeSection === 'sessions' ? 'active' : ''}`}
         >
           <FileText className="h-4 w-4 mr-2" />
@@ -60,7 +61,9 @@ export default function FloatingMenu({
         
         {isAdmin && (
           <button
-            onClick={onNavigateToAdmin}
+            onClick={() => {
+              onNavigateToAdmin();
+            }}
             className={`menu-item ${activeSection === 'admin' ? 'active' : ''}`}
           >
             <Settings className="h-4 w-4 mr-2" />
@@ -76,7 +79,9 @@ export default function FloatingMenu({
         </span>
         
         <button
-          onClick={onSignOut}
+          onClick={() => {
+            onSignOut();
+          }}
           className="menu-item logout"
         >
           <LogOut className="h-4 w-4 mr-2" />
