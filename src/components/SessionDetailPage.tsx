@@ -120,21 +120,6 @@ export default function SessionDetailPage({ sessionId, currentUser, onBack }: Se
     }
   };
 
-  const formatDateTimeToDDMMAAAA = (dateInput: string | Date): string => {
-    try {
-      const date = typeof dateInput === 'string' ? new Date(dateInput) : dateInput;
-      
-      if (isNaN(date.getTime())) {
-        return 'Data inválida';
-      }
-      
-      return date.toLocaleString('pt-BR');
-    } catch (error) {
-      console.error('Erro ao formatar data:', error);
-      return 'Data inválida';
-    }
-  };
-
   if (loading) {
     logger.debug('UI', 'SessionDetailPage mostrando loading');
     return (

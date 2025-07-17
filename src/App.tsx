@@ -45,26 +45,6 @@ function App() {
     });
   }, [user, loading]);
   const handleSignOut = () => {
-    try {
-      logger.info('NAV', 'Usuário clicou em sair', { userId: user?.id });
-    } catch (e) {
-      console.log('Logger error:', e);
-    }
-    signOut().then(() => {
-      // Forçar limpeza adicional do estado local após logout
-      setShowAdminPanel(false);
-      setShowPatientPanel(false);
-      setShowSessionsPanel(false);
-      setShowTranscriptionPage(false);
-      setViewingSessionId(null);
-      try {
-        logger.info('NAV', 'Estado local limpo após logout');
-      } catch (e) {
-        console.log('Logger error:', e);
-      }
-    });
-  };
-
   // Atalho de teclado para abrir debug panel
   React.useEffect(() => {
     const handleKeyDown = (event: KeyboardEvent) => {
@@ -72,41 +52,40 @@ function App() {
       if (event.ctrlKey && event.shiftKey && event.key === 'D') {
         event.preventDefault();
         setShowDebugPanel(true);
-        try {
-          logger.info('UI', 'Debug panel aberto via atalho de teclado');
-        } catch (e) {
-          console.log('Logger error:', e);
-        }
+        logger.info('UI', 'Debug panel aberto via atalho de teclado');
       }
     };
 
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
   }, []);
+    logger.info('NAV', 'Usuário clicou em sair', { userId: user?.id });
+    signOut().then(() => {
+      // Forçar limpeza adicional do estado local após logout
+      setShowAdminPanel(false);
+      setShowPatientPanel(false);
+      setShowSessionsPanel(false);
+      setShowTranscriptionPage(false);
+      setViewingSessionId(null);
+      logger.info('NAV', 'Estado local limpo após logout');
+    });
+  };
 
   const navigateToHome = () => {
-    try {
-      logger.navigationEvent(getCurrentSection(), 'dashboard', user?.id);
-      logger.debug('NAV', 'Navegando para home - estado atual', {
-        user: user ? user.id : 'NO_USER',
-        showAdminPanel,
-        showPatientPanel,
-        showSessionsPanel
-      });
-    } catch (e) {
-      console.log('Logger error:', e);
-    }
+    logger.navigationEvent(getCurrentSection(), 'dashboard', user?.id);
+    logger.debug('NAV', 'Navegando para home - estado atual', {
+      user: user ? user.id : 'NO_USER',
+      showAdminPanel,
+      showPatientPanel,
+      showSessionsPanel
+    });
     setShowAdminPanel(false);
     setShowPatientPanel(false);
     setShowSessionsPanel(false);
     setShowTranscriptionPage(false);
     setSelectedPatientFilter(null);
     setViewingSessionId(null);
-    try {
-      logger.info('NAV', 'Navegação para home concluída');
-    } catch (e) {
-      console.log('Logger error:', e);
-    }
+    logger.info('NAV', 'Navegação para home concluída');
   };
 
   const navigateToAdmin = () => {
