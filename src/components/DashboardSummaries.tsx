@@ -9,6 +9,7 @@ interface DashboardSummariesProps {
   onNavigateToPatients: () => void;
   onNavigateToSessions: () => void;
   onNavigateToAdmin?: () => void;
+  onStartNewTranscription: () => void;
 }
 
 interface DashboardData {
@@ -28,7 +29,8 @@ export default function DashboardSummaries({
   currentUser, 
   onNavigateToPatients, 
   onNavigateToSessions,
-  onNavigateToAdmin
+  onNavigateToAdmin,
+  onStartNewTranscription
 }: DashboardSummariesProps) {
   const [data, setData] = useState<DashboardData>({
     totalPatients: 0,
@@ -199,7 +201,7 @@ export default function DashboardSummaries({
       </div>
 
       {/* Cards de Sumário */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
         {/* Total de Usuários (apenas para admin) */}
         {isAdmin && (
           <div 
@@ -244,6 +246,25 @@ export default function DashboardSummaries({
           </div>
         </div>
 
+        {/* Nova Transcrição */}
+        <div 
+          onClick={onStartNewTranscription}
+          className="glass-card rounded-xl shadow-lg p-6 hover:shadow-xl transition-all duration-200 cursor-pointer hover:scale-105 border-2 border-dashed border-orange-300 hover:border-orange-400"
+        >
+          <div className="flex items-center justify-between">
+            <div>
+              <p className="text-sm font-medium text-orange-600 mb-1">Nova Transcrição</p>
+              <p className="text-lg font-bold text-gray-900">Iniciar Consulta</p>
+            </div>
+            <div className="bg-orange-100 p-3 rounded-full">
+              <Mic className="h-6 w-6 text-orange-600" />
+            </div>
+          </div>
+          <div className="mt-4 flex items-center text-sm text-orange-600">
+            <span className="animate-pulse">●</span>
+            <span className="ml-1">Começar agora</span>
+          </div>
+        </div>
         {/* Total de Sessões */}
         <div 
           onClick={onNavigateToSessions}

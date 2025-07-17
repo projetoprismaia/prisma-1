@@ -203,6 +203,7 @@ function App() {
               onNavigateToPatients={navigateToPatients}
               onNavigateToSessions={navigateToSessions}
               onNavigateToAdmin={isAdmin() ? navigateToAdmin : undefined}
+              onStartNewTranscription={navigateToTranscription}
             />
           )}
         </div>
