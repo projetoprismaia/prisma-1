@@ -967,432 +967,397 @@ export default function RecordingPage({
   }
 
   return (
-    <div className="min-h-screen max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-      {/* Page Header with Recording Info */}
-      <div className="glass-card rounded-xl shadow-lg p-6 mb-8">
-        <div className="flex items-center justify-between mb-4">
-          <button
-            onClick={handleCancel}
-            className="flex items-center space-x-2 text-gray-600 hover:text-gray-900 transition-colors"
-          >
-            <ArrowLeft className="h-5 w-5" />
-            <span>Voltar</span>
-          </button>
-          
-          <div className={`px-4 py-2 rounded-full text-sm font-medium flex items-center space-x-2 ${
-            isRecording && !isPaused 
-              ? 'bg-red-100 text-red-800' 
-              : isPaused 
-              ? 'bg-yellow-100 text-yellow-800'
-              : hasStarted 
-              ? 'bg-gray-100 text-gray-800'
-              : 'bg-blue-100 text-blue-800'
-          }`}>
-            <div className={`w-2 h-2 rounded-full ${
-              isRecording && !isPaused ? 'bg-red-500 animate-pulse' : 'bg-gray-400'
-            }`}></div>
-            <span>{isRecording && !isPaused ? 'Gravando' : isPaused ? 'Pausado' : hasStarted ? 'Parado' : 'Pronto para Iniciar'}</span>
-          </div>
-        </div>
-        
-        <div className="flex items-center justify-between">
-          <div className="flex items-center space-x-4">
-            <div className="bg-red-600 p-3 rounded-lg">
-              <Mic className="h-6 w-6 text-white" />
-            </div>
-            <div>
-              <h1 className="text-2xl font-bold text-gray-900">Gravação em Andamento</h1>
-              <p className="text-gray-600">{sessionTitle}</p>
-            </div>
-          </div>
-          
-          <div className="text-right">
-            <div className="flex items-center space-x-2 text-gray-600 mb-1">
-              <Clock className="h-4 w-4" />
-              <span className="text-sm">Duração</span>
-            </div>
-            <span className="font-mono font-bold text-2xl text-gray-900">{duration}</span>
-          </div>
-        </div>
-      </div>
-
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-          {/* Main Recording Area */}
-          <div className="lg:col-span-2 space-y-6">
-            {/* Session Info */}
-            <div className="glass-card rounded-xl shadow-lg p-6">
-              <div className="flex items-center space-x-4 mb-4">
-                <div className="bg-blue-100 p-3 rounded-full">
-                  <User className="h-6 w-6 text-blue-600" />
-                </div>
-                <div>
-                  <h2 className="text-lg font-semibold text-gray-900">Sessão Ativa</h2>
-                  <div className="flex items-center space-x-2">
-                    <button
-                      onClick={handleOpenPatientChangeModal}
-                      disabled={isRecording}
-                      className={`text-gray-600 hover:text-blue-600 transition-colors flex items-center space-x-1 ${
-                        isRecording ? 'cursor-not-allowed opacity-50' : 'cursor-pointer'
-                      }`}
-                      title={isRecording ? 'Não é possível alterar durante a gravação' : 'Clique para alterar o paciente'}
-                    >
-                      <span>{getSelectedPatientName()}</span>
-                      {!isRecording && <Edit className="h-3 w-3" />}
-                    </button>
-                  </div>
-                </div>
-              </div>
-              
-              <div className="grid grid-cols-2 gap-4 text-sm">
-                <div>
-                  <span className="text-gray-500">Título:</span>
-                  <p className="font-medium">{sessionTitle}</p>
-                </div>
-                <div>
-                  <span className="text-gray-500">Duração:</span>
-                  <p className="font-medium font-mono">{duration}</p>
-                </div>
-                <div>
-                  <span className="text-gray-500">Caracteres:</span>
-                  <p className="font-medium">{transcript.length}</p>
-                </div>
-                <div>
-                  <span className="text-gray-500">Início:</span>
-                  <p className="font-medium">
-                    {startTime ? startTime.toLocaleTimeString('pt-BR') : '--:--'}
-                  </p>
-                </div>
-              </div>
-            </div>
-
-            {/* Recording Controls */}
-            <div className="glass-card rounded-xl shadow-lg p-6">
-              <h2 className="text-xl font-semibold text-gray-800 mb-6">Controles de Gravação</h2>
-              
-              <div className="flex items-center justify-center space-x-4 flex-wrap gap-2">
-                {!hasStarted ? (
-                  <button
-                    onClick={startRecording}
-                    disabled={microphonePermission !== 'granted' || !isSupported}
-                    className="bg-green-600 hover:bg-green-700 disabled:bg-gray-400 text-white px-8 py-4 rounded-lg flex items-center space-x-3 transition-colors duration-200 shadow-md text-lg font-medium"
-                  >
-                    <Play className="h-6 w-6" />
-                    <span>Iniciar Gravação</span>
-                  </button>
-                ) : (
-                  <>
-                    {isRecording && !isPaused ? (
-                      <button
-                        onClick={pauseRecording}
-                        className="bg-yellow-600 hover:bg-yellow-700 disabled:bg-gray-400 text-white px-6 py-3 rounded-lg flex items-center space-x-2 transition-colors duration-200 shadow-md"
-                      >
-                        <Pause className="h-5 w-5" />
-                        <span>Pausar</span>
-                      </button>
-                    ) : isPaused ? (
-                      <button
-                        onClick={resumeRecording}
-                        className="bg-green-600 hover:bg-green-700 text-white px-6 py-3 rounded-lg flex items-center space-x-2 transition-colors duration-200 shadow-md"
-                      >
-                        <Play className="h-5 w-5" />
-                        <span>Retomar</span>
-                      </button>
-                    ) : null}
-                    
-                    {hasStarted && (
-                      <button
-                        onClick={stopRecording}
-                        className="bg-red-600 hover:bg-red-700 text-white px-6 py-3 rounded-lg flex items-center space-x-2 transition-colors duration-200 shadow-md"
-                      >
-                        <Square className="h-5 w-5" />
-                        <span>Finalizar</span>
-                      </button>
-                    )}
-                  </>
-                )}
-              </div>
-              
-              {/* Status da gravação */}
-              <div className="mt-4 text-center">
-                {/* Botão de diagnóstico para problemas */}
-                {hasStarted && (!recognitionRef.current || microphonePermission !== 'granted') && (
-                  <div className="mb-4 p-3 bg-yellow-50 border border-yellow-200 rounded-lg">
-                    <p className="text-sm text-yellow-800 mb-2">
-                      ⚠️ Problema detectado na gravação
-                    </p>
-                    <button
-                      onClick={reinitializeRecognition}
-                      className="bg-yellow-600 hover:bg-yellow-700 text-white px-4 py-2 rounded text-sm"
-                    >
-                      🔄 Reativar Gravação
-                    </button>
-                  </div>
-                )}
-                
-                {!hasStarted && microphonePermission === 'granted' && (
-                  <p className="text-sm text-gray-600">
-                    ✅ Tudo pronto! Clique em "Iniciar Gravação" para começar a transcrição.
-                  </p>
-                )}
-                {!hasStarted && microphonePermission !== 'granted' && (
-                  <button
-                    onClick={requestMicrophonePermission}
-                    className="text-sm text-blue-600 hover:text-blue-700 underline"
-                  >
-                    Permitir acesso ao microfone
-                  </button>
-                )}
-              </div>
-            </div>
-
-            {/* Transcript Area */}
-            <div className="glass-card rounded-xl shadow-lg p-6">
-              <div className="flex items-center justify-between mb-4">
-                <h2 className="text-xl font-semibold text-gray-800">Transcrição em Tempo Real</h2>
-                <div className="flex items-center space-x-2">
-                  <div className={`w-3 h-3 rounded-full ${
-                    isRecording && !isPaused ? 'bg-red-500 animate-pulse' : 'bg-gray-400'
-                  }`}></div>
-                  <span className="text-sm text-gray-600">
-                    {isRecording && !isPaused ? 'Ouvindo...' : 'Pausado'}
-                  </span>
-                </div>
-              </div>
-              
-              <textarea
-                value={transcript}
-                onChange={(e) => setTranscript(e.target.value)}
-                placeholder={hasStarted ? "A transcrição aparecerá aqui em tempo real conforme você fala..." : "Clique em 'Iniciar Gravação' para começar a transcrever sua consulta..."}
-                className="w-full h-96 p-4 border border-gray-200 rounded-lg resize-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                style={{ fontFamily: 'monospace' }}
-              />
-              
-              {/* Interim transcript overlay */}
-              {interimTranscript && (
-                <div className="mt-2 p-2 bg-yellow-50 border border-yellow-200 rounded text-sm text-yellow-800">
-                  <span className="font-medium">Ouvindo: </span>
-                  <span className="italic">{interimTranscript}</span>
-                </div>
-              )}
-              
-              <div className="mt-4 flex items-center justify-between text-sm text-gray-500">
-                <span>{transcript.length + interimTranscript.length} caracteres</span>
-                <span>{hasStarted ? 'Auto-save a cada 30 segundos' : 'Pronto para iniciar'}</span>
-              </div>
-            </div>
-          </div>
-
-          {/* Sidebar - Recording Info */}
-          <div className="space-y-6">
-            <div className="glass-card rounded-xl shadow-lg p-6">
-              <h3 className="text-lg font-semibold text-gray-800 mb-4">Informações da Gravação</h3>
-              
-              <div className="space-y-4">
-                <div className="flex items-center space-x-3">
-                  <div className="bg-blue-100 p-2 rounded-full">
-                    <User className="h-4 w-4 text-blue-600" />
-                  </div>
-                  <div>
-                    <p className="text-sm text-gray-600">Paciente</p>
-                    <p className="font-medium">{getSelectedPatientName()}</p>
-                  </div>
-                </div>
-                
-                <div className="flex items-center space-x-3">
-                  <div className="bg-green-100 p-2 rounded-full">
-                    <FileText className="h-4 w-4 text-green-600" />
-                  </div>
-                  <div>
-                    <p className="text-sm text-gray-600">Sessão</p>
-                    <p className="font-medium">{currentSession?.title || sessionTitle}</p>
-                  </div>
-                </div>
-                
-                <div className="flex items-center space-x-3">
-                  <div className="bg-purple-100 p-2 rounded-full">
-                    <Clock className="h-4 w-4 text-purple-600" />
-                  </div>
-                  <div>
-                    <p className="text-sm text-gray-600">Duração</p>
-                    <p className="font-medium font-mono">{duration}</p>
-                  </div>
-                </div>
-              </div>
-            </div>
-
-            <div className="bg-blue-50 rounded-xl p-6">
-              <div className="flex items-center space-x-2 mb-3">
-                <Mic className="h-5 w-5 text-blue-600" />
-                <h3 className="font-semibold text-blue-800">Dicas de Gravação</h3>
-              </div>
-              <ul className="text-sm text-blue-700 space-y-2">
-                <li>• Fale claramente e em ritmo normal</li>
-                <li>• Evite ruídos de fundo</li>
-                <li>• A transcrição é salva automaticamente</li>
-                <li>• Use "Pausar" para interrupções</li>
-                <li>• Permita o acesso ao microfone quando solicitado</li>
-              </ul>
-            </div>
+    <>
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        {/* Page Header with Recording Info */}
+        <div className="glass-card rounded-xl shadow-lg p-6 mb-8">
+          <div className="flex items-center justify-between mb-4">
+            <button
+              onClick={handleCancel}
+              className="flex items-center space-x-2 text-gray-600 hover:text-gray-900 transition-colors"
+            >
+              <ArrowLeft className="h-5 w-5" />
+              <span>Voltar</span>
+            </button>
             
-            {/* Microphone Status */}
-            <div className={`rounded-xl p-4 ${
-              microphonePermission === 'granted' 
-                ? 'bg-green-50 border border-green-200' 
-                : 'bg-red-50 border border-red-200'
+            <div className={`px-4 py-2 rounded-full text-sm font-medium flex items-center space-x-2 ${
+              isRecording && !isPaused 
+                ? 'bg-red-100 text-red-800' 
+                : isPaused 
+                ? 'bg-yellow-100 text-yellow-800'
+                : hasStarted 
+                ? 'bg-gray-100 text-gray-800'
+                : 'bg-blue-100 text-blue-800'
             }`}>
-              <div className="flex items-center space-x-2 mb-2">
-                <Mic className={`h-4 w-4 ${
-                  microphonePermission === 'granted' ? 'text-green-600' : 'text-red-600'
-                }`} />
-                <span className={`text-sm font-medium ${
-                  microphonePermission === 'granted' ? 'text-green-800' : 'text-red-800'
-                }`}>
-                  {isRecording && !isPaused && recognitionRef.current ? 'Ouvindo...' : 
-                   isPaused ? 'Pausado' : 
-                   hasStarted && !recognitionRef.current ? 'Reconexão necessária' :
-                   hasStarted ? 'Parado' : 'Aguardando início'}
-                </span>
-              </div>
-              <p className={`text-sm ${
-                microphonePermission === 'granted' ? 'text-green-700' : 'text-red-700'
-              }`}>
-                {microphonePermission === 'granted' && recognitionRef.current
-                  ? '✅ Microfone autorizado e funcionando'
-                  : microphonePermission === 'granted' && !recognitionRef.current
-                  ? '⚠️ Microfone autorizado, reconectando...'
-                  : '❌ Microfone não autorizado'
-                }
-              </p>
-              
-              {/* Debug info */}
-              {hasStarted && (
-                <div className="mt-2 text-xs text-gray-500">
-                  <p>Estado: {isRecording ? 'Gravando' : 'Parado'} | {isPaused ? 'Pausado' : 'Ativo'}</p>
-                  <p>Recognition: {recognitionRef.current ? 'OK' : 'Desconectado'}</p>
-                  <p>Aba ativa: {document.visibilityState}</p>
-                </div>
-              )}
+              <div className={`w-2 h-2 rounded-full ${
+                isRecording && !isPaused ? 'bg-red-500 animate-pulse' : 'bg-gray-400'
+              }`}></div>
+              <span>{isRecording && !isPaused ? 'Gravando' : isPaused ? 'Pausado' : hasStarted ? 'Parado' : 'Pronto para Iniciar'}</span>
             </div>
           </div>
-        </div>
-    </div>
-
-    {/* Patient Change Modal */}
-    {showPatientChangeModal && (
-      <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
-        <div className="glass-card rounded-xl shadow-2xl w-full max-w-md max-h-[90vh] overflow-y-auto border border-white/20">
-          {/* Header */}
-          <div className="flex items-center justify-between p-6 border-b border-gray-200">
-            <div className="flex items-center space-x-3">
-              <div className="bg-blue-600 p-2 rounded-lg">
-                <User className="h-5 w-5 text-white" />
+          
+          <div className="flex items-center justify-between">
+            <div className="flex items-center space-x-4">
+              <div className="bg-red-600 p-3 rounded-lg">
+                <Mic className="h-6 w-6 text-white" />
               </div>
               <div>
-                <h2 className="text-xl font-semibold text-gray-800">Alterar Paciente</h2>
-                <p className="text-sm text-gray-600">Selecione um novo paciente para esta sessão</p>
+                <h1 className="text-2xl font-bold text-gray-900">Gravação em Andamento</h1>
+                <p className="text-gray-600">{sessionTitle}</p>
               </div>
             </div>
-            <button
-              onClick={() => setShowPatientChangeModal(false)}
-              className="text-gray-400 hover:text-gray-600 transition-colors"
-            >
-              <X className="h-6 w-6" />
-            </button>
+            
+            <div className="text-right">
+              <div className="flex items-center space-x-2 text-gray-600 mb-1">
+                <Clock className="h-4 w-4" />
+                <span className="text-sm">Duração</span>
+              </div>
+              <span className="font-mono font-bold text-2xl text-gray-900">{duration}</span>
+            </div>
           </div>
+        </div>
 
-          {/* Patient Selection */}
-          <div className="p-6">
-            <div className="mb-4">
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                Selecionar Paciente
-              </label>
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+            {/* Main Recording Area */}
+            <div className="lg:col-span-2 space-y-6">
+              {/* Session Info */}
+              <div className="glass-card rounded-xl shadow-lg p-6">
+                <div className="flex items-center space-x-4 mb-4">
+                  <div className="bg-blue-100 p-3 rounded-full">
+                    <User className="h-6 w-6 text-blue-600" />
+                  </div>
+                  <div>
+                    <h2 className="text-lg font-semibold text-gray-900">Sessão Ativa</h2>
+                    <div className="flex items-center space-x-2">
+                      <button
+                        onClick={handleOpenPatientChangeModal}
+                        disabled={isRecording}
+                        className={`text-gray-600 hover:text-blue-600 transition-colors flex items-center space-x-1 ${
+                          isRecording ? 'cursor-not-allowed opacity-50' : 'cursor-pointer'
+                        }`}
+                        title={isRecording ? 'Não é possível alterar durante a gravação' : 'Clique para alterar o paciente'}
+                      >
+                        <span>{getSelectedPatientName()}</span>
+                        {!isRecording && <Edit className="h-3 w-3" />}
+                      </button>
+                    </div>
+                  </div>
+                </div>
+                
+                <div className="grid grid-cols-2 gap-4 text-sm">
+                  <div>
+                    <span className="text-gray-500">Título:</span>
+                    <p className="font-medium">{sessionTitle}</p>
+                  </div>
+                  <div>
+                    <span className="text-gray-500">Duração:</span>
+                    <p className="font-medium font-mono">{duration}</p>
+                  </div>
+                  <div>
+                    <span className="text-gray-500">Caracteres:</span>
+                    <p className="font-medium">{transcript.length}</p>
+                  </div>
+                  <div>
+                    <span className="text-gray-500">Início:</span>
+                    <p className="font-medium">
+                      {startTime ? startTime.toLocaleTimeString('pt-BR') : '--:--'}
+                    </p>
+                  </div>
+                </div>
+              </div>
+
+              {/* Recording Controls */}
+              <div className="glass-card rounded-xl shadow-lg p-6">
+                <h2 className="text-xl font-semibold text-gray-800 mb-6">Controles de Gravação</h2>
+                
+                <div className="flex items-center justify-center space-x-4 flex-wrap gap-2">
+                  {!hasStarted ? (
+                    <button
+                      onClick={startRecording}
+                      disabled={microphonePermission !== 'granted' || !isSupported}
+                      className="bg-green-600 hover:bg-green-700 disabled:bg-gray-400 text-white px-8 py-4 rounded-lg flex items-center space-x-3 transition-colors duration-200 shadow-md text-lg font-medium"
+                    >
+                      <Play className="h-6 w-6" />
+                      <span>Iniciar Gravação</span>
+                    </button>
+                  ) : (
+                    <>
+                      {isRecording && !isPaused ? (
+                        <button
+                          onClick={pauseRecording}
+                          className="bg-yellow-600 hover:bg-yellow-700 disabled:bg-gray-400 text-white px-6 py-3 rounded-lg flex items-center space-x-2 transition-colors duration-200 shadow-md"
+                        >
+                          <Pause className="h-5 w-5" />
+                          <span>Pausar</span>
+                        </button>
+                      ) : isPaused ? (
+                        <button
+                          onClick={resumeRecording}
+                          className="bg-green-600 hover:bg-green-700 text-white px-6 py-3 rounded-lg flex items-center space-x-2 transition-colors duration-200 shadow-md"
+                        >
+                          <Play className="h-5 w-5" />
+                          <span>Retomar</span>
+                        </button>
+                      ) : null}
+                      
+                      {hasStarted && (
+                        <button
+                          onClick={stopRecording}
+                          className="bg-red-600 hover:bg-red-700 text-white px-6 py-3 rounded-lg flex items-center space-x-2 transition-colors duration-200 shadow-md"
+                        >
+                          <Square className="h-5 w-5" />
+                          <span>Finalizar</span>
+                        </button>
+                      )}
+                    </>
+                  )}
+                </div>
+                
+                {/* Status da gravação */}
+                <div className="mt-4 text-center">
+                  {/* Botão de diagnóstico para problemas */}
+                  {hasStarted && (!recognitionRef.current || microphonePermission !== 'granted') && (
+                    <div className="mb-4 p-3 bg-yellow-50 border border-yellow-200 rounded-lg">
+                      <p className="text-sm text-yellow-800 mb-2">
+                        ⚠️ Problema detectado na gravação
+                      </p>
+                      <button
+                        onClick={reinitializeRecognition}
+                        className="bg-yellow-600 hover:bg-yellow-700 text-white px-4 py-2 rounded text-sm"
+                      >
+                        🔄 Reativar Gravação
+                      </button>
+                    </div>
+                  )}
+                  
+                  {!hasStarted && microphonePermission === 'granted' && (
+                    <p className="text-sm text-gray-600">
+                      ✅ Tudo pronto! Clique em "Iniciar Gravação" para começar a transcrição.
+                    </p>
+                  )}
+                  {!hasStarted && microphonePermission !== 'granted' && (
+                    <button
+                      onClick={requestMicrophonePermission}
+                      className="text-sm text-blue-600 hover:text-blue-700 underline"
+                    >
+                      Permitir acesso ao microfone
+                    </button>
+                  )}
+                </div>
+              </div>
+
+              {/* Transcript Area */}
+              <div className="glass-card rounded-xl shadow-lg p-6">
+                <div className="flex items-center justify-between mb-4">
+                  <h2 className="text-xl font-semibold text-gray-800">Transcrição em Tempo Real</h2>
+                  <div className="flex items-center space-x-2">
+                    <div className={`w-3 h-3 rounded-full ${
+                      isRecording && !isPaused ? 'bg-red-500 animate-pulse' : 'bg-gray-400'
+                    }`}></div>
+                    <span className="text-sm text-gray-600">
+                      {isRecording && !isPaused ? 'Ouvindo...' : 'Pausado'}
+                    </span>
+                  </div>
+                </div>
+                
+                <textarea
+                  value={transcript}
+                  onChange={(e) => setTranscript(e.target.value)}
+                  placeholder={hasStarted ? "A transcrição aparecerá aqui em tempo real conforme você fala..." : "Clique em 'Iniciar Gravação' para começar a transcrever sua consulta..."}
+                  className="w-full h-96 p-4 border border-gray-200 rounded-lg resize-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  style={{ fontFamily: 'monospace' }}
+                />
+                
+                {/* Interim transcript overlay */}
+                {interimTranscript && (
+                  <div className="mt-2 p-2 bg-yellow-50 border border-yellow-200 rounded text-sm text-yellow-800">
+                    <span className="font-medium">Ouvindo: </span>
+                    <span className="italic">{interimTranscript}</span>
+                  </div>
+                )}
+                
+                <div className="mt-4 flex items-center justify-between text-sm text-gray-500">
+                  <span>{transcript.length + interimTranscript.length} caracteres</span>
+                  <span>{hasStarted ? 'Auto-save a cada 30 segundos' : 'Pronto para iniciar'}</span>
+                </div>
+              </div>
+            </div>
+
+            {/* Sidebar - Recording Info */}
+            <div className="space-y-6">
+              <div className="glass-card rounded-xl shadow-lg p-6">
+                <h3 className="text-lg font-semibold text-gray-800 mb-4">Informações da Gravação</h3>
+                
+                <div className="space-y-4">
+                  <div className="flex items-center space-x-3">
+                    <div className="bg-blue-100 p-2 rounded-full">
+                      <User className="h-4 w-4 text-blue-600" />
+                    </div>
+                    <div>
+                      <p className="text-sm text-gray-600">Paciente</p>
+                      <p className="font-medium">{getSelectedPatientName()}</p>
+                    </div>
+                  </div>
+                  
+                  <div className="flex items-center space-x-3">
+                    <div className="bg-green-100 p-2 rounded-full">
+                      <FileText className="h-4 w-4 text-green-600" />
+                    </div>
+                    <div>
+                      <p className="text-sm text-gray-600">Sessão</p>
+                      <p className="font-medium">{currentSession?.title || sessionTitle}</p>
+                    </div>
+                  </div>
+                  
+                  <div className="flex items-center space-x-3">
+                    <div className="bg-purple-100 p-2 rounded-full">
+                      <Clock className="h-4 w-4 text-purple-600" />
+                    </div>
+                    <div>
+                      <p className="text-sm text-gray-600">Duração</p>
+                      <p className="font-medium font-mono">{duration}</p>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <div className="bg-blue-50 rounded-xl p-6">
+                <div className="flex items-center space-x-2 mb-3">
+                  <Mic className="h-5 w-5 text-blue-600" />
+                  <h3 className="font-semibold text-blue-800">Dicas de Gravação</h3>
+                </div>
+                <ul className="text-sm text-blue-700 space-y-2">
+                  <li>• Fale claramente e em ritmo normal</li>
+                  <li>• Evite ruídos de fundo</li>
+                  <li>• A transcrição é salva automaticamente</li>
+                  <li>• Use "Pausar" para interrupções</li>
+                  <li>• Permita o acesso ao microfone quando solicitado</li>
+                </ul>
+              </div>
               
-              {/* Unified Patient Search/Select Field */}
-              <div className="relative">
+              {/* Microphone Status */}
+              <div className={`rounded-xl p-4 ${
+                microphonePermission === 'granted' 
+                  ? 'bg-green-50 border border-green-200' 
+                  : 'bg-red-50 border border-red-200'
+              }`}>
+                <div className="flex items-center space-x-2 mb-2">
+                  <Mic className={`h-4 w-4 ${
+                    microphonePermission === 'granted' ? 'text-green-600' : 'text-red-600'
+                  }`} />
+                  <span className={`text-sm font-medium ${
+                    microphonePermission === 'granted' ? 'text-green-800' : 'text-red-800'
+                  }`}>
+                    {isRecording && !isPaused && recognitionRef.current ? 'Ouvindo...' : 
+                     isPaused ? 'Pausado' : 
+                     hasStarted && !recognitionRef.current ? 'Reconexão necessária' :
+                     hasStarted ? 'Parado' : 'Aguardando início'}
+                  </span>
+                </div>
+                <p className={`text-sm ${
+                  microphonePermission === 'granted' ? 'text-green-700' : 'text-red-700'
+                }`}>
+                  {microphonePermission === 'granted' && recognitionRef.current
+                    ? '✅ Microfone autorizado e funcionando'
+                    : microphonePermission === 'granted' && !recognitionRef.current
+                    ? '⚠️ Microfone autorizado, reconectando...'
+                    : '❌ Microfone não autorizado'
+                  }
+                </p>
+                
+                {/* Debug info */}
+                {hasStarted && (
+                  <div className="mt-2 text-xs text-gray-500">
+                    <p>Estado: {isRecording ? 'Gravando' : 'Parado'} | {isPaused ? 'Pausado' : 'Ativo'}</p>
+                    <p>Recognition: {recognitionRef.current ? 'OK' : 'Desconectado'}</p>
+                    <p>Aba ativa: {document.visibilityState}</p>
+                  </div>
+                )}
+              </div>
+            </div>
+          </div>
+      </div>
+
+      {/* Patient Change Modal */}
+      {showPatientChangeModal && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
+          <div className="glass-card rounded-xl shadow-2xl w-full max-w-md max-h-[90vh] overflow-y-auto border border-white/20">
+            {/* Header */}
+            <div className="flex items-center justify-between p-6 border-b border-gray-200">
+              <div className="flex items-center space-x-3">
+                <div className="bg-blue-600 p-2 rounded-lg">
+                  <User className="h-5 w-5 text-white" />
+                </div>
+                <div>
+                  <h2 className="text-xl font-semibold text-gray-800">Alterar Paciente</h2>
+                  <p className="text-sm text-gray-600">Selecione um novo paciente para esta sessão</p>
+                </div>
+              </div>
+              <button
+                onClick={() => setShowPatientChangeModal(false)}
+                className="text-gray-400 hover:text-gray-600 transition-colors"
+              >
+                <X className="h-6 w-6" />
+              </button>
+            </div>
+
+            {/* Current Patient */}
+            <div className="p-4 bg-blue-50 border-b border-gray-200">
+              <p className="text-sm text-blue-800">
+                <strong>Paciente atual:</strong> {getSelectedPatientName()}
+              </p>
+            </div>
+
+            {/* Patient Search */}
+            <div className="p-6">
+              <div className="relative mb-4">
                 <User className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
                 <input
                   type="text"
-                  placeholder="Digite o nome do paciente ou selecione da lista..."
                   value={patientSearchInput}
-                  onChange={(e) => handlePatientInputChange(e.target.value)}
+                  onChange={handlePatientInputChange}
                   onFocus={handlePatientInputFocus}
                   onBlur={handlePatientInputBlur}
-                  className="w-full pl-10 pr-10 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  className="w-full pl-10 pr-10 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-colors"
+                  placeholder="Buscar paciente pelo nome..."
                 />
                 <Search className="absolute right-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
-                
-                {/* Dropdown List */}
-                {showPatientDropdown && (
-                  <div className="absolute z-10 w-full mt-1 bg-white border border-gray-300 rounded-lg shadow-lg max-h-60 overflow-y-auto">
-                    {filteredPatients.length > 0 ? (
-                      <ul className="py-1">
-                        {filteredPatients.map(patient => (
-                          <li
-                            key={patient.id}
-                            onClick={() => {
-                              handlePatientSelect(patient);
-                              handleChangeSessionPatient(patient.id);
-                            }}
-                            className={`px-4 py-3 hover:bg-blue-50 cursor-pointer transition-colors ${
-                              selectedPatientId === patient.id ? 'bg-blue-100 text-blue-900' : 'text-gray-900'
-                            }`}
-                          >
-                            <div className="flex items-center space-x-3">
-                              <div className="bg-gray-100 p-1 rounded-full">
-                                <User className="h-3 w-3 text-gray-600" />
-                              </div>
-                              <div>
-                                <p className="font-medium">{patient.name}</p>
-                                {patient.email && (
-                                  <p className="text-xs text-gray-500">{patient.email}</p>
-                                )}
-                              </div>
-                            </div>
-                          </li>
-                        ))}
-                      </ul>
-                    ) : (
-                      <div className="px-4 py-3 text-gray-500 text-center">
-                        {patientSearchInput.trim() ? (
-                          <>
-                            <Search className="h-4 w-4 mx-auto mb-1 text-gray-400" />
-                            <p className="text-sm">Nenhum paciente encontrado</p>
-                            <p className="text-xs">com "{patientSearchInput}"</p>
-                          </>
-                        ) : (
-                          <>
-                            <User className="h-4 w-4 mx-auto mb-1 text-gray-400" />
-                            <p className="text-sm">Digite para buscar pacientes</p>
-                          </>
-                        )}
-                      </div>
-                    )}
-                  </div>
-                )}
               </div>
-            </div>
 
-            {/* Current Patient Info */}
-            <div className="bg-blue-50 rounded-lg p-4">
-              <div className="flex items-center space-x-2 mb-2">
-                <User className="h-4 w-4 text-blue-600" />
-                <span className="text-sm font-medium text-blue-800">Paciente Atual</span>
-              </div>
-              <p className="text-blue-700">{getSelectedPatientName()}</p>
-            </div>
-
-            {/* Action Buttons */}
-            <div className="flex space-x-3 mt-6">
-              <button
-                onClick={() => setShowPatientChangeModal(false)}
-                className="flex-1 px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors"
-              >
-                Cancelar
-              </button>
+              {/* Patient List */}
+              {showPatientDropdown && (
+                <div className="border border-gray-200 rounded-lg max-h-48 overflow-y-auto bg-white shadow-lg">
+                  {filteredPatients.length === 0 ? (
+                    <div className="p-4 text-center text-gray-500">
+                      {patientSearchInput ? 'Nenhum paciente encontrado' : 'Nenhum paciente cadastrado'}
+                    </div>
+                  ) : (
+                    filteredPatients.map((patient) => (
+                      <button
+                        key={patient.id}
+                        onClick={() => handleChangeSessionPatient(patient.id)}
+                        className={`w-full text-left p-3 hover:bg-gray-50 transition-colors border-b border-gray-100 last:border-b-0 ${
+                          selectedPatientId === patient.id ? 'bg-blue-50 text-blue-700' : ''
+                        }`}
+                      >
+                        <div className="flex items-center space-x-2">
+                          <User className="h-4 w-4 text-gray-400" />
+                          <div>
+                            <p className="font-medium">{patient.name}</p>
+                            {patient.email && (
+                              <p className="text-xs text-gray-500">{patient.email}</p>
+                            )}
+                          </div>
+                        </div>
+                      </button>
+                    ))
+                  )}
+                </div>
+              )}
             </div>
           </div>
         </div>
-      </div>
-    )}
+      )}
+    </>
   );
 }
