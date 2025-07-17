@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback, useRef } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { supabase } from '../lib/supabase';
 import { AuthUser, UserProfile } from '../types/user';
 
@@ -6,88 +6,55 @@ export function useAuth() {
   const [user, setUser] = useState<AuthUser | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const isInitialized = useRef(false);
-  const isMounted = useRef(true);
 
   // Função para limpar todas as sessões
   const clearAllSessions = useCallback(async () => {
     try {
-      console.log('🧹 [clearAllSessions] Limpando todas as sessões...');
+      console.log('🧹 Limpando sessões...');
       
-      const keys = Object.keys(localStorage);
-      keys.forEach(key => {
+      Object.keys(localStorage).forEach(key => {
         if (key.startsWith('sb-') || key.includes('supabase')) {
           localStorage.removeItem(key);
         }
       });
 
-      const sessionKeys = Object.keys(sessionStorage);
-      sessionKeys.forEach(key => {
+      Object.keys(sessionStorage).forEach(key => {
         if (key.startsWith('sb-') || key.includes('supabase')) {
           sessionStorage.removeItem(key);
         }
       });
 
       await supabase.auth.signOut();
-      console.log('✅ [clearAllSessions] Sessões limpas com sucesso');
+      console.log('✅ Sessões limpas');
     } catch (error) {
-      console.error('❌ [clearAllSessions] Erro ao limpar sessões:', error);
+      console.error('❌ Erro ao limpar sessões:', error);
     }
   }, []);
 
-  // Função para processar o usuário autenticado
+  // Função para processar usuário (SIMPLIFICADA PARA TESTE)
   const processAuthUser = useCallback(async (authUser: any): Promise<AuthUser | null> => {
     try {
-      console.log('🔄 [processAuthUser] Processando usuário:', authUser.id);
+      console.log('🔄 Processando usuário:', authUser.email);
       
-      const { data: profile, error } = await supabase
-        .from('profiles')
-        .select('*')
-        .eq('id', authUser.id)
-        .single();
-
-      if (error) {
-        console.log('⚠️ [processAuthUser] Erro ao buscar perfil:', error.message);
-        
-        if (error.code === 'PGRST116') {
-          console.log('🆕 [processAuthUser] Criando novo perfil...');
-          
-          const { data: newProfile, error: insertError } = await supabase
-            .from('profiles')
-            .insert({
-              id: authUser.id,
-              email: authUser.email,
-              role: 'user',
-              full_name: authUser.user_metadata?.full_name || null,
-              created_at: new Date().toISOString(),
-              updated_at: new Date().toISOString()
-            })
-            .select()
-            .single();
-
-          if (insertError) {
-            console.error('❌ [processAuthUser] Erro ao criar perfil:', insertError);
-            return null;
-          }
-
-          return {
-            id: authUser.id,
-            email: authUser.email,
-            profile: newProfile as UserProfile
-          };
-        }
-        
-        return null;
-      }
-
-      console.log('✅ [processAuthUser] Perfil encontrado');
+      // TESTE: Pular verificação do banco temporariamente
+      console.log('⚠️ MODO TESTE: Pulando verificação do banco profiles');
+      
+      // Retornar usuário básico sem consultar banco
       return {
         id: authUser.id,
         email: authUser.email,
-        profile: profile as UserProfile
+        profile: {
+          id: authUser.id,
+          email: authUser.email,
+          role: 'user', // Assumir como user por padrão
+          full_name: authUser.user_metadata?.full_name || null,
+          created_at: new Date().toISOString(),
+          updated_at: new Date().toISOString()
+        } as UserProfile
       };
+      
     } catch (error) {
-      console.error('❌ [processAuthUser] Erro:', error);
+      console.error('❌ Erro ao processar usuário:', error);
       return null;
     }
   }, []);
@@ -95,22 +62,18 @@ export function useAuth() {
   // Função de logout
   const signOut = useCallback(async () => {
     try {
-      console.log('🚪 [signOut] Iniciando logout...');
+      console.log('🚪 Fazendo logout...');
       setLoading(true);
       await clearAllSessions();
-      if (isMounted.current) {
-        setUser(null);
-        setError(null);
-        setLoading(false);
-      }
-      console.log('✅ [signOut] Logout concluído');
+      setUser(null);
+      setError(null);
+      setLoading(false);
+      console.log('✅ Logout concluído');
     } catch (error) {
-      console.error('❌ [signOut] Erro no logout:', error);
-      if (isMounted.current) {
-        setUser(null);
-        setError(null);
-        setLoading(false);
-      }
+      console.error('❌ Erro no logout:', error);
+      setUser(null);
+      setError(null);
+      setLoading(false);
     }
   }, [clearAllSessions]);
 
@@ -119,157 +82,104 @@ export function useAuth() {
     return user?.profile?.role === 'admin';
   }, [user]);
 
-  // Função para atualizar perfil
+  // Função para atualizar perfil (SIMPLIFICADA)
   const refreshProfile = useCallback(async () => {
-    if (!user) return;
-    
-    try {
-      console.log('🔄 [refreshProfile] Atualizando perfil...');
-      
-      const { data: { session }, error: sessionError } = await supabase.auth.getSession();
-      
-      if (sessionError || !session?.user) {
-        console.log('⚠️ [refreshProfile] Sessão inválida, fazendo logout...');
-        await clearAllSessions();
-        if (isMounted.current) {
+    console.log('🔄 RefreshProfile chamado (modo simplificado)');
+    // No modo teste, não fazer nada
+  }, []);
+
+  // Inicialização da autenticação
+  useEffect(() => {
+    let mounted = true;
+
+    const initializeAuth = async () => {
+      try {
+        console.log('🚀 [TESTE] Iniciando verificação de autenticação...');
+        
+        const { data: { session }, error: sessionError } = await supabase.auth.getSession();
+        console.log('📡 Resposta da sessão:', { session: !!session, error: sessionError });
+        
+        if (!mounted) return;
+
+        if (sessionError) {
+          console.error('❌ Erro na sessão:', sessionError);
+          await clearAllSessions();
           setUser(null);
           setError(null);
           setLoading(false);
-        }
-        return;
-      }
-
-      const { data: profile, error } = await supabase
-        .from('profiles')
-        .select('*')
-        .eq('id', user.id)
-        .single();
-
-      if (error) {
-        console.error('❌ [refreshProfile] Erro ao buscar perfil:', error);
-        return;
-      }
-
-      if (profile && isMounted.current) {
-        setUser({
-          id: user.id,
-          email: user.email,
-          profile: profile as UserProfile
-        });
-        console.log('✅ [refreshProfile] Perfil atualizado');
-      }
-    } catch (error) {
-      console.error('❌ [refreshProfile] Erro:', error);
-    }
-  }, [user, clearAllSessions]);
-
-  // Inicialização da autenticação - useEffect principal
-  useEffect(() => {
-    isMounted.current = true;
-
-    const initializeAuth = async () => {
-      if (isInitialized.current) return;
-      
-      try {
-        console.log('🚀 [initializeAuth] Iniciando verificação de autenticação...');
-        
-        const { data: { session }, error: sessionError } = await supabase.auth.getSession();
-        
-        if (!isMounted.current) return;
-
-        if (sessionError) {
-          console.error('❌ [initializeAuth] Erro na sessão:', sessionError);
-          await clearAllSessions();
-          if (isMounted.current) {
-            setUser(null);
-            setError(null);
-            setLoading(false);
-          }
-          isInitialized.current = true;
           return;
         }
 
         if (session?.user) {
-          console.log('👤 [initializeAuth] Usuário encontrado na sessão');
+          console.log('👤 Usuário encontrado, processando...');
           const processedUser = await processAuthUser(session.user);
           
-          if (!isMounted.current) return;
+          if (!mounted) return;
           
           if (processedUser) {
+            console.log('✅ Usuário processado com sucesso');
             setUser(processedUser);
             setError(null);
           } else {
-            console.log('⚠️ [initializeAuth] Falha ao processar usuário, fazendo logout...');
+            console.log('⚠️ Falha ao processar usuário');
             await clearAllSessions();
             setUser(null);
             setError(null);
           }
         } else {
-          console.log('❌ [initializeAuth] Nenhuma sessão encontrada');
-          if (isMounted.current) {
-            setUser(null);
-            setError(null);
-          }
+          console.log('❌ Nenhuma sessão encontrada');
+          setUser(null);
+          setError(null);
         }
         
-        if (isMounted.current) {
-          setLoading(false);
-        }
-        isInitialized.current = true;
+        setLoading(false);
+        console.log('🏁 Inicialização concluída');
         
       } catch (error) {
-        console.error('❌ [initializeAuth] Erro geral:', error);
-        if (isMounted.current) {
+        console.error('❌ Erro geral na inicialização:', error);
+        if (mounted) {
           await clearAllSessions();
           setUser(null);
           setError(null);
           setLoading(false);
         }
-        isInitialized.current = true;
       }
     };
 
     initializeAuth();
 
     return () => {
-      isMounted.current = false;
+      mounted = false;
     };
   }, [clearAllSessions, processAuthUser]);
 
   // Listener para mudanças de autenticação
   useEffect(() => {
-    console.log('👂 [useAuth] Configurando listener de mudanças de auth...');
+    console.log('👂 Configurando listener...');
     
     const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
-      if (!isMounted.current || !isInitialized.current) return;
-      
-      console.log('🔄 [onAuthStateChange] Evento:', event);
+      console.log('🔄 [LISTENER] Evento:', event, 'Sessão:', !!session);
       
       if (event === 'SIGNED_OUT' || !session?.user) {
-        console.log('🚪 [onAuthStateChange] Usuário deslogado');
-        if (isMounted.current) {
-          setUser(null);
-          setError(null);
-          setLoading(false);
-        }
+        console.log('🚪 Usuário deslogado');
+        setUser(null);
+        setError(null);
+        setLoading(false);
         return;
       }
       
       if (event === 'SIGNED_IN' && session?.user) {
-        console.log('🔑 [onAuthStateChange] Usuário logado');
-        if (isMounted.current) {
-          setLoading(true);
-        }
+        console.log('🔑 Usuário logado');
+        setLoading(true);
         
         const processedUser = await processAuthUser(session.user);
         
-        if (!isMounted.current) return;
-        
         if (processedUser) {
+          console.log('✅ Login processado com sucesso');
           setUser(processedUser);
           setError(null);
         } else {
-          console.log('⚠️ [onAuthStateChange] Falha ao processar usuário no login');
+          console.log('⚠️ Falha ao processar login');
           await clearAllSessions();
           setUser(null);
           setError(null);
