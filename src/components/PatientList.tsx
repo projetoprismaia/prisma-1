@@ -5,7 +5,7 @@ import { Patient, PatientFormData } from '../types/patient';
 import { AuthUser } from '../types/user';
 import PatientFormModal from './PatientFormModal';
 import { useNotification } from '../hooks/useNotification';
-import { formatToDDMMAAAA } from '../utils/dateFormatter';
+import { formatToDDMM } from '../utils/dateFormatter';
 
 interface PatientListProps {
   currentUser: AuthUser;
@@ -268,7 +268,7 @@ export default function PatientList({ currentUser, onNavigateToSessions }: Patie
                       </p>
                     )}
                     <p className="text-xs text-gray-500">
-                      Cadastrado em: {formatToDDMMAAAA(patient.created_at)}
+                      Cadastrado em: {formatToDDMM(patient.created_at)}
                     </p>
                   </div>
                 </div>

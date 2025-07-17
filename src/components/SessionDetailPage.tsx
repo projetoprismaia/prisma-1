@@ -3,7 +3,7 @@ import { FileText, User, Calendar, Clock, ArrowLeft, Download, CheckCircle, Aler
 import { supabase } from '../lib/supabase';
 import { Session } from '../types/session';
 import { AuthUser } from '../types/user';
-import { formatToDDMMAAAA, formatDateTimeToDDMMAAAA } from '../utils/dateFormatter';
+import { formatToDDMM, formatDateTime } from '../utils/dateFormatter';
 
 interface SessionDetailPageProps {
   sessionId: string;
@@ -171,7 +171,7 @@ export default function SessionDetailPage({ sessionId, currentUser, onBack }: Se
               </div>
               <div className="flex items-center space-x-1">
                 <Calendar className="h-4 w-4" />
-                <span>{formatToDDMMAAAA(session.created_at)}</span>
+                <span>{formatToDDMM(session.created_at)}</span>
               </div>
               <div className="flex items-center space-x-1">
                 <Clock className="h-4 w-4" />
@@ -226,7 +226,7 @@ export default function SessionDetailPage({ sessionId, currentUser, onBack }: Se
               <div className="flex items-center justify-between">
                 <span className="text-sm text-gray-600">Criada em:</span>
                 <span className="text-sm font-medium text-gray-900">
-                  {formatDateTimeToDDMMAAAA(session.created_at)}
+                  {formatDateTime(session.created_at)}
                 </span>
               </div>
               
@@ -234,7 +234,7 @@ export default function SessionDetailPage({ sessionId, currentUser, onBack }: Se
                 <div className="flex items-center justify-between">
                   <span className="text-sm text-gray-600">Iniciada em:</span>
                   <span className="text-sm font-medium text-gray-900">
-                    {formatDateTimeToDDMMAAAA(session.start_time)}
+                    {formatDateTime(session.start_time)}
                   </span>
                 </div>
               )}
@@ -243,7 +243,7 @@ export default function SessionDetailPage({ sessionId, currentUser, onBack }: Se
                 <div className="flex items-center justify-between">
                   <span className="text-sm text-gray-600">Finalizada em:</span>
                   <span className="text-sm font-medium text-gray-900">
-                    {formatDateTimeToDDMMAAAA(session.end_time)}
+                    {formatDateTime(session.end_time)}
                   </span>
                 </div>
               )}
