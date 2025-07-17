@@ -4,6 +4,7 @@ import { supabase } from '../lib/supabase';
 import { UserProfile, UserRole } from '../types/user';
 import UserFormModal, { UserFormData } from './UserFormModal';
 import { useNotification } from '../hooks/useNotification';
+import { formatToDDMMAAAA } from '../utils/dateFormatter';
 
 interface AdminPanelProps {
   currentUser: any;
@@ -436,7 +437,7 @@ export default function AdminPanel({ currentUser }: AdminPanelProps) {
               return (
                 <div
                   key={user.id}
-                  className="flex items-center justify-between p-4 border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors"
+                      <p>Criado em: {formatToDDMMAAAA(user.created_at)}</p>
                 >
                   <div className="flex items-center space-x-3">
                     <div className="bg-gray-100 p-2 rounded-full">

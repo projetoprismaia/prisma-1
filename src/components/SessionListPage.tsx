@@ -4,6 +4,7 @@ import { supabase } from '../lib/supabase';
 import { Session } from '../types/session';
 import { Patient } from '../types/patient';
 import { AuthUser } from '../types/user';
+import { formatToDDMMAAAA, formatDateTimeShortToDDMMAAAA, formatDateTimeToDDMMAAAA } from '../utils/dateFormatter';
 
 interface SessionListPageProps {
   currentUser: AuthUser;
@@ -290,7 +291,7 @@ export default function SessionListPage({ currentUser, onStartRecording, initial
                     <div className="flex items-center space-x-4 text-xs text-gray-500">
                       <p className="flex items-center">
                         <Calendar className="h-3 w-3 mr-1" />
-                        {new Date(session.created_at).toLocaleDateString('pt-BR')}
+                        {formatToDDMMAAAA(session.created_at)}
                       </p>
                       <p className="flex items-center">
                         <Clock className="h-3 w-3 mr-1" />
@@ -344,7 +345,7 @@ export default function SessionListPage({ currentUser, onStartRecording, initial
                 <div>
                   <h2 className="text-xl font-semibold text-gray-800">{selectedSession.title}</h2>
                   <p className="text-sm text-gray-600">
-                    {selectedSession.patient?.name} • {new Date(selectedSession.created_at).toLocaleString('pt-BR')}
+                    {selectedSession.patient?.name} • {formatDateTimeToDDMMAAAA(selectedSession.created_at)}
                   </p>
                 </div>
               </div>
