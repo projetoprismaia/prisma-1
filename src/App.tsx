@@ -40,6 +40,7 @@ function App() {
         setRefreshTrigger(prev => prev + 1);
       } catch (error) {
         // Silenciar erro de recarregamento
+      }
     };
 
     // Registrar callback para quando aba voltar a ficar visível
