@@ -124,7 +124,7 @@ export default function DashboardSummaries({
       .order('created_at', { ascending: false })
       .limit(5);
 
-    setData({
+    const dashboardData = {
       totalUsers: usersCount || 0,
       totalPatients: patientsCount || 0,
       totalSessions: sessions?.length || 0,
@@ -135,7 +135,7 @@ export default function DashboardSummaries({
         created_at: session.created_at,
         status: session.status
       })) || []
-    });
+    };
     
     // Armazenar no cache
     dataCache.set(cacheKey, dashboardData);
@@ -171,7 +171,7 @@ export default function DashboardSummaries({
       .order('created_at', { ascending: false })
       .limit(5);
 
-    setData({
+    const dashboardData = {
       totalPatients: patientsCount || 0,
       totalSessions: sessions?.length || 0,
       recentSessions: recentSessions?.map(session => ({
@@ -181,7 +181,7 @@ export default function DashboardSummaries({
         created_at: session.created_at,
         status: session.status
       })) || []
-    });
+    };
     
     // Armazenar no cache
     dataCache.set(cacheKey, dashboardData);
