@@ -33,33 +33,30 @@ function App() {
 
   // Gerenciar recarregamento de dados quando aba volta a ficar visível
   useEffect(() => {
-    const handleTabVisible = async () => {
-      if (!user) return;
-      
+    if (!user) return;
+
+    const handleTabVisible = () => {
       console.log('👁️ [App] Aba voltou a ficar visível - iniciando revalidação');
       
-      try {
-        // Pequeno delay para evitar múltiplas requisições
-        await new Promise(resolve => setTimeout(resolve, 500));
-        
-        // Revalidar sessão do usuário
-        await refreshProfile();
-        
-        // Disparar recarregamento de dados nos componentes
-        console.log('🔄 [App] Disparando revalidação de dados...');
-        setRefreshTrigger(prev => prev + 1);
-        
-        console.log('✅ [App] Revalidação concluída com sucesso');
-      } catch (error) {
-        console.error('❌ [App] Erro na revalidação:', error);
-        console.log('⚠️ [App] Continuando com dados em cache devido ao erro');
-      }
+      // Pequeno delay para evitar múltiplas requisições
+      setTimeout(async () => {
+        try {
+          // Revalidar sessão do usuário
+          await refreshProfile();
+          
+          // Disparar recarregamento de dados nos componentes
+          console.log('🔄 [App] Disparando revalidação de dados...');
+          setRefreshTrigger(prev => prev + 1);
+          
+          console.log('✅ [App] Revalidação concluída com sucesso');
+        } catch (error) {
+          console.error('❌ [App] Erro na revalidação:', error);
+        }
+      }, 500);
     };
 
     // Registrar callback para quando aba voltar a ficar visível
-    if (user) {
-      onTabVisible(handleTabVisible);
-    }
+    onTabVisible(handleTabVisible);
   }, [user, refreshProfile, onTabVisible]);
 
   // Log para debug

@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 
 interface UseTabVisibilityReturn {
   isTabVisible: boolean;
@@ -9,11 +9,14 @@ interface UseTabVisibilityReturn {
 export function useTabVisibility(): UseTabVisibilityReturn {
   const [isTabVisible, setIsTabVisible] = useState(!document.hidden);
   const [wasTabHidden, setWasTabHidden] = useState(false);
-  const [visibilityCallbacks, setVisibilityCallbacks] = useState<(() => void)[]>([]);
+  const visibilityCallbacks = useRef<(() => void)[]>([]);
 
   useEffect(() => {
     const handleVisibilityChange = () => {
       const isVisible = !document.hidden;
+      
+      // Prevenir atualizações redundantes
+      if (isVisible === isTabVisible) return;
       
       console.log('🔍 [useTabVisibility] Mudança de visibilidade:', {
         isVisible,
@@ -28,7 +31,7 @@ export function useTabVisibility(): UseTabVisibilityReturn {
         setWasTabHidden(true);
         
         // Executar todos os callbacks registrados
-        visibilityCallbacks.forEach(callback => {
+        visibilityCallbacks.current.forEach(callback => {
           try {
             callback();
           } catch (error) {
@@ -70,10 +73,10 @@ export function useTabVisibility(): UseTabVisibilityReturn {
       window.removeEventListener('focus', handleFocus);
       window.removeEventListener('blur', handleBlur);
     };
-  }, [isTabVisible, visibilityCallbacks]);
+  }, []); // Removido isTabVisible das dependências para evitar loops
 
   const onTabVisible = useCallback((callback: () => void) => {
-    setVisibilityCallbacks(prev => [...prev, callback]);
+    visibilityCallbacks.current.push(callback);
   }, []);
 
   // Limpar flag após um tempo

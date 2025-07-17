@@ -7,10 +7,11 @@ export function useAuth() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const isProcessingRef = useRef(false);
+  const mountedRef = useRef(true);
 
   console.log('🔍 [useAuth] Hook inicializado');
 
-  // Função para limpar todas as sessões - movida para escopo principal
+  // Função para limpar todas as sessões
   const clearAllSessions = async () => {
     try {
       console.log('🧹 [clearAllSessions] Limpando todas as sessões...');
@@ -48,13 +49,12 @@ export function useAuth() {
   };
 
   useEffect(() => {
-    let mounted = true;
-
     console.log('🔍 [useAuth] useEffect iniciado');
 
     const initializeAuth = async () => {
-      if (isProcessingRef.current) {
-        console.log('⚠️ [initializeAuth] Já está processando, ignorando...');
+      // Verificar se já está processando ou se o componente foi desmontado
+      if (isProcessingRef.current || !mountedRef.current) {
+        console.log('⚠️ [initializeAuth] Já está processando ou desmontado, ignorando...');
         return;
       }
 
@@ -63,7 +63,6 @@ export function useAuth() {
       try {
         setLoading(true);
         console.log('🔍 [initializeAuth] Inicializando autenticação...');
-        console.log('🔍 [initializeAuth] mounted:', mounted, 'isProcessing:', isProcessingRef.current);
         
         // Verificar sessão atual
         const { data: { session }, error: sessionError } = await supabase.auth.getSession();
@@ -74,12 +73,12 @@ export function useAuth() {
           sessionError: sessionError?.message || 'NO_ERROR'
         });
         
-        if (!mounted) return;
+        if (!mountedRef.current) return;
         
         if (sessionError) {
           console.error('❌ [initializeAuth] Erro ao buscar sessão:', sessionError);
           await clearAllSessions();
-          if (mounted) {
+          if (mountedRef.current) {
             setUser(null);
             setError(null);
           }
@@ -88,11 +87,10 @@ export function useAuth() {
         
         if (session?.user) {
           console.log('✅ [initializeAuth] Sessão encontrada, verificando usuário...');
-          console.log('🔍 [initializeAuth] User data:', session.user.id, session.user.email);
           await handleUserSession(session.user);
         } else {
           console.log('👤 [initializeAuth] Nenhuma sessão ativa');
-          if (mounted) {
+          if (mountedRef.current) {
             setUser(null);
             setError(null);
           }
@@ -100,12 +98,12 @@ export function useAuth() {
       } catch (error) {
         console.error('❌ [initializeAuth] Erro na inicialização:', error);
         await clearAllSessions();
-        if (mounted) {
+        if (mountedRef.current) {
           setUser(null);
           setError(null);
         }
       } finally {
-        if (mounted) {
+        if (mountedRef.current) {
           setLoading(false);
         }
         isProcessingRef.current = false;
@@ -113,15 +111,10 @@ export function useAuth() {
     };
 
     const handleUserSession = async (authUser: any) => {
-      if (!mounted) return;
+      if (!mountedRef.current) return;
 
       try {
         console.log('👤 [handleUserSession] Buscando perfil do usuário:', authUser.id);
-        console.log('🔍 [handleUserSession] Auth user data:', {
-          id: authUser.id,
-          email: authUser.email,
-          created_at: authUser.created_at
-        });
         
         // Tentar buscar perfil existente
         const { data: profile, error } = await supabase
@@ -135,7 +128,7 @@ export function useAuth() {
           error: error?.message || 'NO_ERROR'
         });
 
-        if (!mounted) return;
+        if (!mountedRef.current) return;
 
         if (error) {
           console.error('❌ [handleUserSession] Erro ao buscar perfil:', error.message);
@@ -146,7 +139,7 @@ export function useAuth() {
               error.message?.includes('relation "profiles" does not exist')) {
             console.log('🚪 [handleUserSession] Usuário não encontrado no banco, limpando sessão...');
             await clearAllSessions();
-            if (mounted) {
+            if (mountedRef.current) {
               setUser(null);
               setError(null);
             }
@@ -168,20 +161,12 @@ export function useAuth() {
             .select()
             .single();
 
-          console.log('🔍 [handleUserSession] Profile creation result:', {
-            newProfile: newProfile ? 'CREATED' : 'FAILED',
-            insertError: insertError?.message || 'NO_ERROR'
-          });
-
-          if (!mounted) return;
+          if (!mountedRef.current) return;
 
           if (insertError) {
             console.error('❌ [handleUserSession] Erro ao criar perfil:', insertError.message);
-            
-            // Qualquer erro na criação do perfil resulta em logout
-            console.log('🚪 [handleUserSession] Falha ao criar perfil, limpando sessão...');
             await clearAllSessions();
-            if (mounted) {
+            if (mountedRef.current) {
               setUser(null);
               setError(null);
             }
@@ -189,7 +174,7 @@ export function useAuth() {
           }
 
           console.log('✅ [handleUserSession] Perfil criado com sucesso');
-          if (mounted) {
+          if (mountedRef.current) {
             setUser({
               id: authUser.id,
               email: authUser.email,
@@ -198,13 +183,7 @@ export function useAuth() {
           }
         } else {
           console.log('✅ [handleUserSession] Perfil encontrado');
-          console.log('🔍 [handleUserSession] Profile data:', {
-            id: profile.id,
-            email: profile.email,
-            role: profile.role,
-            full_name: profile.full_name
-          });
-          if (mounted) {
+          if (mountedRef.current) {
             setUser({
               id: authUser.id,
               email: authUser.email,
@@ -214,9 +193,8 @@ export function useAuth() {
         }
       } catch (error) {
         console.error('❌ [handleUserSession] Erro crítico ao buscar perfil:', error);
-        console.log('🚪 [handleUserSession] Erro crítico, forçando logout...');
         await clearAllSessions();
-        if (mounted) {
+        if (mountedRef.current) {
           setUser(null);
           setError(null);
         }
@@ -228,50 +206,61 @@ export function useAuth() {
 
     // Listener para mudanças de autenticação
     const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
-      if (!mounted || isProcessingRef.current) {
-        console.log('⚠️ [onAuthStateChange] Ignorando evento - mounted:', mounted, 'isProcessing:', isProcessingRef.current);
+      console.log('🔄 [onAuthStateChange] Evento recebido:', {
+        event,
+        session: session ? 'EXISTS' : 'NULL',
+        user: session?.user ? session.user.id : 'NO_USER',
+        mounted: mountedRef.current,
+        isProcessing: isProcessingRef.current
+      });
+
+      // Verificar se deve processar o evento
+      if (!mountedRef.current) {
+        console.log('⚠️ [onAuthStateChange] Componente desmontado, ignorando evento');
         return;
       }
-      
+
+      if (isProcessingRef.current) {
+        console.log('⚠️ [onAuthStateChange] Já está processando, ignorando evento');
+        return;
+      }
+
+      // Marcar como processando
       isProcessingRef.current = true;
       
       try {
-        console.log('🔄 [onAuthStateChange] Mudança de autenticação:', {
-          event,
-          session: session ? 'EXISTS' : 'NULL',
-          user: session?.user ? session.user.id : 'NO_USER',
-          mounted
-        });
-        
         if (event === 'SIGNED_OUT' || !session?.user) {
           console.log('🚪 [onAuthStateChange] Usuário deslogado');
-          if (mounted) {
+          if (mountedRef.current) {
             setUser(null);
             setError(null);
             setLoading(false);
-            console.log('✅ [onAuthStateChange] Estado do usuário limpo - deve mostrar tela de login');
           }
-          return;
-        }
-        
-        if (event === 'SIGNED_IN' && session?.user) {
+        } else if (event === 'SIGNED_IN' && session?.user) {
           console.log('🔑 [onAuthStateChange] Usuário logado');
+          if (mountedRef.current) {
+            setLoading(true);
+          }
           await handleUserSession(session.user);
+          if (mountedRef.current) {
+            setLoading(false);
+          }
         }
       } catch (error) {
         console.error('❌ [onAuthStateChange] Erro no processamento do evento:', error);
-        if (mounted) {
+        if (mountedRef.current) {
           setUser(null);
           setError(null);
           setLoading(false);
         }
       } finally {
+        // Sempre resetar o flag de processamento
         isProcessingRef.current = false;
       }
     });
 
     return () => {
-      mounted = false;
+      mountedRef.current = false;
       subscription.unsubscribe();
     };
   }, []);
@@ -283,10 +272,6 @@ export function useAuth() {
       loading,
       shouldShowLogin: !user && !loading
     });
-    
-    if (!user && !loading) {
-      console.log('🔓 [useAuth] Usuário deslogado - App deve mostrar tela de login');
-    }
   }, [user, loading]);
 
   const signOut = async () => {
@@ -300,24 +285,24 @@ export function useAuth() {
     try {
       setLoading(true);
       console.log('🔓 [signOut] Fazendo logout...');
-      console.log('🔍 [signOut] Estado atual do usuário:', user ? user.email : 'NULL');
       
       // Usar a função centralizada de limpeza
       await clearAllSessions();
       
       console.log('✅ [signOut] Logout realizado com sucesso');
-      console.log('🔄 [signOut] Aguardando onAuthStateChange disparar...');
     } catch (error) {
       console.error('❌ [signOut] Erro ao fazer logout:', error);
       // Forçar limpeza do estado mesmo com erro
       await clearAllSessions();
       
-      // Forçar atualização do estado se o onAuthStateChange não disparar
-      console.log('🔧 [signOut] Forçando limpeza do estado devido ao erro...');
-      setUser(null);
-      setError(null);
+      if (mountedRef.current) {
+        setUser(null);
+        setError(null);
+      }
     } finally {
-      setLoading(false);
+      if (mountedRef.current) {
+        setLoading(false);
+      }
       isProcessingRef.current = false;
     }
   };
@@ -327,6 +312,7 @@ export function useAuth() {
   const refreshProfile = async () => {
     if (!user || isProcessingRef.current) return;
     
+    const wasProcessing = isProcessingRef.current;
     isProcessingRef.current = true;
     
     try {
@@ -338,9 +324,11 @@ export function useAuth() {
       if (sessionError || !session?.user) {
         console.log('❌ [refreshProfile] Sessão inválida, forçando logout');
         await clearAllSessions();
-        setUser(null);
-        setError(null);
-        setLoading(false);
+        if (mountedRef.current) {
+          setUser(null);
+          setError(null);
+          setLoading(false);
+        }
         return;
       }
       
@@ -356,7 +344,7 @@ export function useAuth() {
         return;
       }
 
-      if (profile) {
+      if (profile && mountedRef.current) {
         console.log('✅ [refreshProfile] Perfil atualizado com sucesso');
         setUser({
           id: user.id,
@@ -367,7 +355,7 @@ export function useAuth() {
     } catch (error) {
       console.error('❌ [refreshProfile] Erro ao revalidar perfil:', error);
     } finally {
-      isProcessingRef.current = false;
+      isProcessingRef.current = wasProcessing;
     }
   };
 
