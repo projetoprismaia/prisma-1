@@ -6,6 +6,7 @@ import FloatingMenu from './components/FloatingMenu';
 import AdminPanel from './components/AdminPanel';
 import PatientList from './components/PatientList';
 import SessionListPage from './components/SessionListPage';
+import SessionDetailPage from './components/SessionDetailPage';
 import DashboardSummaries from './components/DashboardSummaries';
 import RecordingPage from './components/RecordingPage';
 import NotificationModal from './components/NotificationModal';
@@ -18,6 +19,7 @@ function App() {
   const [showPatientPanel, setShowPatientPanel] = useState(false);
   const [showSessionsPanel, setShowSessionsPanel] = useState(false);
   const [selectedPatientFilter, setSelectedPatientFilter] = useState<string | null>(null);
+  const [viewingSessionId, setViewingSessionId] = useState<string | null>(null);
   const [activeRecordingSession, setActiveRecordingSession] = useState<{
     active: boolean;
   } | null>(null);
@@ -29,6 +31,7 @@ function App() {
       setShowPatientPanel(false);
       setShowSessionsPanel(false);
       setActiveRecordingSession(null);
+      setViewingSessionId(null);
     });
   };
 
@@ -46,6 +49,7 @@ function App() {
     setShowSessionsPanel(false);
     setSelectedPatientFilter(null);
     setActiveRecordingSession(null);
+    setViewingSessionId(null);
     console.log('✅ [navigateToHome] Navegação concluída');
   };
 
@@ -58,6 +62,7 @@ function App() {
     setShowSessionsPanel(false);
     setSelectedPatientFilter(null);
     setActiveRecordingSession(null);
+    setViewingSessionId(null);
     console.log('✅ [navigateToAdmin] Navegação concluída');
   };
 
@@ -69,6 +74,7 @@ function App() {
     setShowSessionsPanel(false);
     setSelectedPatientFilter(null);
     setActiveRecordingSession(null);
+    setViewingSessionId(null);
     console.log('✅ [navigateToPatients] Navegação concluída');
   };
 
@@ -79,6 +85,7 @@ function App() {
     setShowSessionsPanel(true);
     setSelectedPatientFilter(null);
     setActiveRecordingSession(null);
+    setViewingSessionId(null);
     console.log('✅ [navigateToSessions] Navegação concluída');
   };
 
@@ -89,6 +96,7 @@ function App() {
     setShowSessionsPanel(true);
     setSelectedPatientFilter(patientId);
     setActiveRecordingSession(null);
+    setViewingSessionId(null);
     console.log('✅ [navigateToSessionsWithPatient] Navegação concluída');
   };
 
@@ -98,12 +106,14 @@ function App() {
     setShowAdminPanel(false);
     setShowPatientPanel(false);
     setShowSessionsPanel(false);
+    setViewingSessionId(null);
     console.log('✅ [navigateToRecording] Navegação concluída');
   };
 
   const handleRecordingComplete = () => {
     console.log('✅ [handleRecordingComplete] Gravação concluída');
     setActiveRecordingSession(null);
+    setViewingSessionId(null);
     // Optionally navigate to sessions list
     navigateToSessions();
     console.log('✅ [handleRecordingComplete] Redirecionamento concluído');
@@ -112,11 +122,23 @@ function App() {
   const handleRecordingCancel = () => {
     console.log('❌ [handleRecordingCancel] Gravação cancelada');
     setActiveRecordingSession(null);
+    setViewingSessionId(null);
     console.log('✅ [handleRecordingCancel] Cancelamento concluído');
   };
 
+  const navigateToSessionDetail = (sessionId: string) => {
+    console.log('📄 [navigateToSessionDetail] Navegando para detalhes da sessão:', sessionId);
+    setViewingSessionId(sessionId);
+    setShowAdminPanel(false);
+    setShowPatientPanel(false);
+    setShowSessionsPanel(false);
+    setActiveRecordingSession(null);
+    console.log('✅ [navigateToSessionDetail] Navegação concluída');
+  };
+
   const getCurrentSection = () => {
-    const section = activeRecordingSession ? 'sessions' :
+    const section = viewingSessionId ? 'sessions' :
+                   activeRecordingSession ? 'sessions' :
                    showAdminPanel ? 'admin' : 
                    showPatientPanel ? 'patients' : 
                    showSessionsPanel ? 'sessions' : 'dashboard';
@@ -168,7 +190,13 @@ function App() {
 
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
           {/* Render content based on current state */}
-          {activeRecordingSession ? (
+          {viewingSessionId ? (
+            <SessionDetailPage
+              sessionId={viewingSessionId}
+              currentUser={user}
+              onBack={navigateToSessions}
+            />
+          ) : activeRecordingSession ? (
             <RecordingPage
               currentUser={user}
               onComplete={handleRecordingComplete}
@@ -186,6 +214,7 @@ function App() {
               currentUser={user} 
               onStartRecording={navigateToRecording}
               initialPatientFilter={selectedPatientFilter}
+              onViewSession={navigateToSessionDetail}
             />
           ) : (
             <DashboardSummaries

@@ -10,6 +10,7 @@ interface SessionListPageProps {
   currentUser: AuthUser;
   onStartRecording: () => void;
   initialPatientFilter?: string;
+  onViewSession: (sessionId: string) => void;
 }
 
 // Add debug logging
@@ -20,14 +21,13 @@ const log = (message: string, data?: any) => {
   }
 }
 
-export default function SessionListPage({ currentUser, onStartRecording, initialPatientFilter }: SessionListPageProps) {
+export default function SessionListPage({ currentUser, onStartRecording, initialPatientFilter, onViewSession }: SessionListPageProps) {
   const [sessions, setSessions] = useState<Session[]>([]);
   const [patients, setPatients] = useState<Patient[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedPatient, setSelectedPatient] = useState<string>('all');
   const [dateFilter, setDateFilter] = useState('');
-  const [selectedSession, setSelectedSession] = useState<Session | null>(null);
 
   useEffect(() => {
     fetchSessions();
@@ -312,7 +312,7 @@ export default function SessionListPage({ currentUser, onStartRecording, initial
 
                 <div className="flex space-x-2">
                   <button
-                    onClick={() => setSelectedSession(session)}
+                    onClick={() => onViewSession(session.id)}
                     className="p-2 text-indigo-600 hover:bg-indigo-100 rounded-lg transition-colors"
                     title="Visualizar sessão"
                   >
@@ -332,56 +332,6 @@ export default function SessionListPage({ currentUser, onStartRecording, initial
           )}
         </div>
       </div>
-
-      {/* Session Detail Modal */}
-      {selectedSession && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
-          <div className="glass-card rounded-xl shadow-2xl w-full max-w-4xl max-h-[90vh] overflow-y-auto border border-white/20">
-            <div className="flex items-center justify-between p-6 border-b border-gray-200">
-              <div className="flex items-center space-x-3">
-                <div className="bg-indigo-600 p-2 rounded-lg">
-                  <FileText className="h-5 w-5 text-white" />
-                </div>
-                <div>
-                  <h2 className="text-xl font-semibold text-gray-800">{selectedSession.title}</h2>
-                  <p className="text-sm text-gray-600">
-                    {selectedSession.patient?.name} • {formatDateTimeToDDMMAAAA(selectedSession.created_at)}
-                  </p>
-                </div>
-              </div>
-              <button
-                onClick={() => setSelectedSession(null)}
-                className="text-gray-400 hover:text-gray-600 transition-colors"
-              >
-                ✕
-              </button>
-            </div>
-            
-            <div className="p-6">
-              <div className="mb-4">
-                <div className="flex items-center space-x-4 text-sm text-gray-600">
-                  <span className={`px-3 py-1 rounded-full text-xs font-medium border flex items-center space-x-1 ${getStatusColor(selectedSession.status)}`}>
-                    {getStatusIcon(selectedSession.status)}
-                    <span>{getStatusText(selectedSession.status)}</span>
-                  </span>
-                  {selectedSession.duration && (
-                    <span>Duração: {selectedSession.duration}</span>
-                  )}
-                </div>
-              </div>
-              
-              <div className="bg-gray-50 rounded-lg p-4">
-                <h3 className="font-medium text-gray-800 mb-2">Transcrição:</h3>
-                <div className="max-h-96 overflow-y-auto">
-                  <p className="text-gray-700 whitespace-pre-wrap font-mono text-sm">
-                    {selectedSession.transcription_content || 'Nenhuma transcrição disponível ainda.'}
-                  </p>
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
-      )}
     </>
   );
 }
