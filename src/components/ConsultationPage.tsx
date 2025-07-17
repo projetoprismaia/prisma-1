@@ -77,8 +77,16 @@ export default function ConsultationPage({ currentUser, isTabVisible, onBack }: 
           'A gravação foi pausada porque a aba perdeu o foco. Clique em "Continuar" para retomar.'
         );
       }
+    } else if (isTabVisible && recordingStatus === 'paused') {
+      console.log('👁️ [ConsultationPage] Aba voltou a ficar visível enquanto pausada - retomando automaticamente');
+      resumeRecording(); // This sets recordingStatus to 'recording' and starts recognition
+      showSuccess(
+        'Consulta Retomada Automaticamente',
+        'A gravação foi retomada porque a aba voltou a ficar visível.'
+      );
+      }
     }
-  }, [isTabVisible, recordingStatus]);
+  }, [isTabVisible, recordingStatus, pauseRecording, resumeRecording, showWarning, showSuccess]);
 
   const fetchPatients = async () => {
     try {
