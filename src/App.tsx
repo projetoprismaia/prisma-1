@@ -7,7 +7,7 @@ import AdminPanel from './components/AdminPanel';
 import PatientList from './components/PatientList';
 import SessionListPage from './components/SessionListPage';
 import SessionDetailPage from './components/SessionDetailPage';
-import TranscriptionPage from './components/TranscriptionPage';
+import ConsultationPage from './components/ConsultationPage';
 import DashboardSummaries from './components/DashboardSummaries';
 import NotificationModal from './components/NotificationModal';
 import { useNotification } from './hooks/useNotification';
@@ -20,7 +20,7 @@ function App() {
   const [showSessionsPanel, setShowSessionsPanel] = useState(false);
   const [selectedPatientFilter, setSelectedPatientFilter] = useState<string | null>(null);
   const [viewingSessionId, setViewingSessionId] = useState<string | null>(null);
-  const [showTranscriptionPage, setShowTranscriptionPage] = useState(false);
+  const [showConsultationPage, setShowConsultationPage] = useState(false);
 
   const handleSignOut = () => {
     signOut().then(() => {
@@ -28,7 +28,7 @@ function App() {
       setShowAdminPanel(false);
       setShowPatientPanel(false);
       setShowSessionsPanel(false);
-      setShowTranscriptionPage(false);
+      setShowConsultationPage(false);
       setViewingSessionId(null);
     });
   };
@@ -44,7 +44,7 @@ function App() {
     setShowAdminPanel(false);
     setShowPatientPanel(false);
     setShowSessionsPanel(false);
-    setShowTranscriptionPage(false);
+    setShowConsultationPage(false);
     setSelectedPatientFilter(null);
     setViewingSessionId(null);
     console.log('✅ [navigateToHome] Navegação concluída');
@@ -57,7 +57,7 @@ function App() {
     setShowAdminPanel(true);
     setShowPatientPanel(false);
     setShowSessionsPanel(false);
-    setShowTranscriptionPage(false);
+    setShowConsultationPage(false);
     setSelectedPatientFilter(null);
     setViewingSessionId(null);
     console.log('✅ [navigateToAdmin] Navegação concluída');
@@ -69,7 +69,7 @@ function App() {
     setShowAdminPanel(false);
     setShowPatientPanel(true);
     setShowSessionsPanel(false);
-    setShowTranscriptionPage(false);
+    setShowConsultationPage(false);
     setSelectedPatientFilter(null);
     setViewingSessionId(null);
     console.log('✅ [navigateToPatients] Navegação concluída');
@@ -80,7 +80,7 @@ function App() {
     setShowAdminPanel(false);
     setShowPatientPanel(false);
     setShowSessionsPanel(true);
-    setShowTranscriptionPage(false);
+    setShowConsultationPage(false);
     setSelectedPatientFilter(null);
     setViewingSessionId(null);
     console.log('✅ [navigateToSessions] Navegação concluída');
@@ -91,7 +91,7 @@ function App() {
     setShowAdminPanel(false);
     setShowPatientPanel(false);
     setShowSessionsPanel(true);
-    setShowTranscriptionPage(false);
+    setShowConsultationPage(false);
     setSelectedPatientFilter(patientId);
     setViewingSessionId(null);
     console.log('✅ [navigateToSessionsWithPatient] Navegação concluída');
@@ -103,23 +103,23 @@ function App() {
     setShowAdminPanel(false);
     setShowPatientPanel(false);
     setShowSessionsPanel(false);
-    setShowTranscriptionPage(false);
+    setShowConsultationPage(false);
     console.log('✅ [navigateToSessionDetail] Navegação concluída');
   };
 
-  const navigateToTranscription = () => {
-    console.log('🎤 [navigateToTranscription] Navegando para transcrição');
-    setShowTranscriptionPage(true);
+  const navigateToConsultation = () => {
+    console.log('🎤 [navigateToConsultation] Navegando para consulta');
+    setShowConsultationPage(true);
     setShowAdminPanel(false);
     setShowPatientPanel(false);
     setShowSessionsPanel(false);
     setViewingSessionId(null);
     setSelectedPatientFilter(null);
-    console.log('✅ [navigateToTranscription] Navegação concluída');
+    console.log('✅ [navigateToConsultation] Navegação concluída');
   };
 
   const getCurrentSection = () => {
-    const section = showTranscriptionPage ? 'sessions' :
+    const section = showConsultationPage ? 'sessions' :
                    viewingSessionId ? 'sessions' :
                    showAdminPanel ? 'admin' : 
                    showPatientPanel ? 'patients' : 
@@ -172,8 +172,8 @@ function App() {
 
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
           {/* Render content based on current state */}
-          {showTranscriptionPage ? (
-            <TranscriptionPage
+          {showConsultationPage ? (
+            <ConsultationPage
               currentUser={user}
               onBack={navigateToSessions}
             />
@@ -195,7 +195,7 @@ function App() {
               currentUser={user} 
               initialPatientFilter={selectedPatientFilter}
               onViewSession={navigateToSessionDetail}
-              onStartNewTranscription={navigateToTranscription}
+              onStartNewConsultation={navigateToConsultation}
             />
           ) : (
             <DashboardSummaries
@@ -203,7 +203,7 @@ function App() {
               onNavigateToPatients={navigateToPatients}
               onNavigateToSessions={navigateToSessions}
               onNavigateToAdmin={isAdmin() ? navigateToAdmin : undefined}
-              onStartNewTranscription={navigateToTranscription}
+              onStartNewConsultation={navigateToConsultation}
             />
           )}
         </div>

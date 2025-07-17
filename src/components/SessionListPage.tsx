@@ -10,7 +10,7 @@ interface SessionListPageProps {
   currentUser: AuthUser;
   initialPatientFilter?: string;
   onViewSession: (sessionId: string) => void;
-  onStartNewTranscription: () => void;
+  onStartNewConsultation: () => void;
 }
 
 // Add debug logging
@@ -21,7 +21,7 @@ const log = (message: string, data?: any) => {
   }
 };
 
-export default function SessionListPage({ currentUser, initialPatientFilter, onViewSession, onStartNewTranscription }: SessionListPageProps) {
+export default function SessionListPage({ currentUser, initialPatientFilter, onViewSession, onStartNewConsultation }: SessionListPageProps) {
   const [sessions, setSessions] = useState<Session[]>([]);
   const [patients, setPatients] = useState<Patient[]>([]);
   const [loading, setLoading] = useState(true);
@@ -173,11 +173,11 @@ export default function SessionListPage({ currentUser, initialPatientFilter, onV
             </div>
           </div>
           <button
-            onClick={onStartNewTranscription}
+            onClick={onStartNewConsultation}
             className="bg-purple-600 hover:bg-purple-700 text-white px-4 py-2 rounded-lg flex items-center space-x-2 transition-colors"
           >
             <Plus className="h-4 w-4" />
-            <span>Nova Transcrição</span>
+            <span>Nova Consulta</span>
           </button>
         </div>
 
@@ -254,10 +254,10 @@ export default function SessionListPage({ currentUser, initialPatientFilter, onV
               </p>
               {!searchTerm && selectedPatient === 'all' && !dateFilter && (
                 <button
-                  onClick={onStartNewTranscription}
+                  onClick={onStartNewConsultation}
                   className="mt-3 text-purple-600 hover:text-purple-700 font-medium"
                 >
-                  Criar primeira transcrição
+                  Criar primeira consulta
                 </button>
               )}
             </div>

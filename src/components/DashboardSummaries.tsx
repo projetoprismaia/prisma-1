@@ -9,7 +9,7 @@ interface DashboardSummariesProps {
   onNavigateToPatients: () => void;
   onNavigateToSessions: () => void;
   onNavigateToAdmin?: () => void;
-  onStartNewTranscription: () => void;
+  onStartNewConsultation: () => void;
 }
 
 interface DashboardData {
@@ -30,7 +30,7 @@ export default function DashboardSummaries({
   onNavigateToPatients, 
   onNavigateToSessions,
   onNavigateToAdmin,
-  onStartNewTranscription
+  onStartNewConsultation
 }: DashboardSummariesProps) {
   const [data, setData] = useState<DashboardData>({
     totalPatients: 0,
@@ -248,12 +248,12 @@ export default function DashboardSummaries({
 
         {/* Nova Transcrição */}
         <div 
-          onClick={onStartNewTranscription}
+          onClick={onStartNewConsultation}
           className="glass-card rounded-xl shadow-lg p-6 hover:shadow-xl transition-all duration-200 cursor-pointer hover:scale-105 border-2 border-dashed border-orange-300 hover:border-orange-400"
         >
           <div className="flex items-center justify-between">
             <div>
-              <p className="text-sm font-medium text-orange-600 mb-1">Nova Transcrição</p>
+              <p className="text-sm font-medium text-orange-600 mb-1">Nova Consulta</p>
               <p className="text-lg font-bold text-gray-900">Iniciar Consulta</p>
             </div>
             <div className="bg-orange-100 p-3 rounded-full">

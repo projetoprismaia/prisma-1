@@ -6,7 +6,7 @@ import { AuthUser } from '../types/user';
 import { useNotification } from '../hooks/useNotification';
 import { formatDateTimeShort } from '../utils/dateFormatter';
 
-interface TranscriptionPageProps {
+interface ConsultationPageProps {
   currentUser: AuthUser;
   onBack: () => void;
 }
@@ -18,7 +18,7 @@ interface AudioDevice {
   label: string;
 }
 
-export default function TranscriptionPage({ currentUser, onBack }: TranscriptionPageProps) {
+export default function ConsultationPage({ currentUser, onBack }: ConsultationPageProps) {
   const [patients, setPatients] = useState<Patient[]>([]);
   const [audioDevices, setAudioDevices] = useState<AudioDevice[]>([]);
   const [selectedPatient, setSelectedPatient] = useState<string>('');
@@ -169,7 +169,7 @@ export default function TranscriptionPage({ currentUser, onBack }: Transcription
   const startRecording = async () => {
     try {
       if (!selectedPatient || !selectedDevice) {
-        showError('Campos Obrigatórios', 'Selecione um paciente e um microfone para iniciar a sessão.');
+        showError('Campos Obrigatórios', 'Selecione um paciente e um microfone para iniciar a consulta.');
         return;
       }
 
@@ -199,7 +199,7 @@ export default function TranscriptionPage({ currentUser, onBack }: Transcription
       }, 1000);
 
       setRecordingStatus('recording');
-      showSuccess('Gravação Iniciada', 'A transcrição em tempo real foi iniciada.');
+      showSuccess('Consulta Iniciada', 'A transcrição em tempo real foi iniciada.');
 
     } catch (error) {
       console.error('Erro ao iniciar gravação:', error);
@@ -217,7 +217,7 @@ export default function TranscriptionPage({ currentUser, onBack }: Transcription
     }
 
     setRecordingStatus('paused');
-    showSuccess('Gravação Pausada', 'A transcrição foi pausada.');
+    showSuccess('Consulta Pausada', 'A transcrição foi pausada.');
   };
 
   const resumeRecording = () => {
@@ -230,7 +230,7 @@ export default function TranscriptionPage({ currentUser, onBack }: Transcription
     }, 1000);
 
     setRecordingStatus('recording');
-    showSuccess('Gravação Retomada', 'A transcrição foi retomada.');
+    showSuccess('Consulta Retomada', 'A transcrição foi retomada.');
   };
 
   const stopRecording = async () => {
@@ -272,7 +272,7 @@ export default function TranscriptionPage({ currentUser, onBack }: Transcription
       if (error) throw error;
 
       setRecordingStatus('completed');
-      showSuccess('Sessão Salva', 'A transcrição foi salva com sucesso!');
+      showSuccess('Consulta Salva', 'A consulta foi salva com sucesso!');
       
       // Voltar para a lista de sessões após 2 segundos
       setTimeout(() => {
@@ -281,7 +281,7 @@ export default function TranscriptionPage({ currentUser, onBack }: Transcription
 
     } catch (error) {
       console.error('Erro ao salvar sessão:', error);
-      showError('Erro ao Salvar', 'Não foi possível salvar a sessão. Tente novamente.');
+      showError('Erro ao Salvar', 'Não foi possível salvar a consulta. Tente novamente.');
       setRecordingStatus('recording'); // Voltar ao estado anterior
     } finally {
       setSaving(false);
@@ -321,7 +321,7 @@ export default function TranscriptionPage({ currentUser, onBack }: Transcription
         <div className="glass-card rounded-xl shadow-xl p-8 max-w-md text-center border border-white/20">
           <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-indigo-600 mx-auto mb-4"></div>
           <h2 className="text-xl font-semibold text-gray-800 mb-2">Carregando...</h2>
-          <p className="text-gray-600 text-sm">Preparando a página de transcrição</p>
+          <p className="text-gray-600 text-sm">Preparando a página de consulta</p>
         </div>
       </div>
     );
@@ -342,7 +342,7 @@ export default function TranscriptionPage({ currentUser, onBack }: Transcription
             </button>
           </div>
           
-          <h2 className="text-lg font-semibold text-gray-800 mb-4">Configuração da Sessão</h2>
+          <h2 className="text-lg font-semibold text-gray-800 mb-4">Configuração da Consulta</h2>
           
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             {/* Patient Selection */}
@@ -393,7 +393,7 @@ export default function TranscriptionPage({ currentUser, onBack }: Transcription
           {/* Session Title */}
           <div className="mt-6">
             <label className="block text-sm font-medium text-gray-700 mb-2">
-              Título da Sessão
+              Título da Consulta
             </label>
             <div className="w-full px-4 py-2 border border-gray-200 rounded-lg bg-gray-50">
               <p className="text-gray-800 font-medium">
@@ -529,7 +529,7 @@ export default function TranscriptionPage({ currentUser, onBack }: Transcription
         <div className="glass-card rounded-xl shadow-lg p-6">
           <div className="flex items-center justify-center space-x-3 text-purple-600">
             <Save className="h-6 w-6" />
-            <span className="text-lg font-semibold">Sessão salva com sucesso!</span>
+            <span className="text-lg font-semibold">Consulta salva com sucesso!</span>
           </div>
           <p className="text-center text-gray-600 mt-2">
             Redirecionando para a lista de sessões...
