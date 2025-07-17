@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useAuth } from './hooks/useAuth';
 import { testSupabaseConnection } from './lib/supabase';
 import OrganicBackground from './components/OrganicBackground';
