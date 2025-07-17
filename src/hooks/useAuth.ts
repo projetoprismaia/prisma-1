@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { supabase } from '../lib/supabase';
 import { AuthUser, UserProfile } from '../types/user';
 
@@ -6,6 +6,7 @@ export function useAuth() {
   const [user, setUser] = useState<AuthUser | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const isProcessingRef = useRef(false);
 
   console.log('🔍 [useAuth] Hook inicializado');
 
@@ -48,17 +49,21 @@ export function useAuth() {
 
   useEffect(() => {
     let mounted = true;
-    let isProcessing = false;
 
     console.log('🔍 [useAuth] useEffect iniciado');
 
     const initializeAuth = async () => {
-      if (isProcessing || !mounted) return;
-      isProcessing = true;
+      if (isProcessingRef.current) {
+        console.log('⚠️ [initializeAuth] Já está processando, ignorando...');
+        return;
+      }
+
+      isProcessingRef.current = true;
 
       try {
+        setLoading(true);
         console.log('🔍 [initializeAuth] Inicializando autenticação...');
-        console.log('🔍 [initializeAuth] mounted:', mounted, 'isProcessing:', isProcessing);
+        console.log('🔍 [initializeAuth] mounted:', mounted, 'isProcessing:', isProcessingRef.current);
         
         // Verificar sessão atual
         const { data: { session }, error: sessionError } = await supabase.auth.getSession();
@@ -77,7 +82,6 @@ export function useAuth() {
           if (mounted) {
             setUser(null);
             setError(null);
-            setLoading(false);
           }
           return;
         }
@@ -91,7 +95,6 @@ export function useAuth() {
           if (mounted) {
             setUser(null);
             setError(null);
-            setLoading(false);
           }
         }
       } catch (error) {
@@ -100,10 +103,12 @@ export function useAuth() {
         if (mounted) {
           setUser(null);
           setError(null);
-          setLoading(false);
         }
       } finally {
-        isProcessing = false;
+        if (mounted) {
+          setLoading(false);
+        }
+        isProcessingRef.current = false;
       }
     };
 
@@ -144,7 +149,6 @@ export function useAuth() {
             if (mounted) {
               setUser(null);
               setError(null);
-              setLoading(false);
             }
             return;
           }
@@ -180,7 +184,6 @@ export function useAuth() {
             if (mounted) {
               setUser(null);
               setError(null);
-              setLoading(false);
             }
             return;
           }
@@ -192,7 +195,6 @@ export function useAuth() {
               email: authUser.email,
               profile: newProfile as UserProfile
             });
-            setLoading(false);
           }
         } else {
           console.log('✅ [handleUserSession] Perfil encontrado');
@@ -208,7 +210,6 @@ export function useAuth() {
               email: authUser.email,
               profile: profile as UserProfile
             });
-            setLoading(false);
           }
         }
       } catch (error) {
@@ -218,7 +219,6 @@ export function useAuth() {
         if (mounted) {
           setUser(null);
           setError(null);
-          setLoading(false);
         }
       }
     };
@@ -228,31 +228,45 @@ export function useAuth() {
 
     // Listener para mudanças de autenticação
     const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
-      if (!mounted || isProcessing) return;
+      if (!mounted || isProcessingRef.current) {
+        console.log('⚠️ [onAuthStateChange] Ignorando evento - mounted:', mounted, 'isProcessing:', isProcessingRef.current);
+        return;
+      }
       
-      console.log('🔄 [onAuthStateChange] Mudança de autenticação:', {
-        event,
-        session: session ? 'EXISTS' : 'NULL',
-        user: session?.user ? session.user.id : 'NO_USER',
-        mounted,
-        isProcessing
-      });
+      isProcessingRef.current = true;
       
-      if (event === 'SIGNED_OUT' || !session?.user) {
-        console.log('🚪 [onAuthStateChange] Usuário deslogado');
-        console.log('🔄 [onAuthStateChange] Definindo user como null...');
+      try {
+        console.log('🔄 [onAuthStateChange] Mudança de autenticação:', {
+          event,
+          session: session ? 'EXISTS' : 'NULL',
+          user: session?.user ? session.user.id : 'NO_USER',
+          mounted
+        });
+        
+        if (event === 'SIGNED_OUT' || !session?.user) {
+          console.log('🚪 [onAuthStateChange] Usuário deslogado');
+          if (mounted) {
+            setUser(null);
+            setError(null);
+            setLoading(false);
+            console.log('✅ [onAuthStateChange] Estado do usuário limpo - deve mostrar tela de login');
+          }
+          return;
+        }
+        
+        if (event === 'SIGNED_IN' && session?.user) {
+          console.log('🔑 [onAuthStateChange] Usuário logado');
+          await handleUserSession(session.user);
+        }
+      } catch (error) {
+        console.error('❌ [onAuthStateChange] Erro no processamento do evento:', error);
         if (mounted) {
           setUser(null);
           setError(null);
           setLoading(false);
-          console.log('✅ [onAuthStateChange] Estado do usuário limpo - deve mostrar tela de login');
         }
-        return;
-      }
-      
-      if (event === 'SIGNED_IN' && session?.user) {
-        console.log('🔑 [onAuthStateChange] Usuário logado');
-        await handleUserSession(session.user);
+      } finally {
+        isProcessingRef.current = false;
       }
     });
 
@@ -274,8 +288,17 @@ export function useAuth() {
       console.log('🔓 [useAuth] Usuário deslogado - App deve mostrar tela de login');
     }
   }, [user, loading]);
+
   const signOut = async () => {
+    if (isProcessingRef.current) {
+      console.log('⚠️ [signOut] Já está processando, ignorando...');
+      return;
+    }
+
+    isProcessingRef.current = true;
+    
     try {
+      setLoading(true);
       console.log('🔓 [signOut] Fazendo logout...');
       console.log('🔍 [signOut] Estado atual do usuário:', user ? user.email : 'NULL');
       
@@ -293,14 +316,18 @@ export function useAuth() {
       console.log('🔧 [signOut] Forçando limpeza do estado devido ao erro...');
       setUser(null);
       setError(null);
+    } finally {
       setLoading(false);
+      isProcessingRef.current = false;
     }
   };
 
   const isAdmin = () => user?.profile?.role === 'admin';
 
   const refreshProfile = async () => {
-    if (!user) return;
+    if (!user || isProcessingRef.current) return;
+    
+    isProcessingRef.current = true;
     
     try {
       console.log('🔄 [refreshProfile] Revalidando perfil do usuário:', user.id);
@@ -339,6 +366,8 @@ export function useAuth() {
       }
     } catch (error) {
       console.error('❌ [refreshProfile] Erro ao revalidar perfil:', error);
+    } finally {
+      isProcessingRef.current = false;
     }
   };
 
