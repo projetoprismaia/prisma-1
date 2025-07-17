@@ -30,7 +30,6 @@ function App() {
     const handleTabVisible = async () => {
       if (!user) return;
       
-      
       try {
         // Pequeno delay para evitar múltiplas requisições
         await new Promise(resolve => setTimeout(resolve, 500));
@@ -40,7 +39,7 @@ function App() {
         // Disparar recarregamento de dados nos componentes
         setRefreshTrigger(prev => prev + 1);
       } catch (error) {
-      }
+        // Silenciar erro de recarregamento
     };
 
     // Registrar callback para quando aba voltar a ficar visível
@@ -49,7 +48,6 @@ function App() {
     }
   }, [user, refreshProfile, onTabVisible]);
 
-  
   const handleSignOut = () => {
     signOut().then(() => {
       // Forçar limpeza adicional do estado local após logout

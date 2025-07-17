@@ -15,13 +15,7 @@ export function useTabVisibility(): UseTabVisibilityReturn {
     const handleVisibilityChange = () => {
       const isVisible = !document.hidden;
       
-      console.log('🔍 [useTabVisibility] Mudança de visibilidade:', {
-        isVisible,
-        previousState: isTabVisible,
-      });
-      
       if (!isTabVisible && isVisible) {
-        console.log('👁️ [useTabVisibility] Aba ficou visível novamente');
         setWasTabHidden(true);
         
         // Executar todos os callbacks registrados
@@ -29,11 +23,10 @@ export function useTabVisibility(): UseTabVisibilityReturn {
           try {
             callback();
           } catch (error) {
-            console.error('❌ [useTabVisibility] Erro ao executar callback:', error);
+            // Silenciar erros de callback
           }
         });
       } else if (isTabVisible && !isVisible) {
-        console.log('🙈 [useTabVisibility] Aba ficou oculta');
         setWasTabHidden(false);
       }
       setIsTabVisible(isVisible);

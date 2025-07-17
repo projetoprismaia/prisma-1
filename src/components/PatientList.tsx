@@ -34,16 +34,14 @@ export default function PatientList({ currentUser, refreshTrigger, onNavigateToS
     }
   }, [refreshTrigger]);
 
-  // 🔧 CORREÇÃO: Recarregar dados quando a aba ganhar foco
+  // Recarregar dados quando a aba ganhar foco
   useEffect(() => {
     const handleFocus = () => {
-      console.log('Página ganhou foco, recarregando dados...');
       fetchPatients();
     };
 
     const handleVisibilityChange = () => {
       if (!document.hidden) {
-        console.log('Página ficou visível, recarregando dados...');
         fetchPatients();
       }
     };
@@ -73,10 +71,7 @@ export default function PatientList({ currentUser, refreshTrigger, onNavigateToS
       const patients = data || [];
       setPatients(patients);
       
-      // 🔧 CORREÇÃO: Log para debug
-      console.log('Dados recarregados:', patients.length, 'pacientes encontrados');
     } catch (error) {
-      console.error('Erro ao carregar pacientes:', error);
       showError('Erro ao Carregar', 'Não foi possível carregar os pacientes');
     } finally {
       setLoading(false);
@@ -139,7 +134,6 @@ export default function PatientList({ currentUser, refreshTrigger, onNavigateToS
           : 'O novo paciente foi adicionado com sucesso.'
       );
     } catch (error: any) {
-      console.error('Erro ao salvar paciente:', error);
       showError(
         'Erro ao Salvar',
         `Não foi possível salvar o paciente: ${error.message}`
@@ -167,7 +161,6 @@ export default function PatientList({ currentUser, refreshTrigger, onNavigateToS
         'O paciente foi removido com sucesso do sistema.'
       );
     } catch (error: any) {
-      console.error('Erro ao deletar paciente:', error);
       showError(
         'Erro ao Deletar',
         `Não foi possível deletar o paciente: ${error.message}`

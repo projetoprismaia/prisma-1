@@ -7,85 +7,42 @@ export function useAuth() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  // Função para limpar todas as sessões - movida para escopo principal
-  const clearAllSessions = async () => {
-    try {
-      console.log('🧹 [clearAllSessions] Limpando todas as sessões...');
-      const keys = Object.keys(localStorage);
-      keys.forEach(key => {
-        if (key.startsWith('sb-') || key.includes('supabase')) {
-          localStorage.removeItem(key);
-          console.log('🗑️ [clearAllSessions] Removido do localStorage:', key);
-        }
-      });
-
-      const sessionKeys = Object.keys(sessionStorage);
-      sessionKeys.forEach(key => {
-        if (key.startsWith('sb-') || key.includes('supabase')) {
-          sessionStorage.removeItem(key);
-          console.log('🗑️ [clearAllSessions] Removido do sessionStorage:', key);
-        }
-      });
-
-      const { error } = await supabase.auth.signOut();
-      if (error) {
-        console.error('⚠️ [clearAllSessions] Erro no signOut do Supabase:', error);
-      }
-    } catch (error) {
-      console.error('❌ [clearAllSessions] Erro ao limpar sessões:', error);
-    }
-  };
-
   useEffect(() => {
     let mounted = true;
-    let isProcessing = false;
 
     const initializeAuth = async () => {
-      if (isProcessing || !mounted) return;
-      isProcessing = true;
       try {
-        // Verificar sessão atual
+        // Verificar sessão atual uma única vez
         const { data: { session }, error: sessionError } = await supabase.auth.getSession();
         
         if (!mounted) return;
         
         if (sessionError) {
-          await clearAllSessions();
-          if (mounted) {
-            setUser(null);
-            setError(null);
-            setLoading(false);
-          }
+          setError(sessionError.message);
+          setLoading(false);
           return;
         }
         
         if (session?.user) {
-          await handleUserSession(session.user);
+          await loadUserProfile(session.user);
         } else {
-          if (mounted) {
-            setUser(null);
-            setError(null);
-            setLoading(false);
-          }
-        }
-      } catch (error) {
-        console.error('❌ [initializeAuth] Erro na inicialização:', error);
-        await clearAllSessions();
-        if (mounted) {
           setUser(null);
-          setError(null);
           setLoading(false);
         }
-      } finally {
-        isProcessing = false;
+      } catch (err: any) {
+        if (mounted) {
+          setError(err.message || 'Erro na autenticação');
+          setLoading(false);
+        }
       }
     };
 
-    const handleUserSession = async (authUser: any) => {
+    const loadUserProfile = async (authUser: any) => {
       if (!mounted) return;
+      
       try {
-        // Tentar buscar perfil existente
-        const { data: profile, error } = await supabase
+        // Buscar perfil do usuário
+        const { data: profile, error: profileError } = await supabase
           .from('profiles')
           .select('*')
           .eq('id', authUser.id)
@@ -93,129 +50,136 @@ export function useAuth() {
 
         if (!mounted) return;
 
-        if (error) {
-          // Se usuário não existe no banco, limpar tudo e fazer logout
-          if (error.code === 'PGRST116' || 
-              error.message?.includes('No rows found') ||
-              error.message?.includes('relation "profiles" does not exist')) {
-            await clearAllSessions();
-            if (mounted) {
-              setUser(null);
-              setError(null);
+        if (profileError) {
+          // Se perfil não existe, criar um novo
+          if (profileError.code === 'PGRST116') {
+            const { data: newProfile, error: insertError } = await supabase
+              .from('profiles')
+              .insert({
+                id: authUser.id,
+                email: authUser.email,
+                role: 'user',
+                full_name: authUser.user_metadata?.full_name || null,
+                created_at: new Date().toISOString(),
+                updated_at: new Date().toISOString()
+              })
+              .select()
+              .single();
+
+            if (!mounted) return;
+
+            if (insertError) {
+              setError('Erro ao criar perfil do usuário');
               setLoading(false);
+              return;
             }
-            return;
-          }
 
-          // Para outros erros, tentar criar perfil
-          const { data: newProfile, error: insertError } = await supabase
-            .from('profiles')
-            .insert({
-              id: authUser.id,
-              email: authUser.email,
-              role: 'user',
-              full_name: authUser.user_metadata?.full_name || null,
-              created_at: new Date().toISOString(),
-              updated_at: new Date().toISOString()
-            })
-            .select()
-            .single();
-
-          if (!mounted) return;
-
-          if (insertError) {
-            // Qualquer erro na criação do perfil resulta em logout
-            await clearAllSessions();
-            if (mounted) {
-              setUser(null);
-              setError(null);
-              setLoading(false);
-            }
-            return;
-          }
-
-          if (mounted) {
             setUser({
               id: authUser.id,
               email: authUser.email,
               profile: newProfile as UserProfile
             });
-            setLoading(false);
+          } else {
+            setError('Erro ao carregar perfil do usuário');
           }
-        } else {
-          if (mounted) {
-            setUser({
-              id: authUser.id,
-              email: authUser.email,
-              profile: profile as UserProfile
-            });
-            setLoading(false);
-          }
+          setLoading(false);
+          return;
         }
-      } catch (error) {
-        await clearAllSessions();
+
+        // Perfil carregado com sucesso
+        setUser({
+          id: authUser.id,
+          email: authUser.email,
+          profile: profile as UserProfile
+        });
+        setLoading(false);
+      } catch (err: any) {
         if (mounted) {
-          setUser(null);
-          setError(null);
+          setError(err.message || 'Erro ao carregar perfil');
           setLoading(false);
         }
       }
     };
-    // Inicializar
+
+    // Inicializar autenticação
     initializeAuth();
+
     // Listener para mudanças de autenticação
     const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
-      if (!mounted || isProcessing) return;
+      if (!mounted) return;
       
       if (event === 'SIGNED_OUT' || !session?.user) {
-        if (mounted) {
-          setUser(null);
-          setError(null);
-          setLoading(false);
-        }
-        return;
-      }
-      
-      if (event === 'SIGNED_IN' && session?.user) {
-        await handleUserSession(session.user);
-      }
-    });
-    return () => {
-      mounted = false;
-      subscription.unsubscribe();
-    };
-  }, []);
-  // Log adicional para monitorar mudanças no estado do usuário
-  useEffect(() => {
-  }, [user, loading]);
-  const signOut = async () => {
-    try {
-      // Usar a função centralizada de limpeza
-      await clearAllSessions();
-    } catch (error) {
-      // Forçar limpeza do estado mesmo com erro
-      await clearAllSessions();
-      // Forçar atualização do estado se o onAuthStateChange não disparar
-      setUser(null);
-      setError(null);
-      setLoading(false);
-    }
-  };
-  const isAdmin = () => user?.profile?.role === 'admin';
-  const refreshProfile = async () => {
-    if (!user) return;
-    
-    try {
-      // Verificar sessão atual
-      const { data: { session }, error: sessionError } = await supabase.auth.getSession();
-      
-      if (sessionError || !session?.user) {
-        await clearAllSessions();
         setUser(null);
         setError(null);
         setLoading(false);
         return;
       }
+      
+      if (event === 'SIGNED_IN' && session?.user) {
+        setLoading(true);
+        await loadUserProfile(session.user);
+      }
+    });
+
+    return () => {
+      mounted = false;
+      subscription.unsubscribe();
+    };
+  }, []); // Dependências vazias - executa apenas uma vez
+
+  const signOut = async () => {
+    try {
+      setLoading(true);
+      
+      // Limpar localStorage
+      const keys = Object.keys(localStorage);
+      keys.forEach(key => {
+        if (key.startsWith('sb-') || key.includes('supabase')) {
+          localStorage.removeItem(key);
+        }
+      });
+
+      // Limpar sessionStorage
+      const sessionKeys = Object.keys(sessionStorage);
+      sessionKeys.forEach(key => {
+        if (key.startsWith('sb-') || key.includes('supabase')) {
+          sessionStorage.removeItem(key);
+        }
+      });
+
+      // Fazer logout no Supabase
+      const { error } = await supabase.auth.signOut();
+      if (error) throw error;
+
+      // Limpar estado
+      setUser(null);
+      setError(null);
+      setLoading(false);
+    } catch (err: any) {
+      // Forçar limpeza mesmo com erro
+      setUser(null);
+      setError(null);
+      setLoading(false);
+    }
+  };
+
+  const isAdmin = () => {
+    return user?.profile?.role === 'admin';
+  };
+
+  const refreshProfile = async () => {
+    if (!user) return;
+    
+    try {
+      // Verificar se ainda há sessão válida
+      const { data: { session }, error: sessionError } = await supabase.auth.getSession();
+      
+      if (sessionError || !session?.user) {
+        setUser(null);
+        setError(null);
+        return;
+      }
+
       // Buscar perfil atualizado
       const { data: profile, error } = await supabase
         .from('profiles')
@@ -234,9 +198,11 @@ export function useAuth() {
           profile: profile as UserProfile
         });
       }
-    } catch (error) {
+    } catch (err) {
+      // Silenciar erros de refresh
     }
   };
+
   return {
     user,
     loading,

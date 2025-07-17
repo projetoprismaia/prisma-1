@@ -65,7 +65,7 @@ export default function DashboardSummaries({
         await fetchUserData();
       }
     } catch (error) {
-      console.error('Erro ao buscar dados do dashboard:', error);
+      // Silenciar erro - dados serão mostrados como 0
     } finally {
       setLoading(false);
     }

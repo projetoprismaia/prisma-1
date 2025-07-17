@@ -31,7 +31,6 @@ export default function AdminPanel({ currentUser, refreshTrigger }: AdminPanelPr
   // Recarregar dados quando refreshTrigger mudar
   useEffect(() => {
     if (refreshTrigger && refreshTrigger > 0) {
-      console.log('🔄 [AdminPanel] Recarregando dados devido ao refreshTrigger:', refreshTrigger);
       fetchUsers();
     }
   }, [refreshTrigger]);
@@ -124,7 +123,6 @@ export default function AdminPanel({ currentUser, refreshTrigger }: AdminPanelPr
           patientsData?.forEach(patient => {
             if (patient.user_id && counts.hasOwnProperty(patient.user_id)) {
               counts[patient.user_id]++;
-            } else if (patient.user_id) {
             }
           });
           
@@ -162,7 +160,6 @@ export default function AdminPanel({ currentUser, refreshTrigger }: AdminPanelPr
         user.id === userId ? { ...user, role: newRole } : user
       ));
     } catch (error) {
-      console.error('Erro ao atualizar role:', error);
       showError(
         'Erro ao Atualizar',
         'Não foi possível atualizar o role do usuário. Tente novamente.'
