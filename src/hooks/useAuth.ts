@@ -8,7 +8,7 @@ export function useAuth() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  logger.debug('AUTH', 'useAuth hook inicializado');
+  // Remover log inicial que pode causar problemas
 
   // Função para limpar todas as sessões - movida para escopo principal
   const clearAllSessions = async () => {
@@ -246,7 +246,7 @@ export function useAuth() {
         logger.error('AUTH', 'Erro crítico em handleUserSession', {
           error,
           userId: authUser.id,
-          stack: error instanceof Error ? error.stack : undefined
+          message: error instanceof Error ? error.message : 'Unknown error'
         });
         await clearAllSessions();
         if (mounted) {

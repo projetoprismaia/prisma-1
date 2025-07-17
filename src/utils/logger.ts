@@ -20,11 +20,22 @@ class Logger {
   private logs: LogEntry[] = [];
   private sessionId: string;
   private maxLogs = 1000; // Manter apenas os últimos 1000 logs
-  private isEnabled = true;
+  private isEnabled = false; // Desabilitar por padrão para evitar problemas
 
   constructor() {
     this.sessionId = this.generateSessionId();
-    this.log('INFO', 'SESSION', 'Logger inicializado', { sessionId: this.sessionId });
+    // Não fazer log na inicialização para evitar problemas
+  }
+
+  // Método para habilitar logs
+  enable() {
+    this.isEnabled = true;
+    this.log('INFO', 'SESSION', 'Logger habilitado', { sessionId: this.sessionId });
+  }
+
+  // Método para desabilitar logs
+  disable() {
+    this.isEnabled = false;
   }
 
   private generateSessionId(): string {
