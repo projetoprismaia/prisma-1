@@ -1,7 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { Users, FileText, TrendingUp, Calendar, Clock, Mic } from 'lucide-react';
-import { supabase } from '../lib/supabase';
+import { supabase, fetchDataWithRetry } from '../lib/supabase';
 import { AuthUser } from '../types/user';
+import { useNotification } from '../hooks/useNotification';
 import { formatDateTime } from '../utils/dateFormatter';
 
 interface DashboardSummariesProps {
@@ -39,6 +40,8 @@ export default function DashboardSummaries({
     recentSessions: []
   });
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<Error | null>(null);
+  const { showErrorFromException } = useNotification();
 
   const isAdmin = currentUser.profile.role === 'admin';
 
@@ -49,16 +52,24 @@ export default function DashboardSummaries({
   const fetchDashboardData = async () => {
     try {
       setLoading(true);
+      setError(null);
+      console.log('📊 [DashboardSummaries] Iniciando busca de dados do dashboard...');
       
       if (isAdmin) {
+        console.log('👑 [DashboardSummaries] Buscando dados como admin...');
         // Admin vê dados de todos os usuários
         await fetchAdminData();
       } else {
+        console.log('👤 [DashboardSummaries] Buscando dados como usuário...');
         // Usuário comum vê apenas seus próprios dados
         await fetchUserData();
       }
+      
+      console.log('✅ [DashboardSummaries] Dados do dashboard carregados com sucesso');
     } catch (error) {
-      console.error('Erro ao buscar dados do dashboard:', error);
+      console.error('❌ [DashboardSummaries] Erro ao buscar dados do dashboard:', error);
+      setError(error as Error);
+      showErrorFromException(error as Error, 'Erro ao Carregar Dashboard');
     } finally {
       setLoading(false);
     }
@@ -66,38 +77,44 @@ export default function DashboardSummaries({
 
   const fetchAdminData = async () => {
     // Buscar total de usuários
-    const { count: usersCount } = await supabase
-      .from('profiles')
-      .select('*', { count: 'exact', head: true });
+    console.log('👥 [DashboardSummaries] Buscando contagem de usuários...');
+    const usersCount = await fetchDataWithRetry(
+      () => supabase.from('profiles').select('*', { count: 'exact', head: true }).then(result => ({ data: result.count, error: result.error })),
+      { skipSessionCheck: false }
+    );
 
     // Buscar total de pacientes
-    const { count: patientsCount } = await supabase
-      .from('patients')
-      .select('*', { count: 'exact', head: true });
+    console.log('👤 [DashboardSummaries] Buscando contagem de pacientes...');
+    const patientsCount = await fetchDataWithRetry(
+      () => supabase.from('patients').select('*', { count: 'exact', head: true }).then(result => ({ data: result.count, error: result.error })),
+      { skipSessionCheck: false }
+    );
 
     // Buscar sessões por status
-    const { data: sessions } = await supabase
-      .from('sessions')
-      .select('id');
+    console.log('📄 [DashboardSummaries] Buscando sessões...');
+    const sessions = await fetchDataWithRetry(
+      () => supabase.from('sessions').select('id'),
+      { skipSessionCheck: false }
+    );
 
     // Buscar sessões recentes
-    const { data: recentSessions } = await supabase
-      .from('sessions')
-      .select(`
+    console.log('📅 [DashboardSummaries] Buscando sessões recentes...');
+    const recentSessions = await fetchDataWithRetry(
+      () => supabase.from('sessions').select(`
         id,
         title,
         created_at,
         status,
         patient:patients(name)
-      `)
-      .order('created_at', { ascending: false })
-      .limit(5);
+      `).order('created_at', { ascending: false }).limit(5),
+      { skipSessionCheck: false }
+    );
 
     setData({
       totalUsers: usersCount || 0,
       totalPatients: patientsCount || 0,
       totalSessions: sessions?.length || 0,
-      recentSessions: recentSessions?.map(session => ({
+      recentSessions: recentSessions?.map((session: any) => ({
         id: session.id,
         title: session.title,
         patient_name: session.patient?.name || 'Paciente não encontrado',
@@ -109,35 +126,36 @@ export default function DashboardSummaries({
 
   const fetchUserData = async () => {
     // Buscar pacientes do usuário
-    const { count: patientsCount } = await supabase
-      .from('patients')
-      .select('*', { count: 'exact', head: true })
-      .eq('user_id', currentUser.id);
+    console.log('👤 [DashboardSummaries] Buscando pacientes do usuário...');
+    const patientsCount = await fetchDataWithRetry(
+      () => supabase.from('patients').select('*', { count: 'exact', head: true }).eq('user_id', currentUser.id).then(result => ({ data: result.count, error: result.error })),
+      { skipSessionCheck: false }
+    );
 
     // Buscar sessões do usuário por status
-    const { data: sessions } = await supabase
-      .from('sessions')
-      .select('id')
-      .eq('user_id', currentUser.id);
+    console.log('📄 [DashboardSummaries] Buscando sessões do usuário...');
+    const sessions = await fetchDataWithRetry(
+      () => supabase.from('sessions').select('id').eq('user_id', currentUser.id),
+      { skipSessionCheck: false }
+    );
 
     // Buscar sessões recentes do usuário
-    const { data: recentSessions } = await supabase
-      .from('sessions')
-      .select(`
+    console.log('📅 [DashboardSummaries] Buscando sessões recentes do usuário...');
+    const recentSessions = await fetchDataWithRetry(
+      () => supabase.from('sessions').select(`
         id,
         title,
         created_at,
         status,
         patient:patients(name)
-      `)
-      .eq('user_id', currentUser.id)
-      .order('created_at', { ascending: false })
-      .limit(5);
+      `).eq('user_id', currentUser.id).order('created_at', { ascending: false }).limit(5),
+      { skipSessionCheck: false }
+    );
 
     setData({
       totalPatients: patientsCount || 0,
       totalSessions: sessions?.length || 0,
-      recentSessions: recentSessions?.map(session => ({
+      recentSessions: recentSessions?.map((session: any) => ({
         id: session.id,
         title: session.title,
         patient_name: session.patient?.name || 'Paciente não encontrado',
@@ -176,6 +194,10 @@ export default function DashboardSummaries({
   if (loading) {
     return (
       <div className="space-y-6">
+        <div className="text-center">
+          <h1 className="text-3xl font-bold text-gray-900 mb-2">Carregando Dashboard...</h1>
+          <p className="text-gray-600">Buscando dados mais recentes</p>
+        </div>
         <div className="animate-pulse">
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
             {[...Array(4)].map((_, i) => (
@@ -184,6 +206,32 @@ export default function DashboardSummaries({
                 <div className="h-8 bg-gray-200 rounded w-1/2"></div>
               </div>
             ))}
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  // Mostrar erro se houver falha no carregamento
+  if (error && !loading) {
+    return (
+      <div className="space-y-6">
+        <div className="text-center">
+          <h1 className="text-3xl font-bold text-gray-900 mb-2">Dashboard</h1>
+          <p className="text-red-600">Erro ao carregar dados</p>
+        </div>
+        
+        <div className="glass-card rounded-xl shadow-lg p-6">
+          <div className="text-center py-8">
+            <TrendingUp className="h-12 w-12 text-red-500 mx-auto mb-3" />
+            <h3 className="text-lg font-semibold text-gray-800 mb-2">Erro ao Carregar Dashboard</h3>
+            <p className="text-gray-600 mb-4">{error.message}</p>
+            <button
+              onClick={fetchDashboardData}
+              className="bg-purple-600 hover:bg-purple-700 text-white px-4 py-2 rounded-lg transition-colors"
+            >
+              Tentar Novamente
+            </button>
           </div>
         </div>
       </div>

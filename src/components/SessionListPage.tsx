@@ -1,9 +1,11 @@
 import React, { useState, useEffect } from 'react';
 import { FileText, Search, Plus, Play, Pause, Square, Clock, User, Calendar, Filter, Download, Eye } from 'lucide-react';
-import { supabase } from '../lib/supabase';
+import { supabase, fetchDataWithRetry } from '../lib/supabase';
 import { Session } from '../types/session';
 import { Patient } from '../types/patient';
 import { AuthUser } from '../types/user';
+import { useSessions, usePatients } from '../hooks/useSupabaseData';
+import { useNotification } from '../hooks/useNotification';
 import { formatToDDMM, formatDateTimeShort, formatDateTime } from '../utils/dateFormatter';
 
 interface SessionListPageProps {
@@ -24,15 +26,60 @@ const log = (message: string, data?: any) => {
 export default function SessionListPage({ currentUser, initialPatientFilter, onViewSession, onStartNewTranscription }: SessionListPageProps) {
   const [sessions, setSessions] = useState<Session[]>([]);
   const [patients, setPatients] = useState<Patient[]>([]);
+  const { showErrorFromException } = useNotification();
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<Error | null>(null);
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedPatient, setSelectedPatient] = useState<string>('all');
   const [dateFilter, setDateFilter] = useState('');
 
+  // Usar hooks personalizados para buscar dados
+  const {
+    data: sessionsData,
+    loading: sessionsLoading,
+    error: sessionsError,
+    retry: retrySessions,
+    refresh: refreshSessions
+  } = useSessions(currentUser.id, selectedPatient !== 'all' ? selectedPatient : undefined);
+
+  const {
+    data: patientsData,
+    loading: patientsLoading,
+    error: patientsError,
+    retry: retryPatients
+  } = usePatients(currentUser.id);
+
   useEffect(() => {
-    fetchSessions();
-    fetchPatients();
-  }, []);
+    if (sessionsData) {
+      log('Dados de sessões recebidos:', sessionsData.length);
+      setSessions(sessionsData);
+    }
+  }, [sessionsData]);
+
+  useEffect(() => {
+    if (patientsData) {
+      log('Dados de pacientes recebidos:', patientsData.length);
+      setPatients(patientsData);
+    }
+  }, [patientsData]);
+
+  useEffect(() => {
+    if (sessionsError) {
+      console.error('❌ [SessionListPage] Erro ao carregar sessões:', sessionsError);
+      setError(sessionsError);
+    }
+  }, [sessionsError]);
+
+  useEffect(() => {
+    if (patientsError) {
+      console.error('❌ [SessionListPage] Erro ao carregar pacientes:', patientsError);
+      showErrorFromException(patientsError, 'Erro ao Carregar Pacientes');
+    }
+  }, [patientsError, showErrorFromException]);
+
+  useEffect(() => {
+    setLoading(sessionsLoading || patientsLoading);
+  }, [sessionsLoading, patientsLoading]);
 
   // Update selected patient when initialPatientFilter changes
   useEffect(() => {
@@ -41,46 +88,8 @@ export default function SessionListPage({ currentUser, initialPatientFilter, onV
     }
   }, [initialPatientFilter]);
 
-  const fetchSessions = async () => {
-    try {
-      log('Iniciando busca de sessões...');
-      const { data, error } = await supabase
-        .from('sessions')
-        .select(`
-          *,
-          patient:patients(id, name, email, whatsapp)
-        `)
-        .eq('user_id', currentUser.id)
-        .order('created_at', { ascending: false });
-
-      if (error) throw error;
-      log('Sessões encontradas:', data);
-      setSessions(data || []);
-    } catch (error) {
-      log('Erro ao buscar sessões:', error);
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const fetchPatients = async () => {
-    try {
-      log('Iniciando busca de pacientes...');
-      const { data, error } = await supabase
-        .from('patients')
-        .select('*')
-        .eq('user_id', currentUser.id)
-        .order('name');
-
-      if (error) throw error;
-      log('Pacientes encontrados:', data);
-      setPatients(data || []);
-    } catch (error) {
-      log('Erro ao buscar pacientes:', error);
-    }
-  };
-
   const exportSession = (session: Session) => {
+    log('Exportando sessão:', session.id);
     const element = document.createElement('a');
     const content = `Sessão: ${session.title}\nPaciente: ${session.patient?.name}\nData: ${new Date(session.created_at).toLocaleString('pt-BR')}\nDuração: ${session.duration}\nStatus: ${getStatusText(session.status)}\n\n${session.transcription_content || 'Sem transcrição disponível'}`;
     
@@ -147,6 +156,17 @@ export default function SessionListPage({ currentUser, initialPatientFilter, onV
   if (loading) {
     return (
       <div className="bg-white rounded-xl shadow-lg p-6">
+        <div className="flex items-center justify-between mb-4">
+          <h2 className="text-xl font-semibold text-gray-800">Carregando sessões...</h2>
+          {error && (
+            <button
+              onClick={retrySessions}
+              className="bg-purple-600 hover:bg-purple-700 text-white px-4 py-2 rounded-lg text-sm transition-colors"
+            >
+              Tentar Novamente
+            </button>
+          )}
+        </div>
         <div className="animate-pulse">
           <div className="h-6 bg-gray-200 rounded w-1/4 mb-4"></div>
           <div className="space-y-3">
@@ -154,6 +174,25 @@ export default function SessionListPage({ currentUser, initialPatientFilter, onV
               <div key={i} className="h-20 bg-gray-200 rounded"></div>
             ))}
           </div>
+        </div>
+      </div>
+    );
+  }
+
+  // Mostrar erro se houver falha no carregamento
+  if (error && !loading && sessions.length === 0) {
+    return (
+      <div className="glass-card rounded-xl shadow-lg p-6">
+        <div className="text-center py-8">
+          <FileText className="h-12 w-12 text-red-500 mx-auto mb-3" />
+          <h3 className="text-lg font-semibold text-gray-800 mb-2">Erro ao Carregar Sessões</h3>
+          <p className="text-gray-600 mb-4">{error.message}</p>
+          <button
+            onClick={retrySessions}
+            className="bg-purple-600 hover:bg-purple-700 text-white px-4 py-2 rounded-lg transition-colors"
+          >
+            Tentar Novamente
+          </button>
         </div>
       </div>
     );
