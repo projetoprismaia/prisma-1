@@ -10,6 +10,7 @@ interface SessionListPageProps {
   currentUser: AuthUser;
   initialPatientFilter?: string;
   onViewSession: (sessionId: string) => void;
+  onStartNewTranscription: () => void;
 }
 
 // Add debug logging
@@ -20,7 +21,7 @@ const log = (message: string, data?: any) => {
   }
 };
 
-export default function SessionListPage({ currentUser, initialPatientFilter, onViewSession }: SessionListPageProps) {
+export default function SessionListPage({ currentUser, initialPatientFilter, onViewSession, onStartNewTranscription }: SessionListPageProps) {
   const [sessions, setSessions] = useState<Session[]>([]);
   const [patients, setPatients] = useState<Patient[]>([]);
   const [loading, setLoading] = useState(true);
@@ -171,6 +172,13 @@ export default function SessionListPage({ currentUser, initialPatientFilter, onV
               <p className="text-sm text-gray-600">Gerencie suas sessões de consulta</p>
             </div>
           </div>
+          <button
+            onClick={onStartNewTranscription}
+            className="bg-indigo-600 hover:bg-indigo-700 text-white px-4 py-2 rounded-lg flex items-center space-x-2 transition-colors"
+          >
+            <Plus className="h-4 w-4" />
+            <span>Nova Transcrição</span>
+          </button>
         </div>
 
         {/* Filtros */}
@@ -244,6 +252,14 @@ export default function SessionListPage({ currentUser, initialPatientFilter, onV
                   : 'Nenhuma sessão criada ainda'
                 }
               </p>
+              {!searchTerm && selectedPatient === 'all' && !dateFilter && (
+                <button
+                  onClick={onStartNewTranscription}
+                  className="mt-3 text-indigo-600 hover:text-indigo-700 font-medium"
+                >
+                  Criar primeira transcrição
+                </button>
+              )}
             </div>
           ) : (
             filteredSessions.map((session) => (
