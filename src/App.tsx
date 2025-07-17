@@ -65,11 +65,14 @@ function App() {
         console.log('✅ [App] Revalidação concluída com sucesso');
       } catch (error) {
         console.error('❌ [App] Erro na revalidação:', error);
+        showError('Erro na Sincronização', 'Não foi possível atualizar os dados. Tente recarregar a página.');
       }
     };
 
     // Registrar callback para quando aba voltar a ficar visível
-    onTabVisible(handleTabVisible);
+    if (user) {
+      onTabVisible(handleTabVisible);
+    }
   }, [user, refreshProfile, onTabVisible, showInfo, showSuccess]);
 
   // Log para debug

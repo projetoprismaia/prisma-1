@@ -50,14 +50,14 @@ export function useTabVisibility(): UseTabVisibilityReturn {
     // Também escutar eventos de foco da janela como fallback
     const handleFocus = () => {
       console.log('🔍 [useTabVisibility] Window focus event');
-      if (!isTabVisible) {
+      if (!document.hidden && !isTabVisible) {
         handleVisibilityChange();
       }
     };
 
     const handleBlur = () => {
       console.log('🔍 [useTabVisibility] Window blur event');
-      if (isTabVisible) {
+      if (document.hidden && isTabVisible) {
         setIsTabVisible(false);
       }
     };

@@ -79,12 +79,11 @@ export default function ConsultationPage({ currentUser, isTabVisible, onBack }: 
       }
     } else if (isTabVisible && recordingStatus === 'paused') {
       console.log('👁️ [ConsultationPage] Aba voltou a ficar visível enquanto pausada - retomando automaticamente');
-      resumeRecording(); // This sets recordingStatus to 'recording' and starts recognition
+      resumeRecording();
       showSuccess(
         'Consulta Retomada Automaticamente',
         'A gravação foi retomada porque a aba voltou a ficar visível.'
       );
-      }
     }
   }, [isTabVisible, recordingStatus, pauseRecording, resumeRecording, showWarning, showSuccess]);
 

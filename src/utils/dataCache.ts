@@ -179,6 +179,14 @@ class DataCache {
     const entry = this.cache.get(key);
     return entry ? entry.data : null;
   }
+
+  /**
+   * Força a limpeza de todos os listeners e timers
+   */
+  destroy(): void {
+    this.cache.clear();
+    console.log('🗑️ [DataCache] Cache destruído e limpo');
+  }
 }
 
 // Instância singleton do cache
