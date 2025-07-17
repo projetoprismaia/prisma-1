@@ -4,7 +4,7 @@ import { supabase } from '../lib/supabase';
 import { Patient } from '../types/patient';
 import { AuthUser } from '../types/user';
 import { useNotification } from '../hooks/useNotification';
-import { formatDateTimeShortToDDMMAAAA } from '../utils/dateFormatter';
+import { formatDateTimeShort } from '../utils/dateFormatter';
 
 interface TranscriptionPageProps {
   currentUser: AuthUser;
@@ -43,7 +43,7 @@ export default function TranscriptionPage({ currentUser, onBack }: Transcription
       const selectedPatientData = patients.find(p => p.id === selectedPatient);
       if (selectedPatientData) {
         const now = new Date();
-        const formattedDateTime = formatDateTimeShortToDDMMAAAA(now);
+        const formattedDateTime = formatDateTimeShort(now);
         const autoTitle = `${selectedPatientData.name} - ${formattedDateTime}`;
         setSessionTitle(autoTitle);
       }

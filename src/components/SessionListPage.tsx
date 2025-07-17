@@ -4,7 +4,7 @@ import { supabase } from '../lib/supabase';
 import { Session } from '../types/session';
 import { Patient } from '../types/patient';
 import { AuthUser } from '../types/user';
-import { formatToDDMMAAAA, formatDateTimeShortToDDMMAAAA, formatDateTimeToDDMMAAAA } from '../utils/dateFormatter';
+import { formatToDDMM, formatDateTimeShort, formatDateTime } from '../utils/dateFormatter';
 
 interface SessionListPageProps {
   currentUser: AuthUser;
@@ -286,7 +286,7 @@ export default function SessionListPage({ currentUser, initialPatientFilter, onV
                     <div className="flex items-center space-x-4 text-xs text-gray-500">
                       <p className="flex items-center">
                         <Calendar className="h-3 w-3 mr-1" />
-                        {formatToDDMMAAAA(session.created_at)}
+                        {formatToDDMM(session.created_at)}
                       </p>
                       <p className="flex items-center">
                         <Clock className="h-3 w-3 mr-1" />

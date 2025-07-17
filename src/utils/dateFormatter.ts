@@ -69,3 +69,4 @@ export function formatDateTimeShort(dateInput: string | Date): string {
     console.error('Erro ao formatar data e hora curta:', error);
     return 'Data inválida';
   }
+}

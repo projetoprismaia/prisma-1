@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { Users, FileText, TrendingUp, Calendar, Clock, Mic } from 'lucide-react';
 import { supabase } from '../lib/supabase';
 import { AuthUser } from '../types/user';
-import { formatDateTimeToDDMMAAAA } from '../utils/dateFormatter';
+import { formatDateTime } from '../utils/dateFormatter';
 
 interface DashboardSummariesProps {
   currentUser: AuthUser;
@@ -298,7 +298,7 @@ export default function DashboardSummaries({
                   <p className="font-medium text-gray-900">{session.title}</p>
                   <p className="text-sm text-gray-600">{session.patient_name}</p>
                   <p className="text-xs text-gray-500">
-                    {formatDateTimeToDDMMAAAA(session.created_at)}
+                    {formatDateTime(session.created_at)}
                   </p>
                 </div>
                 <span className={`px-2 py-1 rounded-full text-xs font-medium ${getStatusColor(session.status)}`}>
