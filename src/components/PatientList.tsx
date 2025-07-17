@@ -6,6 +6,7 @@ import { AuthUser } from '../types/user';
 import PatientFormModal from './PatientFormModal';
 import { useNotification } from '../hooks/useNotification';
 import { formatToDDMM } from '../utils/dateFormatter';
+import { logger } from '../utils/logger';
 
 interface PatientListProps {
   currentUser: AuthUser;
@@ -23,20 +24,30 @@ export default function PatientList({ currentUser, onNavigateToSessions }: Patie
   const [deleteConfirm, setDeleteConfirm] = useState<string | null>(null);
 
   useEffect(() => {
+    logger.info('UI', 'PatientList montado', { userId: currentUser.id });
     fetchPatients();
   }, []);
 
   const fetchPatients = async () => {
     try {
+      logger.dataLoad('PatientList', 'start', { userId: currentUser.id }, currentUser.id);
+      logger.supabaseCall('fetch patients', 'patients', 'start', undefined, currentUser.id);
+      
       const { data, error } = await supabase
         .from('patients')
         .select('*')
         .order('created_at', { ascending: false });
 
-      if (error) throw error;
+      if (error) {
+        logger.supabaseCall('fetch patients', 'patients', 'error', error, currentUser.id);
+        throw error;
+      }
+      
+      logger.supabaseCall('fetch patients', 'patients', 'success', { count: data?.length }, currentUser.id);
       setPatients(data || []);
+      logger.dataLoad('PatientList', 'success', { patientsCount: data?.length }, currentUser.id);
     } catch (error) {
-      console.error('Erro ao buscar pacientes:', error);
+      logger.dataLoad('PatientList', 'error', error, currentUser.id);
     } finally {
       setLoading(false);
     }
@@ -44,9 +55,15 @@ export default function PatientList({ currentUser, onNavigateToSessions }: Patie
 
   const handleSavePatient = async (patientData: PatientFormData) => {
     setFormLoading(true);
+    logger.info('DATA', 'Iniciando salvamento de paciente', {
+      isEditing: !!editingPatient,
+      patientName: patientData.name
+    }, currentUser.id);
+    
     try {
       if (editingPatient) {
         // Editing existing patient
+        logger.supabaseCall('update patient', 'patients', 'start', { patientId: editingPatient.id }, currentUser.id);
         const { error } = await supabase
           .from('patients')
           .update({
@@ -56,7 +73,12 @@ export default function PatientList({ currentUser, onNavigateToSessions }: Patie
           })
           .eq('id', editingPatient.id);
 
-        if (error) throw error;
+        if (error) {
+          logger.supabaseCall('update patient', 'patients', 'error', error, currentUser.id);
+          throw error;
+        }
+        
+        logger.supabaseCall('update patient', 'patients', 'success', { patientId: editingPatient.id }, currentUser.id);
 
         // Update local state
         setPatients(patients.map(patient => 
@@ -72,6 +94,7 @@ export default function PatientList({ currentUser, onNavigateToSessions }: Patie
         ));
       } else {
         // Creating new patient
+        logger.supabaseCall('create patient', 'patients', 'start', { patientName: patientData.name }, currentUser.id);
         const { data, error } = await supabase
           .from('patients')
           .insert({
@@ -83,7 +106,12 @@ export default function PatientList({ currentUser, onNavigateToSessions }: Patie
           .select()
           .single();
 
-        if (error) throw error;
+        if (error) {
+          logger.supabaseCall('create patient', 'patients', 'error', error, currentUser.id);
+          throw error;
+        }
+        
+        logger.supabaseCall('create patient', 'patients', 'success', { patientId: data.id }, currentUser.id);
 
         // Add to local state
         setPatients([data, ...patients]);
@@ -91,6 +119,10 @@ export default function PatientList({ currentUser, onNavigateToSessions }: Patie
 
       setShowPatientFormModal(false);
       setEditingPatient(null);
+      logger.info('DATA', 'Paciente salvo com sucesso', {
+        isEditing: !!editingPatient,
+        patientName: patientData.name
+      }, currentUser.id);
       showSuccess(
         editingPatient ? 'Paciente Atualizado' : 'Paciente Criado',
         editingPatient 
@@ -98,7 +130,7 @@ export default function PatientList({ currentUser, onNavigateToSessions }: Patie
           : 'O novo paciente foi adicionado com sucesso.'
       );
     } catch (error: any) {
-      console.error('Erro ao salvar paciente:', error);
+      logger.error('DATA', 'Erro ao salvar paciente', error, currentUser.id);
       showError(
         'Erro ao Salvar',
         `Não foi possível salvar o paciente: ${error.message}`
@@ -110,22 +142,31 @@ export default function PatientList({ currentUser, onNavigateToSessions }: Patie
 
   const handleDeletePatient = async (patientId: string) => {
     try {
+      logger.info('DATA', 'Iniciando exclusão de paciente', { patientId }, currentUser.id);
+      logger.supabaseCall('delete patient', 'patients', 'start', { patientId }, currentUser.id);
+      
       const { error } = await supabase
         .from('patients')
         .delete()
         .eq('id', patientId);
 
-      if (error) throw error;
+      if (error) {
+        logger.supabaseCall('delete patient', 'patients', 'error', error, currentUser.id);
+        throw error;
+      }
+      
+      logger.supabaseCall('delete patient', 'patients', 'success', { patientId }, currentUser.id);
 
       // Remove from local state
       setPatients(patients.filter(patient => patient.id !== patientId));
       setDeleteConfirm(null);
+      logger.info('DATA', 'Paciente excluído com sucesso', { patientId }, currentUser.id);
       showSuccess(
         'Paciente Removido',
         'O paciente foi removido com sucesso do sistema.'
       );
     } catch (error: any) {
-      console.error('Erro ao deletar paciente:', error);
+      logger.error('DATA', 'Erro ao deletar paciente', error, currentUser.id);
       showError(
         'Erro ao Deletar',
         `Não foi possível deletar o paciente: ${error.message}`
@@ -134,16 +175,19 @@ export default function PatientList({ currentUser, onNavigateToSessions }: Patie
   };
 
   const openEditModal = (patient: Patient) => {
+    logger.uiEvent('PatientList', 'Edit modal opened', { patientId: patient.id }, currentUser.id);
     setEditingPatient(patient);
     setShowPatientFormModal(true);
   };
 
   const openCreateModal = () => {
+    logger.uiEvent('PatientList', 'Create modal opened', undefined, currentUser.id);
     setEditingPatient(null);
     setShowPatientFormModal(true);
   };
 
   const handlePatientClick = (patientId: string) => {
+    logger.uiEvent('PatientList', 'Patient clicked', { patientId }, currentUser.id);
     if (onNavigateToSessions) {
       onNavigateToSessions(patientId);
     }
@@ -157,6 +201,7 @@ export default function PatientList({ currentUser, onNavigateToSessions }: Patie
   });
 
   if (loading) {
+    logger.debug('UI', 'PatientList mostrando loading');
     return (
       <div className="bg-white rounded-xl shadow-lg p-6">
         <div className="animate-pulse">
@@ -171,6 +216,11 @@ export default function PatientList({ currentUser, onNavigateToSessions }: Patie
     );
   }
 
+  logger.debug('UI', 'PatientList renderizando dados', {
+    totalPatients: patients.length,
+    filteredPatients: filteredPatients.length,
+    searchTerm
+  });
   return (
     <>
       <div className="glass-card rounded-xl shadow-lg p-6">

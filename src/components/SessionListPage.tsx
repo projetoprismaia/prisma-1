@@ -5,6 +5,7 @@ import { Session } from '../types/session';
 import { Patient } from '../types/patient';
 import { AuthUser } from '../types/user';
 import { formatToDDMM, formatDateTimeShort, formatDateTime } from '../utils/dateFormatter';
+import { logger } from '../utils/logger';
 
 interface SessionListPageProps {
   currentUser: AuthUser;
@@ -13,13 +14,6 @@ interface SessionListPageProps {
   onStartNewTranscription: () => void;
 }
 
-// Add debug logging
-const DEBUG = true;
-const log = (message: string, data?: any) => {
-  if (DEBUG) {
-    console.log(`[SessionListPage] ${message}`, data);
-  }
-};
 
 export default function SessionListPage({ currentUser, initialPatientFilter, onViewSession, onStartNewTranscription }: SessionListPageProps) {
   const [sessions, setSessions] = useState<Session[]>([]);
@@ -30,6 +24,10 @@ export default function SessionListPage({ currentUser, initialPatientFilter, onV
   const [dateFilter, setDateFilter] = useState('');
 
   useEffect(() => {
+    logger.info('UI', 'SessionListPage montado', {
+      userId: currentUser.id,
+      initialPatientFilter
+    });
     fetchSessions();
     fetchPatients();
   }, []);
@@ -37,13 +35,16 @@ export default function SessionListPage({ currentUser, initialPatientFilter, onV
   // Update selected patient when initialPatientFilter changes
   useEffect(() => {
     if (initialPatientFilter) {
+      logger.info('UI', 'Filtro de paciente aplicado', { patientId: initialPatientFilter });
       setSelectedPatient(initialPatientFilter);
     }
   }, [initialPatientFilter]);
 
   const fetchSessions = async () => {
     try {
-      log('Iniciando busca de sessões...');
+      logger.dataLoad('SessionListPage', 'start', { type: 'sessions' }, currentUser.id);
+      logger.supabaseCall('fetch sessions', 'sessions', 'start', { userId: currentUser.id }, currentUser.id);
+      
       const { data, error } = await supabase
         .from('sessions')
         .select(`
@@ -53,11 +54,16 @@ export default function SessionListPage({ currentUser, initialPatientFilter, onV
         .eq('user_id', currentUser.id)
         .order('created_at', { ascending: false });
 
-      if (error) throw error;
-      log('Sessões encontradas:', data);
+      if (error) {
+        logger.supabaseCall('fetch sessions', 'sessions', 'error', error, currentUser.id);
+        throw error;
+      }
+      
+      logger.supabaseCall('fetch sessions', 'sessions', 'success', { count: data?.length }, currentUser.id);
       setSessions(data || []);
+      logger.dataLoad('SessionListPage', 'success', { type: 'sessions', count: data?.length }, currentUser.id);
     } catch (error) {
-      log('Erro ao buscar sessões:', error);
+      logger.dataLoad('SessionListPage', 'error', { type: 'sessions', error }, currentUser.id);
     } finally {
       setLoading(false);
     }
@@ -65,22 +71,30 @@ export default function SessionListPage({ currentUser, initialPatientFilter, onV
 
   const fetchPatients = async () => {
     try {
-      log('Iniciando busca de pacientes...');
+      logger.dataLoad('SessionListPage', 'start', { type: 'patients' }, currentUser.id);
+      logger.supabaseCall('fetch patients', 'patients', 'start', { userId: currentUser.id }, currentUser.id);
+      
       const { data, error } = await supabase
         .from('patients')
         .select('*')
         .eq('user_id', currentUser.id)
         .order('name');
 
-      if (error) throw error;
-      log('Pacientes encontrados:', data);
+      if (error) {
+        logger.supabaseCall('fetch patients', 'patients', 'error', error, currentUser.id);
+        throw error;
+      }
+      
+      logger.supabaseCall('fetch patients', 'patients', 'success', { count: data?.length }, currentUser.id);
       setPatients(data || []);
+      logger.dataLoad('SessionListPage', 'success', { type: 'patients', count: data?.length }, currentUser.id);
     } catch (error) {
-      log('Erro ao buscar pacientes:', error);
+      logger.dataLoad('SessionListPage', 'error', { type: 'patients', error }, currentUser.id);
     }
   };
 
   const exportSession = (session: Session) => {
+    logger.uiEvent('SessionListPage', 'Export session', { sessionId: session.id }, currentUser.id);
     const element = document.createElement('a');
     const content = `Sessão: ${session.title}\nPaciente: ${session.patient?.name}\nData: ${new Date(session.created_at).toLocaleString('pt-BR')}\nDuração: ${session.duration}\nStatus: ${getStatusText(session.status)}\n\n${session.transcription_content || 'Sem transcrição disponível'}`;
     
@@ -145,6 +159,7 @@ export default function SessionListPage({ currentUser, initialPatientFilter, onV
   });
 
   if (loading) {
+    logger.debug('UI', 'SessionListPage mostrando loading');
     return (
       <div className="bg-white rounded-xl shadow-lg p-6">
         <div className="animate-pulse">
@@ -159,6 +174,13 @@ export default function SessionListPage({ currentUser, initialPatientFilter, onV
     );
   }
 
+  logger.debug('UI', 'SessionListPage renderizando dados', {
+    totalSessions: sessions.length,
+    filteredSessions: filteredSessions.length,
+    selectedPatient,
+    searchTerm,
+    dateFilter
+  });
   return (
     <>
       <div className="glass-card rounded-xl shadow-lg p-6">
