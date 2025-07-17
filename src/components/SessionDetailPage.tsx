@@ -4,7 +4,6 @@ import { supabase } from '../lib/supabase';
 import { Session } from '../types/session';
 import { AuthUser } from '../types/user';
 import { formatToDDMM, formatDateTime } from '../utils/dateFormatter';
-import { logger } from '../utils/logger';
 
 interface SessionDetailPageProps {
   sessionId: string;
@@ -18,10 +17,6 @@ export default function SessionDetailPage({ sessionId, currentUser, onBack }: Se
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    logger.info('UI', 'SessionDetailPage montado', {
-      sessionId,
-      userId: currentUser.id
-    });
     fetchSessionDetails();
   }, [sessionId]);
 
@@ -29,9 +24,6 @@ export default function SessionDetailPage({ sessionId, currentUser, onBack }: Se
     try {
       setLoading(true);
       setError(null);
-      
-      logger.dataLoad('SessionDetailPage', 'start', { sessionId }, currentUser.id);
-      logger.supabaseCall('fetch session details', 'sessions', 'start', { sessionId }, currentUser.id);
 
       const { data, error } = await supabase
         .from('sessions')
@@ -43,22 +35,16 @@ export default function SessionDetailPage({ sessionId, currentUser, onBack }: Se
         .eq('user_id', currentUser.id)
         .single();
 
-      if (error) {
-        logger.supabaseCall('fetch session details', 'sessions', 'error', error, currentUser.id);
-        throw error;
-      }
+      if (error) throw error;
 
       if (!data) {
-        logger.warn('DATA', 'Sessão não encontrada', { sessionId }, currentUser.id);
         setError('Sessão não encontrada');
         return;
       }
 
-      logger.supabaseCall('fetch session details', 'sessions', 'success', { sessionId }, currentUser.id);
       setSession(data);
-      logger.dataLoad('SessionDetailPage', 'success', { sessionId, hasTranscription: !!data.transcription_content }, currentUser.id);
     } catch (error: any) {
-      logger.dataLoad('SessionDetailPage', 'error', { sessionId, error }, currentUser.id);
+      console.error('Erro ao buscar detalhes da sessão:', error);
       setError(error.message || 'Erro ao carregar sessão');
     } finally {
       setLoading(false);
@@ -67,8 +53,6 @@ export default function SessionDetailPage({ sessionId, currentUser, onBack }: Se
 
   const exportSession = () => {
     if (!session) return;
-    
-    logger.uiEvent('SessionDetailPage', 'Export session', { sessionId: session.id }, currentUser.id);
 
     const element = document.createElement('a');
     const content = `Sessão: ${session.title}\nPaciente: ${session.patient?.name}\nData: ${formatDateTimeToDDMMAAAA(session.created_at)}\nDuração: ${session.duration || 'N/A'}\nStatus: ${getStatusText(session.status)}\n\n${session.transcription_content || 'Sem transcrição disponível'}`;
@@ -121,7 +105,6 @@ export default function SessionDetailPage({ sessionId, currentUser, onBack }: Se
   };
 
   if (loading) {
-    logger.debug('UI', 'SessionDetailPage mostrando loading');
     return (
       <div className="min-h-screen flex items-center justify-center">
         <div className="glass-card rounded-xl shadow-xl p-8 max-w-md text-center border border-white/20">
@@ -134,7 +117,6 @@ export default function SessionDetailPage({ sessionId, currentUser, onBack }: Se
   }
 
   if (error || !session) {
-    logger.debug('UI', 'SessionDetailPage mostrando erro', { error, hasSession: !!session });
     return (
       <div className="min-h-screen flex items-center justify-center">
         <div className="glass-card rounded-xl shadow-xl p-8 max-w-md text-center border border-white/20">
@@ -153,13 +135,6 @@ export default function SessionDetailPage({ sessionId, currentUser, onBack }: Se
       </div>
     );
   }
-
-  logger.debug('UI', 'SessionDetailPage renderizando sessão', {
-    sessionId: session.id,
-    patientName: session.patient?.name,
-    status: session.status,
-    hasTranscription: !!session.transcription_content
-  });
 
   return (
     <div className="max-w-4xl mx-auto space-y-6">

@@ -5,7 +5,6 @@ import { UserProfile, UserRole } from '../types/user';
 import UserFormModal, { UserFormData } from './UserFormModal';
 import { useNotification } from '../hooks/useNotification';
 import { formatToDDMM } from '../utils/dateFormatter';
-import { logger } from '../utils/logger';
 
 interface AdminPanelProps {
   currentUser: any;
@@ -25,80 +24,70 @@ export default function AdminPanel({ currentUser }: AdminPanelProps) {
   const [deleteConfirm, setDeleteConfirm] = useState<string | null>(null);
 
   useEffect(() => {
-    logger.info('UI', 'AdminPanel montado', { userId: currentUser.id });
     fetchUsers();
   }, []);
 
   const fetchUsers = async () => {
     try {
-      logger.dataLoad('AdminPanel', 'start', { type: 'users' }, currentUser.id);
+      console.log('🔍 Buscando usuários e contagem de pacientes...');
       
       // Buscar usuários
-      logger.supabaseCall('fetch users', 'profiles', 'start', undefined, currentUser.id);
       const { data: usersData, error: usersError } = await supabase
         .from('profiles')
         .select('*')
         .order('created_at', { ascending: false });
 
-      if (usersError) {
-        logger.supabaseCall('fetch users', 'profiles', 'error', usersError, currentUser.id);
-        throw usersError;
-      }
-      
-      logger.supabaseCall('fetch users', 'profiles', 'success', { count: usersData?.length }, currentUser.id);
+      if (usersError) throw usersError;
+      console.log('👥 Usuários encontrados:', usersData?.length || 0);
       setUsers(usersData || []);
 
       // Buscar contagem de pacientes para cada usuário
       if (usersData && usersData.length > 0) {
-        logger.info('DATA', 'Iniciando busca de contagem de pacientes', { usersCount: usersData.length }, currentUser.id);
+        console.log('🔍 Buscando pacientes...');
         
         // Tentar buscar pacientes como admin
         let patientsData = null;
         let patientsError = null;
         
         // Primeira tentativa: buscar todos os pacientes (admin)
-        logger.supabaseCall('fetch all patients', 'patients', 'start', undefined, currentUser.id);
         const { data: allPatients, error: allPatientsError } = await supabase
           .from('patients')
           .select('user_id');
           
         if (allPatientsError) {
-          logger.supabaseCall('fetch all patients', 'patients', 'error', allPatientsError, currentUser.id);
+          console.log('⚠️ Erro ao buscar todos os pacientes:', allPatientsError.message);
           
           // Segunda tentativa: usar RPC se disponível
-          logger.info('DATA', 'Tentando usar RPC para contagem de pacientes', undefined, currentUser.id);
           const { data: rpcData, error: rpcError } = await supabase
             .rpc('count_patients_by_user')
             .catch(() => ({ data: null, error: { message: 'RPC não disponível' } }));
             
           if (rpcError || !rpcData) {
-            logger.warn('DATA', 'RPC falhou, usando contagem manual', rpcError, currentUser.id);
+            console.log('⚠️ RPC também falhou, usando contagem manual...');
             
             // Terceira tentativa: contar manualmente para cada usuário
             const counts: Record<string, number> = {};
             
             for (const user of usersData) {
-              logger.supabaseCall(`count patients for ${user.email}`, 'patients', 'start', { userId: user.id }, currentUser.id);
               const { count, error: countError } = await supabase
                 .from('patients')
                 .select('*', { count: 'exact', head: true })
                 .eq('user_id', user.id);
                 
               if (countError) {
-                logger.supabaseCall(`count patients for ${user.email}`, 'patients', 'error', countError, currentUser.id);
+                console.error(`Erro ao contar pacientes para ${user.email}:`, countError);
                 counts[user.id] = 0;
               } else {
-                logger.supabaseCall(`count patients for ${user.email}`, 'patients', 'success', { count }, currentUser.id);
                 counts[user.id] = count || 0;
+                console.log(`👤 ${user.email}: ${count || 0} pacientes`);
               }
             }
             
-            logger.info('DATA', 'Contagem manual concluída', counts, currentUser.id);
+            console.log('📈 Contagem final por usuário:', counts);
             setPatientCounts(counts);
             return;
           } else {
             // RPC funcionou
-            logger.info('DATA', 'RPC funcionou, processando dados', { dataLength: rpcData.length }, currentUser.id);
             const counts: Record<string, number> = {};
             usersData.forEach(user => {
               counts[user.id] = 0;
@@ -108,18 +97,17 @@ export default function AdminPanel({ currentUser }: AdminPanelProps) {
               counts[item.user_id] = item.patient_count;
             });
             
-            logger.info('DATA', 'Contagem via RPC concluída', counts, currentUser.id);
+            console.log('📈 Contagem via RPC:', counts);
             setPatientCounts(counts);
             return;
           }
         } else {
-          logger.supabaseCall('fetch all patients', 'patients', 'success', { count: allPatients?.length }, currentUser.id);
           patientsData = allPatients;
           patientsError = null;
         }
 
         if (patientsError) {
-          logger.error('DATA', 'Erro ao buscar pacientes', patientsError, currentUser.id);
+          console.error('Erro ao buscar pacientes:', patientsError);
           // Em caso de erro, inicializar com zeros
           const emptyCounts: Record<string, number> = {};
           usersData.forEach(user => {
@@ -127,7 +115,8 @@ export default function AdminPanel({ currentUser }: AdminPanelProps) {
           });
           setPatientCounts(emptyCounts);
         } else {
-          logger.info('DATA', 'Processando contagem de pacientes', { totalPatients: patientsData?.length }, currentUser.id);
+          console.log('👤 Total de pacientes no banco:', patientsData?.length || 0);
+          console.log('📊 Dados dos pacientes:', patientsData);
           
           // Contar pacientes por usuário
           const counts: Record<string, number> = {};
@@ -142,21 +131,19 @@ export default function AdminPanel({ currentUser }: AdminPanelProps) {
             if (patient.user_id && counts.hasOwnProperty(patient.user_id)) {
               counts[patient.user_id]++;
             } else if (patient.user_id) {
-              logger.warn('DATA', 'Paciente com user_id não encontrado', { userId: patient.user_id }, currentUser.id);
+              console.warn('⚠️ Paciente com user_id não encontrado nos usuários:', patient.user_id);
             }
           });
           
-          logger.info('DATA', 'Contagem final de pacientes por usuário', counts, currentUser.id);
+          console.log('📈 Contagem final por usuário:', counts);
           setPatientCounts(counts);
         }
       } else {
-        logger.info('DATA', 'Nenhum usuário encontrado', undefined, currentUser.id);
+        console.log('👥 Nenhum usuário encontrado');
         setPatientCounts({});
       }
-      
-      logger.dataLoad('AdminPanel', 'success', { usersCount: usersData?.length }, currentUser.id);
     } catch (error) {
-      logger.dataLoad('AdminPanel', 'error', error, currentUser.id);
+      console.error('Erro ao buscar usuários:', error);
       setPatientCounts({});
     } finally {
       setLoading(false);
@@ -165,7 +152,6 @@ export default function AdminPanel({ currentUser }: AdminPanelProps) {
 
   const updateUserRole = async (userId: string, newRole: UserRole) => {
     if (userId === currentUser.id) {
-      logger.warn('UI', 'Tentativa de alterar próprio role bloqueada', { userId }, currentUser.id);
       showWarning(
         'Ação Não Permitida',
         'Você não pode alterar seu próprio role de usuário.'
@@ -174,28 +160,19 @@ export default function AdminPanel({ currentUser }: AdminPanelProps) {
     }
 
     setUpdating(userId);
-    logger.info('DATA', 'Atualizando role do usuário', { userId, newRole }, currentUser.id);
-    
     try {
-      logger.supabaseCall('update user role', 'profiles', 'start', { userId, newRole }, currentUser.id);
       const { error } = await supabase
         .from('profiles')
         .update({ role: newRole })
         .eq('id', userId);
 
-      if (error) {
-        logger.supabaseCall('update user role', 'profiles', 'error', error, currentUser.id);
-        throw error;
-      }
-      
-      logger.supabaseCall('update user role', 'profiles', 'success', { userId, newRole }, currentUser.id);
+      if (error) throw error;
 
       setUsers(users.map(user => 
         user.id === userId ? { ...user, role: newRole } : user
       ));
-      logger.info('DATA', 'Role do usuário atualizado com sucesso', { userId, newRole }, currentUser.id);
     } catch (error) {
-      logger.error('DATA', 'Erro ao atualizar role', error, currentUser.id);
+      console.error('Erro ao atualizar role:', error);
       showError(
         'Erro ao Atualizar',
         'Não foi possível atualizar o role do usuário. Tente novamente.'
@@ -207,16 +184,9 @@ export default function AdminPanel({ currentUser }: AdminPanelProps) {
 
   const handleSaveUser = async (userData: UserFormData) => {
     setFormLoading(true);
-    logger.info('DATA', 'Salvando usuário', {
-      isEditing: !!editingUser,
-      email: userData.email,
-      role: userData.role
-    }, currentUser.id);
-    
     try {
       if (editingUser) {
         // Editing existing user
-        logger.supabaseCall('update user', 'profiles', 'start', { userId: editingUser.id }, currentUser.id);
         const { error } = await supabase
           .from('profiles')
           .update({
@@ -226,12 +196,7 @@ export default function AdminPanel({ currentUser }: AdminPanelProps) {
           })
           .eq('id', editingUser.id);
 
-        if (error) {
-          logger.supabaseCall('update user', 'profiles', 'error', error, currentUser.id);
-          throw error;
-        }
-        
-        logger.supabaseCall('update user', 'profiles', 'success', { userId: editingUser.id }, currentUser.id);
+        if (error) throw error;
 
         // Update local state
         setUsers(users.map(user => 
@@ -246,22 +211,15 @@ export default function AdminPanel({ currentUser }: AdminPanelProps) {
         ));
       } else {
         // Creating new user
-        logger.supabaseCall('create user auth', 'auth', 'start', { email: userData.email }, currentUser.id);
         const { data: authData, error: authError } = await supabase.auth.signUp({
           email: userData.email,
           password: userData.password!,
         });
 
-        if (authError) {
-          logger.supabaseCall('create user auth', 'auth', 'error', authError, currentUser.id);
-          throw authError;
-        }
-        
-        logger.supabaseCall('create user auth', 'auth', 'success', { userId: authData.user?.id }, currentUser.id);
+        if (authError) throw authError;
 
         if (authData.user) {
           // Update the profile with additional data
-          logger.supabaseCall('update new user profile', 'profiles', 'start', { userId: authData.user.id }, currentUser.id);
           const { error: profileError } = await supabase
             .from('profiles')
             .update({
@@ -271,12 +229,7 @@ export default function AdminPanel({ currentUser }: AdminPanelProps) {
             })
             .eq('id', authData.user.id);
 
-          if (profileError) {
-            logger.supabaseCall('update new user profile', 'profiles', 'error', profileError, currentUser.id);
-            throw profileError;
-          }
-          
-          logger.supabaseCall('update new user profile', 'profiles', 'success', { userId: authData.user.id }, currentUser.id);
+          if (profileError) throw profileError;
 
           // Refresh the users list
           await fetchUsers();
@@ -285,12 +238,8 @@ export default function AdminPanel({ currentUser }: AdminPanelProps) {
 
       setShowUserFormModal(false);
       setEditingUser(null);
-      logger.info('DATA', 'Usuário salvo com sucesso', {
-        isEditing: !!editingUser,
-        email: userData.email
-      }, currentUser.id);
     } catch (error: any) {
-      logger.error('DATA', 'Erro ao salvar usuário', error, currentUser.id);
+      console.error('Erro ao salvar usuário:', error);
       showError(
         'Erro ao Salvar Usuário',
         `Não foi possível salvar o usuário: ${error.message}`
@@ -302,7 +251,6 @@ export default function AdminPanel({ currentUser }: AdminPanelProps) {
 
   const handleDeleteUser = async (userId: string) => {
     if (userId === currentUser.id) {
-      logger.warn('UI', 'Tentativa de deletar própria conta bloqueada', { userId }, currentUser.id);
       showWarning(
         'Ação Não Permitida',
         'Você não pode deletar sua própria conta.'
@@ -310,10 +258,7 @@ export default function AdminPanel({ currentUser }: AdminPanelProps) {
       return;
     }
 
-    logger.info('DATA', 'Iniciando exclusão de usuário', { userId }, currentUser.id);
-    
     try {
-      logger.info('DATA', 'Chamando edge function para deletar usuário', { userId }, currentUser.id);
       const response = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/delete-user`, {
         method: 'POST',
         headers: {
@@ -326,12 +271,9 @@ export default function AdminPanel({ currentUser }: AdminPanelProps) {
       const result = await response.json();
 
       if (!result.success) {
-        logger.error('DATA', 'Edge function retornou erro', { error: result.error, userId }, currentUser.id);
         throw new Error(result.error);
       }
 
-      logger.info('DATA', 'Usuário deletado via edge function', { userId }, currentUser.id);
-      
       // Remove user from local state
       setUsers(users.filter(user => user.id !== userId));
       setDeleteConfirm(null);
@@ -340,7 +282,7 @@ export default function AdminPanel({ currentUser }: AdminPanelProps) {
         'O usuário foi removido com sucesso do sistema.'
       );
     } catch (error: any) {
-      logger.error('DATA', 'Erro ao deletar usuário', error, currentUser.id);
+      console.error('Erro ao deletar usuário:', error);
       showError(
         'Erro ao Deletar',
         `Não foi possível deletar o usuário: ${error.message}`
@@ -349,13 +291,11 @@ export default function AdminPanel({ currentUser }: AdminPanelProps) {
   };
 
   const openEditModal = (user: UserProfile) => {
-    logger.uiEvent('AdminPanel', 'Edit user modal opened', { userId: user.id }, currentUser.id);
     setEditingUser(user);
     setShowUserFormModal(true);
   };
 
   const openCreateModal = () => {
-    logger.uiEvent('AdminPanel', 'Create user modal opened', undefined, currentUser.id);
     setEditingUser(null);
     setShowUserFormModal(true);
   };
@@ -379,7 +319,6 @@ export default function AdminPanel({ currentUser }: AdminPanelProps) {
   };
 
   if (loading) {
-    logger.debug('UI', 'AdminPanel mostrando loading');
     return (
       <div className="bg-white rounded-xl shadow-lg p-6">
         <div className="animate-pulse">
@@ -394,11 +333,6 @@ export default function AdminPanel({ currentUser }: AdminPanelProps) {
     );
   }
 
-  logger.debug('UI', 'AdminPanel renderizando dados', {
-    totalUsers: users.length,
-    filteredUsers: filteredUsers.length,
-    patientCountsLoaded: Object.keys(patientCounts).length > 0
-  });
   return (
     <>
       <div className="glass-card rounded-xl shadow-lg p-6">

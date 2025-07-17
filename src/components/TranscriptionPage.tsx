@@ -5,7 +5,6 @@ import { Patient } from '../types/patient';
 import { AuthUser } from '../types/user';
 import { useNotification } from '../hooks/useNotification';
 import { formatDateTimeShort } from '../utils/dateFormatter';
-import { logger } from '../utils/logger';
 
 interface TranscriptionPageProps {
   currentUser: AuthUser;
@@ -40,7 +39,6 @@ export default function TranscriptionPage({ currentUser, onBack }: Transcription
 
   // Auto-generate session title when patient is selected
   useEffect(() => {
-    logger.debug('UI', 'Auto-gerando título da sessão', { selectedPatient });
     if (selectedPatient) {
       const selectedPatientData = patients.find(p => p.id === selectedPatient);
       if (selectedPatientData) {
@@ -48,7 +46,6 @@ export default function TranscriptionPage({ currentUser, onBack }: Transcription
         const formattedDateTime = formatDateTimeShort(now);
         const autoTitle = `${selectedPatientData.name} - ${formattedDateTime}`;
         setSessionTitle(autoTitle);
-        logger.info('UI', 'Título da sessão gerado', { title: autoTitle, patientId: selectedPatient });
       }
     } else {
       setSessionTitle('');
@@ -56,38 +53,27 @@ export default function TranscriptionPage({ currentUser, onBack }: Transcription
   }, [selectedPatient, patients]);
 
   useEffect(() => {
-    logger.info('UI', 'TranscriptionPage montado', { userId: currentUser.id });
     fetchPatients();
     fetchAudioDevices();
     initializeSpeechRecognition();
     
     return () => {
-      logger.info('UI', 'TranscriptionPage desmontado - executando cleanup');
       cleanup();
     };
   }, []);
 
   const fetchPatients = async () => {
     try {
-      logger.dataLoad('TranscriptionPage', 'start', { type: 'patients' }, currentUser.id);
-      logger.supabaseCall('fetch patients', 'patients', 'start', { userId: currentUser.id }, currentUser.id);
-      
       const { data, error } = await supabase
         .from('patients')
         .select('*')
         .eq('user_id', currentUser.id)
         .order('name');
 
-      if (error) {
-        logger.supabaseCall('fetch patients', 'patients', 'error', error, currentUser.id);
-        throw error;
-      }
-      
-      logger.supabaseCall('fetch patients', 'patients', 'success', { count: data?.length }, currentUser.id);
+      if (error) throw error;
       setPatients(data || []);
-      logger.dataLoad('TranscriptionPage', 'success', { type: 'patients', count: data?.length }, currentUser.id);
     } catch (error) {
-      logger.dataLoad('TranscriptionPage', 'error', { type: 'patients', error }, currentUser.id);
+      console.error('Erro ao buscar pacientes:', error);
       showError('Erro', 'Não foi possível carregar a lista de pacientes.');
     } finally {
       setLoading(false);
@@ -96,7 +82,6 @@ export default function TranscriptionPage({ currentUser, onBack }: Transcription
 
   const fetchAudioDevices = async () => {
     try {
-      logger.info('UI', 'Buscando dispositivos de áudio', undefined, currentUser.id);
       // Solicitar permissão para acessar microfone primeiro
       await navigator.mediaDevices.getUserMedia({ audio: true });
       
@@ -109,26 +94,22 @@ export default function TranscriptionPage({ currentUser, onBack }: Transcription
         }));
 
       setAudioDevices(audioInputs);
-      logger.info('UI', 'Dispositivos de áudio carregados', { count: audioInputs.length }, currentUser.id);
       
       // Selecionar o primeiro dispositivo por padrão
       if (audioInputs.length > 0) {
         setSelectedDevice(audioInputs[0].deviceId);
-        logger.debug('UI', 'Dispositivo padrão selecionado', { deviceId: audioInputs[0].deviceId });
       }
     } catch (error) {
-      logger.error('UI', 'Erro ao buscar dispositivos de áudio', error, currentUser.id);
+      console.error('Erro ao buscar dispositivos de áudio:', error);
       showError('Erro', 'Não foi possível acessar os dispositivos de áudio. Verifique as permissões.');
     }
   };
 
   const initializeSpeechRecognition = () => {
-    logger.info('UI', 'Inicializando reconhecimento de voz', undefined, currentUser.id);
     // Verificar se o navegador suporta Web Speech API
     const SpeechRecognition = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
     
     if (SpeechRecognition) {
-      logger.info('UI', 'Web Speech API suportada', undefined, currentUser.id);
       const recognition = new SpeechRecognition();
       recognition.continuous = true;
       recognition.interimResults = true;
@@ -148,22 +129,20 @@ export default function TranscriptionPage({ currentUser, onBack }: Transcription
         }
 
         if (finalTranscript) {
-          logger.debug('UI', 'Transcrição recebida', { length: finalTranscript.length }, currentUser.id);
           setTranscriptionContent(prev => prev + finalTranscript);
         }
       };
 
       recognition.onerror = (event: any) => {
-        logger.error('UI', 'Erro na transcrição', { error: event.error }, currentUser.id);
+        console.error('Erro na transcrição:', event.error);
         if (event.error === 'no-speech') {
           // Reiniciar automaticamente se não houver fala
           if (recordingStatus === 'recording') {
-            logger.debug('UI', 'Reiniciando reconhecimento por falta de fala');
             setTimeout(() => {
               try {
                 recognition.start();
               } catch (e) {
-                logger.debug('UI', 'Reconhecimento já ativo');
+                console.log('Reconhecimento já ativo');
               }
             }, 1000);
           }
@@ -173,42 +152,28 @@ export default function TranscriptionPage({ currentUser, onBack }: Transcription
       recognition.onend = () => {
         // Reiniciar automaticamente se ainda estiver gravando
         if (recordingStatus === 'recording') {
-          logger.debug('UI', 'Reconhecimento terminou, reiniciando');
           try {
             recognition.start();
           } catch (e) {
-            logger.debug('UI', 'Reconhecimento já ativo ao reiniciar');
+            console.log('Reconhecimento já ativo');
           }
         }
       };
 
       recognitionRef.current = recognition;
-      logger.info('UI', 'Reconhecimento de voz configurado', undefined, currentUser.id);
     } else {
-      logger.error('UI', 'Web Speech API não suportada', undefined, currentUser.id);
       showError('Navegador Incompatível', 'Seu navegador não suporta reconhecimento de voz. Use Chrome ou Edge.');
     }
   };
 
   const startRecording = async () => {
     try {
-      logger.info('UI', 'Iniciando gravação', {
-        selectedPatient,
-        selectedDevice,
-        sessionTitle
-      }, currentUser.id);
-      
       if (!selectedPatient || !selectedDevice) {
-        logger.warn('UI', 'Campos obrigatórios não preenchidos', {
-          hasPatient: !!selectedPatient,
-          hasDevice: !!selectedDevice
-        }, currentUser.id);
         showError('Campos Obrigatórios', 'Selecione um paciente e um microfone para iniciar a sessão.');
         return;
       }
 
       // Obter stream de áudio do dispositivo selecionado
-      logger.debug('UI', 'Obtendo stream de áudio', { deviceId: selectedDevice });
       const stream = await navigator.mediaDevices.getUserMedia({
         audio: { deviceId: selectedDevice }
       });
@@ -221,7 +186,6 @@ export default function TranscriptionPage({ currentUser, onBack }: Transcription
 
       // Iniciar reconhecimento de voz
       if (recognitionRef.current) {
-        logger.debug('UI', 'Iniciando reconhecimento de voz');
         recognitionRef.current.start();
       }
 
@@ -235,21 +199,15 @@ export default function TranscriptionPage({ currentUser, onBack }: Transcription
       }, 1000);
 
       setRecordingStatus('recording');
-      logger.info('UI', 'Gravação iniciada com sucesso', {
-        startTime: now.toISOString(),
-        patientId: selectedPatient
-      }, currentUser.id);
       showSuccess('Gravação Iniciada', 'A transcrição em tempo real foi iniciada.');
 
     } catch (error) {
-      logger.error('UI', 'Erro ao iniciar gravação', error, currentUser.id);
+      console.error('Erro ao iniciar gravação:', error);
       showError('Erro na Gravação', 'Não foi possível iniciar a gravação. Verifique as permissões do microfone.');
     }
   };
 
   const pauseRecording = () => {
-    logger.info('UI', 'Pausando gravação', { duration }, currentUser.id);
-    
     if (recognitionRef.current) {
       recognitionRef.current.stop();
     }
@@ -263,8 +221,6 @@ export default function TranscriptionPage({ currentUser, onBack }: Transcription
   };
 
   const resumeRecording = () => {
-    logger.info('UI', 'Retomando gravação', { duration }, currentUser.id);
-    
     if (recognitionRef.current) {
       recognitionRef.current.start();
     }
@@ -279,11 +235,6 @@ export default function TranscriptionPage({ currentUser, onBack }: Transcription
 
   const stopRecording = async () => {
     setSaving(true);
-    logger.info('UI', 'Finalizando gravação', {
-      duration,
-      transcriptionLength: transcriptionContent.length,
-      patientId: selectedPatient
-    }, currentUser.id);
     
     try {
       // Parar reconhecimento de voz
@@ -305,18 +256,6 @@ export default function TranscriptionPage({ currentUser, onBack }: Transcription
       const durationFormatted = formatDuration(duration);
 
       // Salvar sessão no Supabase
-      logger.info('DATA', 'Salvando sessão no banco', {
-        patientId: selectedPatient,
-        title: sessionTitle,
-        duration: durationFormatted,
-        transcriptionLength: transcriptionContent.length
-      }, currentUser.id);
-      
-      logger.supabaseCall('create session', 'sessions', 'start', {
-        patientId: selectedPatient,
-        title: sessionTitle
-      }, currentUser.id);
-      
       const { error } = await supabase
         .from('sessions')
         .insert({
@@ -330,31 +269,18 @@ export default function TranscriptionPage({ currentUser, onBack }: Transcription
           status: 'completed'
         });
 
-      if (error) {
-        logger.supabaseCall('create session', 'sessions', 'error', error, currentUser.id);
-        throw error;
-      }
-      
-      logger.supabaseCall('create session', 'sessions', 'success', {
-        duration: durationFormatted,
-        transcriptionLength: transcriptionContent.length
-      }, currentUser.id);
+      if (error) throw error;
 
       setRecordingStatus('completed');
-      logger.info('UI', 'Sessão salva com sucesso', {
-        duration: durationFormatted,
-        transcriptionLength: transcriptionContent.length
-      }, currentUser.id);
       showSuccess('Sessão Salva', 'A transcrição foi salva com sucesso!');
       
       // Voltar para a lista de sessões após 2 segundos
       setTimeout(() => {
-        logger.info('UI', 'Redirecionando para lista de sessões');
         onBack();
       }, 2000);
 
     } catch (error) {
-      logger.error('DATA', 'Erro ao salvar sessão', error, currentUser.id);
+      console.error('Erro ao salvar sessão:', error);
       showError('Erro ao Salvar', 'Não foi possível salvar a sessão. Tente novamente.');
       setRecordingStatus('recording'); // Voltar ao estado anterior
     } finally {
@@ -363,7 +289,6 @@ export default function TranscriptionPage({ currentUser, onBack }: Transcription
   };
 
   const cleanup = () => {
-    logger.debug('UI', 'Executando cleanup da transcrição');
     if (recognitionRef.current) {
       recognitionRef.current.stop();
     }
@@ -391,7 +316,6 @@ export default function TranscriptionPage({ currentUser, onBack }: Transcription
   const isCompleted = recordingStatus === 'completed';
 
   if (loading) {
-    logger.debug('UI', 'TranscriptionPage mostrando loading');
     return (
       <div className="min-h-screen flex items-center justify-center">
         <div className="glass-card rounded-xl shadow-xl p-8 max-w-md text-center border border-white/20">
@@ -403,13 +327,6 @@ export default function TranscriptionPage({ currentUser, onBack }: Transcription
     );
   }
 
-  logger.debug('UI', 'TranscriptionPage renderizando', {
-    recordingStatus,
-    selectedPatient,
-    selectedDevice,
-    sessionTitle,
-    transcriptionLength: transcriptionContent.length
-  });
   return (
     <div className="max-w-4xl mx-auto space-y-6">
       {/* Configuration */}

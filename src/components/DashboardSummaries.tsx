@@ -3,7 +3,6 @@ import { Users, FileText, TrendingUp, Calendar, Clock, Mic } from 'lucide-react'
 import { supabase } from '../lib/supabase';
 import { AuthUser } from '../types/user';
 import { formatDateTime } from '../utils/dateFormatter';
-import { logger } from '../utils/logger';
 
 interface DashboardSummariesProps {
   currentUser: AuthUser;
@@ -44,17 +43,12 @@ export default function DashboardSummaries({
   const isAdmin = currentUser.profile.role === 'admin';
 
   useEffect(() => {
-    logger.info('UI', 'DashboardSummaries montado', {
-      userId: currentUser.id,
-      isAdmin
-    });
     fetchDashboardData();
   }, [currentUser]);
 
   const fetchDashboardData = async () => {
     try {
       setLoading(true);
-      logger.dataLoad('DashboardSummaries', 'start', { isAdmin }, currentUser.id);
       
       if (isAdmin) {
         // Admin vê dados de todos os usuários
@@ -63,41 +57,30 @@ export default function DashboardSummaries({
         // Usuário comum vê apenas seus próprios dados
         await fetchUserData();
       }
-      
-      logger.dataLoad('DashboardSummaries', 'success', data, currentUser.id);
     } catch (error) {
-      logger.dataLoad('DashboardSummaries', 'error', error, currentUser.id);
+      console.error('Erro ao buscar dados do dashboard:', error);
     } finally {
       setLoading(false);
     }
   };
 
   const fetchAdminData = async () => {
-    logger.debug('DATA', 'Iniciando fetchAdminData', { userId: currentUser.id });
-    
     // Buscar total de usuários
-    logger.supabaseCall('count users', 'profiles', 'start', undefined, currentUser.id);
     const { count: usersCount } = await supabase
       .from('profiles')
       .select('*', { count: 'exact', head: true });
-    logger.supabaseCall('count users', 'profiles', 'success', { count: usersCount }, currentUser.id);
 
     // Buscar total de pacientes
-    logger.supabaseCall('count patients', 'patients', 'start', undefined, currentUser.id);
     const { count: patientsCount } = await supabase
       .from('patients')
       .select('*', { count: 'exact', head: true });
-    logger.supabaseCall('count patients', 'patients', 'success', { count: patientsCount }, currentUser.id);
 
     // Buscar sessões por status
-    logger.supabaseCall('fetch sessions', 'sessions', 'start', undefined, currentUser.id);
     const { data: sessions } = await supabase
       .from('sessions')
       .select('id');
-    logger.supabaseCall('fetch sessions', 'sessions', 'success', { count: sessions?.length }, currentUser.id);
 
     // Buscar sessões recentes
-    logger.supabaseCall('fetch recent sessions', 'sessions', 'start', undefined, currentUser.id);
     const { data: recentSessions } = await supabase
       .from('sessions')
       .select(`
@@ -109,9 +92,8 @@ export default function DashboardSummaries({
       `)
       .order('created_at', { ascending: false })
       .limit(5);
-    logger.supabaseCall('fetch recent sessions', 'sessions', 'success', { count: recentSessions?.length }, currentUser.id);
 
-    const dashboardData = {
+    setData({
       totalUsers: usersCount || 0,
       totalPatients: patientsCount || 0,
       totalSessions: sessions?.length || 0,
@@ -122,35 +104,23 @@ export default function DashboardSummaries({
         created_at: session.created_at,
         status: session.status
       })) || []
-    };
-
-    logger.info('DATA', 'Admin dashboard data loaded', dashboardData, currentUser.id);
-    setData({
-      ...dashboardData
     });
   };
 
   const fetchUserData = async () => {
-    logger.debug('DATA', 'Iniciando fetchUserData', { userId: currentUser.id });
-    
     // Buscar pacientes do usuário
-    logger.supabaseCall('count user patients', 'patients', 'start', { userId: currentUser.id }, currentUser.id);
     const { count: patientsCount } = await supabase
       .from('patients')
       .select('*', { count: 'exact', head: true })
       .eq('user_id', currentUser.id);
-    logger.supabaseCall('count user patients', 'patients', 'success', { count: patientsCount }, currentUser.id);
 
     // Buscar sessões do usuário por status
-    logger.supabaseCall('fetch user sessions', 'sessions', 'start', { userId: currentUser.id }, currentUser.id);
     const { data: sessions } = await supabase
       .from('sessions')
       .select('id')
       .eq('user_id', currentUser.id);
-    logger.supabaseCall('fetch user sessions', 'sessions', 'success', { count: sessions?.length }, currentUser.id);
 
     // Buscar sessões recentes do usuário
-    logger.supabaseCall('fetch user recent sessions', 'sessions', 'start', { userId: currentUser.id }, currentUser.id);
     const { data: recentSessions } = await supabase
       .from('sessions')
       .select(`
@@ -163,9 +133,8 @@ export default function DashboardSummaries({
       .eq('user_id', currentUser.id)
       .order('created_at', { ascending: false })
       .limit(5);
-    logger.supabaseCall('fetch user recent sessions', 'sessions', 'success', { count: recentSessions?.length }, currentUser.id);
 
-    const dashboardData = {
+    setData({
       totalPatients: patientsCount || 0,
       totalSessions: sessions?.length || 0,
       recentSessions: recentSessions?.map(session => ({
@@ -175,11 +144,6 @@ export default function DashboardSummaries({
         created_at: session.created_at,
         status: session.status
       })) || []
-    };
-
-    logger.info('DATA', 'User dashboard data loaded', dashboardData, currentUser.id);
-    setData({
-      ...dashboardData
     });
   };
 
@@ -210,7 +174,6 @@ export default function DashboardSummaries({
   };
 
   if (loading) {
-    logger.debug('UI', 'DashboardSummaries mostrando loading');
     return (
       <div className="space-y-6">
         <div className="animate-pulse">
@@ -227,12 +190,6 @@ export default function DashboardSummaries({
     );
   }
 
-  logger.debug('UI', 'DashboardSummaries renderizando dados', {
-    totalPatients: data.totalPatients,
-    totalSessions: data.totalSessions,
-    totalUsers: data.totalUsers,
-    recentSessionsCount: data.recentSessions.length
-  });
   return (
     <div className="space-y-8">
       {/* Título do Dashboard */}

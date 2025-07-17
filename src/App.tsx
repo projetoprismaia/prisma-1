@@ -1,6 +1,5 @@
 import React, { useState } from 'react';
 import { useAuth } from './hooks/useAuth';
-import { logger } from './utils/logger';
 import OrganicBackground from './components/OrganicBackground';
 import AuthForm from './components/AuthForm';
 import FloatingMenu from './components/FloatingMenu';
@@ -12,7 +11,6 @@ import TranscriptionPage from './components/TranscriptionPage';
 import DashboardSummaries from './components/DashboardSummaries';
 import NotificationModal from './components/NotificationModal';
 import { useNotification } from './hooks/useNotification';
-import DebugPanel from './components/DebugPanel';
 
 function App() {
   const { user, loading, error, signOut, isAdmin } = useAuth();
@@ -23,43 +21,8 @@ function App() {
   const [selectedPatientFilter, setSelectedPatientFilter] = useState<string | null>(null);
   const [viewingSessionId, setViewingSessionId] = useState<string | null>(null);
   const [showTranscriptionPage, setShowTranscriptionPage] = useState(false);
-  const [showDebugPanel, setShowDebugPanel] = useState(false);
 
-  // Log inicial do App
-  React.useEffect(() => {
-    logger.info('UI', 'App component montado', {
-      hasUser: !!user,
-      loading,
-      hasError: !!error
-    });
-  }, []);
-
-  // Log mudanças de estado do usuário
-  React.useEffect(() => {
-    logger.info('UI', 'Estado do usuário mudou no App', {
-      hasUser: !!user,
-      userId: user?.id,
-      email: user?.email,
-      role: user?.profile?.role,
-      loading
-    });
-  }, [user, loading]);
   const handleSignOut = () => {
-  // Atalho de teclado para abrir debug panel
-  React.useEffect(() => {
-    const handleKeyDown = (event: KeyboardEvent) => {
-      // Ctrl + Shift + D para abrir debug panel
-      if (event.ctrlKey && event.shiftKey && event.key === 'D') {
-        event.preventDefault();
-        setShowDebugPanel(true);
-        logger.info('UI', 'Debug panel aberto via atalho de teclado');
-      }
-    };
-
-    window.addEventListener('keydown', handleKeyDown);
-    return () => window.removeEventListener('keydown', handleKeyDown);
-  }, []);
-    logger.info('NAV', 'Usuário clicou em sair', { userId: user?.id });
     signOut().then(() => {
       // Forçar limpeza adicional do estado local após logout
       setShowAdminPanel(false);
@@ -67,17 +30,16 @@ function App() {
       setShowSessionsPanel(false);
       setShowTranscriptionPage(false);
       setViewingSessionId(null);
-      logger.info('NAV', 'Estado local limpo após logout');
     });
   };
 
   const navigateToHome = () => {
-    logger.navigationEvent(getCurrentSection(), 'dashboard', user?.id);
-    logger.debug('NAV', 'Navegando para home - estado atual', {
+    console.log('🏠 [navigateToHome] Navegando para home');
+    console.log('🔍 [navigateToHome] Estado atual:', {
       user: user ? user.id : 'NO_USER',
       showAdminPanel,
       showPatientPanel,
-      showSessionsPanel
+      showSessionsPanel,
     });
     setShowAdminPanel(false);
     setShowPatientPanel(false);
@@ -85,79 +47,75 @@ function App() {
     setShowTranscriptionPage(false);
     setSelectedPatientFilter(null);
     setViewingSessionId(null);
-    logger.info('NAV', 'Navegação para home concluída');
+    console.log('✅ [navigateToHome] Navegação concluída');
   };
 
   const navigateToAdmin = () => {
-    logger.navigationEvent(getCurrentSection(), 'admin', user?.id);
-    logger.info('NAV', 'Navegando para admin', {
-      userRole: user?.profile?.role,
-      isAdmin: isAdmin()
-    });
+    console.log('⚙️ [navigateToAdmin] Navegando para admin');
+    console.log('🔍 [navigateToAdmin] User role:', user?.profile?.role);
+    console.log('🔍 [navigateToAdmin] isAdmin():', isAdmin());
     setShowAdminPanel(true);
     setShowPatientPanel(false);
     setShowSessionsPanel(false);
     setShowTranscriptionPage(false);
     setSelectedPatientFilter(null);
     setViewingSessionId(null);
-    logger.info('NAV', 'Navegação para admin concluída');
+    console.log('✅ [navigateToAdmin] Navegação concluída');
   };
 
   const navigateToPatients = () => {
-    logger.navigationEvent(getCurrentSection(), 'patients', user?.id);
-    logger.info('NAV', 'Navegando para pacientes', { userRole: user?.profile?.role });
+    console.log('👥 [navigateToPatients] Navegando para pacientes');
+    console.log('🔍 [navigateToPatients] User role:', user?.profile?.role);
     setShowAdminPanel(false);
     setShowPatientPanel(true);
     setShowSessionsPanel(false);
     setShowTranscriptionPage(false);
     setSelectedPatientFilter(null);
     setViewingSessionId(null);
-    logger.info('NAV', 'Navegação para pacientes concluída');
+    console.log('✅ [navigateToPatients] Navegação concluída');
   };
 
   const navigateToSessions = () => {
-    logger.navigationEvent(getCurrentSection(), 'sessions', user?.id);
+    console.log('📄 [navigateToSessions] Navegando para sessões');
     setShowAdminPanel(false);
     setShowPatientPanel(false);
     setShowSessionsPanel(true);
     setShowTranscriptionPage(false);
     setSelectedPatientFilter(null);
     setViewingSessionId(null);
-    logger.info('NAV', 'Navegação para sessões concluída');
+    console.log('✅ [navigateToSessions] Navegação concluída');
   };
 
   const navigateToSessionsWithPatient = (patientId: string) => {
-    logger.navigationEvent(getCurrentSection(), 'sessions-filtered', user?.id);
-    logger.info('NAV', 'Navegando para sessões com filtro de paciente', { patientId });
+    console.log('📄 [navigateToSessionsWithPatient] Navegando para sessões com filtro:', patientId);
     setShowAdminPanel(false);
     setShowPatientPanel(false);
     setShowSessionsPanel(true);
     setShowTranscriptionPage(false);
     setSelectedPatientFilter(patientId);
     setViewingSessionId(null);
-    logger.info('NAV', 'Navegação para sessões filtradas concluída');
+    console.log('✅ [navigateToSessionsWithPatient] Navegação concluída');
   };
 
   const navigateToSessionDetail = (sessionId: string) => {
-    logger.navigationEvent(getCurrentSection(), 'session-detail', user?.id);
-    logger.info('NAV', 'Navegando para detalhes da sessão', { sessionId });
+    console.log('📄 [navigateToSessionDetail] Navegando para detalhes da sessão:', sessionId);
     setViewingSessionId(sessionId);
     setShowAdminPanel(false);
     setShowPatientPanel(false);
     setShowSessionsPanel(false);
     setShowTranscriptionPage(false);
-    logger.info('NAV', 'Navegação para detalhes da sessão concluída');
+    console.log('✅ [navigateToSessionDetail] Navegação concluída');
   };
 
   const navigateToTranscription = () => {
-    logger.navigationEvent(getCurrentSection(), 'transcription', user?.id);
+    console.log('🎤 [navigateToTranscription] Navegando para transcrição');
     setShowTranscriptionPage(true);
     setShowAdminPanel(false);
     setShowPatientPanel(false);
     setShowSessionsPanel(false);
     setViewingSessionId(null);
     setSelectedPatientFilter(null);
-    logger.info('NAV', 'Navegação para transcrição concluída');
+    console.log('✅ [navigateToTranscription] Navegação concluída');
   };
 
   const getCurrentSection = () => {
@@ -166,13 +124,12 @@ function App() {
                    showAdminPanel ? 'admin' : 
                    showPatientPanel ? 'patients' : 
                    showSessionsPanel ? 'sessions' : 'dashboard';
-    logger.debug('NAV', 'Seção atual determinada', { section });
+    console.log('🔍 [getCurrentSection] Seção atual:', section);
     return section;
   };
 
   // Loading state
   if (loading) {
-    logger.info('UI', 'Mostrando tela de loading');
     return (
       <div className="min-h-screen flex items-center justify-center p-4">
         <div className="glass-card rounded-xl shadow-xl p-8 max-w-md text-center border border-white/20">
@@ -186,7 +143,6 @@ function App() {
 
   // Show auth form if not authenticated
   if (!user) {
-    logger.info('UI', 'Mostrando tela de autenticação - usuário não logado');
     return (
       <>
         <OrganicBackground />
@@ -199,11 +155,6 @@ function App() {
 
   // Show recording page if active
   // Main authenticated user layout with FloatingMenu always visible
-  logger.info('UI', 'Renderizando interface principal autenticada', {
-    currentSection: getCurrentSection(),
-    userId: user.id
-  });
-
   return (
     <>
       <OrganicBackground />
@@ -222,29 +173,24 @@ function App() {
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
           {/* Render content based on current state */}
           {showTranscriptionPage ? (
-            logger.debug('UI', 'Renderizando TranscriptionPage') &&
             <TranscriptionPage
               currentUser={user}
               onBack={navigateToSessions}
             />
           ) : viewingSessionId ? (
-            logger.debug('UI', 'Renderizando SessionDetailPage', { sessionId: viewingSessionId }) &&
             <SessionDetailPage
               sessionId={viewingSessionId}
               currentUser={user}
               onBack={navigateToSessions}
             />
           ) : showAdminPanel && isAdmin() ? (
-            logger.debug('UI', 'Renderizando AdminPanel') &&
             <AdminPanel currentUser={user} />
           ) : showPatientPanel && !isAdmin() ? (
-            logger.debug('UI', 'Renderizando PatientList') &&
             <PatientList 
               currentUser={user} 
               onNavigateToSessions={navigateToSessionsWithPatient}
             />
           ) : showSessionsPanel ? (
-            logger.debug('UI', 'Renderizando SessionListPage', { patientFilter: selectedPatientFilter }) &&
             <SessionListPage 
               currentUser={user} 
               initialPatientFilter={selectedPatientFilter}
@@ -252,7 +198,6 @@ function App() {
               onStartNewTranscription={navigateToTranscription}
             />
           ) : (
-            logger.debug('UI', 'Renderizando DashboardSummaries') &&
             <DashboardSummaries
               currentUser={user}
               onNavigateToPatients={navigateToPatients}
@@ -270,12 +215,6 @@ function App() {
           title={notification.title}
           message={notification.message}
           onClose={hideNotification}
-        />
-
-        {/* Debug Panel */}
-        <DebugPanel
-          isOpen={showDebugPanel}
-          onClose={() => setShowDebugPanel(false)}
         />
       </div>
     </>

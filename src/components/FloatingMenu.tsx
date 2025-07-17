@@ -1,7 +1,6 @@
 import React from 'react';
 import { BarChart3, Users, FileText, Settings, User, LogOut } from 'lucide-react';
 import { AuthUser } from '../types/user';
-import { logger } from '../utils/logger';
 
 interface FloatingMenuProps {
   currentUser: AuthUser;
@@ -24,23 +23,16 @@ export default function FloatingMenu({
   onSignOut,
   isAdmin
 }: FloatingMenuProps) {
-  // Log quando o menu é renderizado
-  React.useEffect(() => {
-    logger.debug('UI', 'FloatingMenu renderizado', {
-      activeSection,
-      isAdmin,
-      userId: currentUser.id
-    });
-  }, [activeSection, isAdmin, currentUser.id]);
-
   return (
     <div className="floating-menu">
       <div className="menu-items">
         <button
+          onClick={onNavigateToHome}
           onClick={() => {
-            logger.uiEvent('FloatingMenu', 'Dashboard clicked', {
-              currentSection: activeSection,
-              userId: currentUser.id,
+            console.log('🖱️ [FloatingMenu] Clique em Dashboard');
+            console.log('🔍 [FloatingMenu] Props:', {
+              currentUser: currentUser ? currentUser.id : 'NO_USER',
+              activeSection,
               isAdmin
             });
             onNavigateToHome();
@@ -54,11 +46,8 @@ export default function FloatingMenu({
         {!isAdmin && (
           <button
             onClick={() => {
-              logger.uiEvent('FloatingMenu', 'Pacientes clicked', {
-                currentSection: activeSection,
-                userId: currentUser.id,
-                isAdmin
-              });
+              console.log('🖱️ [FloatingMenu] Clique em Pacientes');
+              console.log('🔍 [FloatingMenu] isAdmin:', isAdmin);
               onNavigateToPatients();
             }}
             className={`menu-item ${activeSection === 'patients' ? 'active' : ''}`}
@@ -70,10 +59,7 @@ export default function FloatingMenu({
         
         <button
           onClick={() => {
-            logger.uiEvent('FloatingMenu', 'Sessões clicked', {
-              currentSection: activeSection,
-              userId: currentUser.id
-            });
+            console.log('🖱️ [FloatingMenu] Clique em Sessões');
             onNavigateToSessions();
           }}
           className={`menu-item ${activeSection === 'sessions' ? 'active' : ''}`}
@@ -85,11 +71,8 @@ export default function FloatingMenu({
         {isAdmin && (
           <button
             onClick={() => {
-              logger.uiEvent('FloatingMenu', 'Admin clicked', {
-                currentSection: activeSection,
-                userId: currentUser.id,
-                isAdmin
-              });
+              console.log('🖱️ [FloatingMenu] Clique em Admin');
+              console.log('🔍 [FloatingMenu] isAdmin:', isAdmin);
               onNavigateToAdmin();
             }}
             className={`menu-item ${activeSection === 'admin' ? 'active' : ''}`}
@@ -108,10 +91,8 @@ export default function FloatingMenu({
         
         <button
           onClick={() => {
-            logger.uiEvent('FloatingMenu', 'Sair clicked', {
-              userId: currentUser.id,
-              timestamp: new Date().toISOString()
-            });
+            console.log('🖱️ [FloatingMenu] Clique em Sair');
+            console.log('🔍 [FloatingMenu] Fazendo logout...');
             onSignOut();
           }}
           className="menu-item logout"
