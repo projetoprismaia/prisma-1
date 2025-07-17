@@ -18,9 +18,14 @@ export function useTabVisibility(): UseTabVisibilityReturn {
       console.log('🔍 [useTabVisibility] Mudança de visibilidade:', {
         isVisible,
         previousState: isTabVisible,
+      });
+      
+      if (!isTabVisible && isVisible) {
+        console.log('👁️ [useTabVisibility] Aba ficou visível novamente');
         setWasTabHidden(true);
         
         // Executar todos os callbacks registrados
+        visibilityCallbacks.forEach(callback => {
           try {
             callback();
           } catch (error) {
