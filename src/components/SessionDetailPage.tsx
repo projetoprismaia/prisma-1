@@ -44,7 +44,6 @@ export default function SessionDetailPage({ sessionId, currentUser, refreshTrigg
       if (cachedSession) {
         console.log(`📄 [SessionDetailPage] Usando sessão do cache (${isDataStale ? 'STALE' : 'FRESH'})`);
         setSession(cachedSession);
-        setLoading(false);
       }
       
       // Se dados estão stale ou não existem, buscar dados frescos
@@ -55,9 +54,7 @@ export default function SessionDetailPage({ sessionId, currentUser, refreshTrigg
       console.error('Erro ao buscar detalhes da sessão:', error);
       setError(error.message || 'Erro ao carregar sessão');
     } finally {
-      if (!dataCache.get(cacheKeys.sessionDetail(sessionId))) {
-        setLoading(false);
-      }
+      setLoading(false);
     }
   };
 

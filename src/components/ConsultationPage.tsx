@@ -98,7 +98,6 @@ export default function ConsultationPage({ currentUser, isTabVisible, onBack }: 
       if (cachedPatients) {
         console.log(`👥 [ConsultationPage] Usando pacientes do cache (${isDataStale ? 'STALE' : 'FRESH'})`);
         setPatients(cachedPatients);
-        setLoading(false);
       }
       
       // Se dados estão stale ou não existem, buscar dados frescos
@@ -121,9 +120,7 @@ export default function ConsultationPage({ currentUser, isTabVisible, onBack }: 
       console.error('Erro ao buscar pacientes:', error);
       showError('Erro', 'Não foi possível carregar a lista de pacientes.');
     } finally {
-      if (!dataCache.get(cacheKeys.patients(currentUser.id))) {
-        setLoading(false);
-      }
+      setLoading(false);
     }
   };
 

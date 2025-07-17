@@ -65,7 +65,6 @@ export default function SessionListPage({ currentUser, refreshTrigger, initialPa
       if (cachedSessions) {
         console.log(`📄 [SessionListPage] Usando sessões do cache (${isDataStale ? 'STALE' : 'FRESH'})`);
         setSessions(cachedSessions);
-        setLoading(false);
       }
       
       // Se dados estão stale ou não existem, buscar dados frescos
@@ -75,9 +74,7 @@ export default function SessionListPage({ currentUser, refreshTrigger, initialPa
     } catch (error) {
       log('Erro ao buscar sessões:', error);
     } finally {
-      if (!dataCache.get(cacheKeys.sessions(currentUser.id))) {
-        setLoading(false);
-      }
+      setLoading(false);
     }
   };
 

@@ -70,7 +70,6 @@ export default function DashboardSummaries({
       if (cachedData) {
         console.log(`📊 [DashboardSummaries] Usando dados do cache (${isDataStale ? 'STALE' : 'FRESH'})`);
         setData(cachedData);
-        setLoading(false);
       }
       
       // Se dados estão stale ou não existem, buscar dados frescos
@@ -84,9 +83,7 @@ export default function DashboardSummaries({
     } catch (error) {
       console.error('Erro ao buscar dados do dashboard:', error);
     } finally {
-      if (!dataCache.get(cacheKeys.dashboardAdmin()) && !dataCache.get(cacheKeys.dashboardUser(currentUser.id))) {
-        setLoading(false);
-      }
+      setLoading(false);
     }
   };
 

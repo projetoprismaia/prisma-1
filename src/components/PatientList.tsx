@@ -47,7 +47,6 @@ export default function PatientList({ currentUser, refreshTrigger, onNavigateToS
       if (cachedPatients) {
         console.log(`👥 [PatientList] Usando pacientes do cache (${isDataStale ? 'STALE' : 'FRESH'})`);
         setPatients(cachedPatients);
-        setLoading(false);
       }
       
       // Se dados estão stale ou não existem, buscar dados frescos
@@ -57,9 +56,7 @@ export default function PatientList({ currentUser, refreshTrigger, onNavigateToS
     } catch (error) {
       console.error('Erro ao buscar pacientes:', error);
     } finally {
-      if (!dataCache.get(cacheKeys.patients(currentUser.id))) {
-        setLoading(false);
-      }
+      setLoading(false);
     }
   };
 
