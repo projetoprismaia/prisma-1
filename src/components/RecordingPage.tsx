@@ -1,8 +1,9 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { Mic, MicOff, Play, Pause, Square, Save, ArrowLeft, Clock, User, FileText, Search } from 'lucide-react';
+import { Mic, MicOff, Play, Pause, Square, Save, ArrowLeft, Clock, User, FileText, Search, Edit, X } from 'lucide-react';
 import { supabase } from '../lib/supabase';
 import { AuthUser } from '../types/user';
 import { Session } from '../types/session';
+import { Patient } from '../types/patient';
 import { useNotification } from '../hooks/useNotification';
 
 // Extend Window interface for Speech Recognition
@@ -44,6 +45,7 @@ export default function RecordingPage({
   const [sessionConfigured, setSessionConfigured] = useState(false);
   const [patientSearchInput, setPatientSearchInput] = useState('');
   const [showPatientDropdown, setShowPatientDropdown] = useState(false);
+  const [showPatientChangeModal, setShowPatientChangeModal] = useState(false);
   
   const recognitionRef = useRef<SpeechRecognition | null>(null);
   const intervalRef = useRef<NodeJS.Timeout | null>(null);
@@ -439,6 +441,75 @@ export default function RecordingPage({
       }
     }
   }, [selectedPatientId, patients]);
+
+  const handleOpenPatientChangeModal = () => {
+    if (isRecording) {
+      showError(
+        'Gravação em Andamento',
+        'Não é possível alterar o paciente durante a gravação. Pause ou finalize a gravação primeiro.'
+      );
+      return;
+    }
+    setShowPatientChangeModal(true);
+  };
+
+  const handleChangeSessionPatient = async (newPatientId: string) => {
+    if (!currentSession) {
+      showError(
+        'Erro',
+        'Nenhuma sessão ativa encontrada.'
+      );
+      return;
+    }
+
+    try {
+      console.log('🔄 Alterando paciente da sessão...', { sessionId: currentSession.id, newPatientId });
+      
+      // Buscar dados do novo paciente
+      const { data: newPatient, error: patientError } = await supabase
+        .from('patients')
+        .select('*')
+        .eq('id', newPatientId)
+        .single();
+
+      if (patientError) throw patientError;
+
+      // Atualizar a sessão no banco de dados
+      const { error: updateError } = await supabase
+        .from('sessions')
+        .update({ patient_id: newPatientId })
+        .eq('id', currentSession.id);
+
+      if (updateError) throw updateError;
+
+      // Atualizar o estado local
+      setCurrentSession({
+        ...currentSession,
+        patient_id: newPatientId,
+        patient: {
+          id: newPatient.id,
+          name: newPatient.name,
+          email: newPatient.email,
+          whatsapp: newPatient.whatsapp
+        }
+      });
+      
+      setSelectedPatientId(newPatientId);
+      setShowPatientChangeModal(false);
+      
+      console.log('✅ Paciente da sessão alterado com sucesso');
+      showSuccess(
+        'Paciente Alterado',
+        `A sessão foi vinculada ao paciente ${newPatient.name} com sucesso.`
+      );
+    } catch (error: any) {
+      console.error('❌ Erro ao alterar paciente da sessão:', error);
+      showError(
+        'Erro ao Alterar Paciente',
+        `Não foi possível alterar o paciente: ${error.message}`
+      );
+    }
+  };
 
   const startRecording = () => {
     if (!recognitionRef.current) {
@@ -956,7 +1027,19 @@ export default function RecordingPage({
                 </div>
                 <div>
                   <h2 className="text-lg font-semibold text-gray-900">Sessão Ativa</h2>
-                  <p className="text-gray-600">{getSelectedPatientName()}</p>
+                  <div className="flex items-center space-x-2">
+                    <button
+                      onClick={handleOpenPatientChangeModal}
+                      disabled={isRecording}
+                      className={`text-gray-600 hover:text-blue-600 transition-colors flex items-center space-x-1 ${
+                        isRecording ? 'cursor-not-allowed opacity-50' : 'cursor-pointer'
+                      }`}
+                      title={isRecording ? 'Não é possível alterar durante a gravação' : 'Clique para alterar o paciente'}
+                    >
+                      <span>{getSelectedPatientName()}</span>
+                      {!isRecording && <Edit className="h-3 w-3" />}
+                    </button>
+                  </div>
                 </div>
               </div>
               
@@ -1193,5 +1276,123 @@ export default function RecordingPage({
           </div>
         </div>
     </div>
+
+    {/* Patient Change Modal */}
+    {showPatientChangeModal && (
+      <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
+        <div className="glass-card rounded-xl shadow-2xl w-full max-w-md max-h-[90vh] overflow-y-auto border border-white/20">
+          {/* Header */}
+          <div className="flex items-center justify-between p-6 border-b border-gray-200">
+            <div className="flex items-center space-x-3">
+              <div className="bg-blue-600 p-2 rounded-lg">
+                <User className="h-5 w-5 text-white" />
+              </div>
+              <div>
+                <h2 className="text-xl font-semibold text-gray-800">Alterar Paciente</h2>
+                <p className="text-sm text-gray-600">Selecione um novo paciente para esta sessão</p>
+              </div>
+            </div>
+            <button
+              onClick={() => setShowPatientChangeModal(false)}
+              className="text-gray-400 hover:text-gray-600 transition-colors"
+            >
+              <X className="h-6 w-6" />
+            </button>
+          </div>
+
+          {/* Patient Selection */}
+          <div className="p-6">
+            <div className="mb-4">
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                Selecionar Paciente
+              </label>
+              
+              {/* Unified Patient Search/Select Field */}
+              <div className="relative">
+                <User className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
+                <input
+                  type="text"
+                  placeholder="Digite o nome do paciente ou selecione da lista..."
+                  value={patientSearchInput}
+                  onChange={(e) => handlePatientInputChange(e.target.value)}
+                  onFocus={handlePatientInputFocus}
+                  onBlur={handlePatientInputBlur}
+                  className="w-full pl-10 pr-10 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                />
+                <Search className="absolute right-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
+                
+                {/* Dropdown List */}
+                {showPatientDropdown && (
+                  <div className="absolute z-10 w-full mt-1 bg-white border border-gray-300 rounded-lg shadow-lg max-h-60 overflow-y-auto">
+                    {filteredPatients.length > 0 ? (
+                      <ul className="py-1">
+                        {filteredPatients.map(patient => (
+                          <li
+                            key={patient.id}
+                            onClick={() => {
+                              handlePatientSelect(patient);
+                              handleChangeSessionPatient(patient.id);
+                            }}
+                            className={`px-4 py-3 hover:bg-blue-50 cursor-pointer transition-colors ${
+                              selectedPatientId === patient.id ? 'bg-blue-100 text-blue-900' : 'text-gray-900'
+                            }`}
+                          >
+                            <div className="flex items-center space-x-3">
+                              <div className="bg-gray-100 p-1 rounded-full">
+                                <User className="h-3 w-3 text-gray-600" />
+                              </div>
+                              <div>
+                                <p className="font-medium">{patient.name}</p>
+                                {patient.email && (
+                                  <p className="text-xs text-gray-500">{patient.email}</p>
+                                )}
+                              </div>
+                            </div>
+                          </li>
+                        ))}
+                      </ul>
+                    ) : (
+                      <div className="px-4 py-3 text-gray-500 text-center">
+                        {patientSearchInput.trim() ? (
+                          <>
+                            <Search className="h-4 w-4 mx-auto mb-1 text-gray-400" />
+                            <p className="text-sm">Nenhum paciente encontrado</p>
+                            <p className="text-xs">com "{patientSearchInput}"</p>
+                          </>
+                        ) : (
+                          <>
+                            <User className="h-4 w-4 mx-auto mb-1 text-gray-400" />
+                            <p className="text-sm">Digite para buscar pacientes</p>
+                          </>
+                        )}
+                      </div>
+                    )}
+                  </div>
+                )}
+              </div>
+            </div>
+
+            {/* Current Patient Info */}
+            <div className="bg-blue-50 rounded-lg p-4">
+              <div className="flex items-center space-x-2 mb-2">
+                <User className="h-4 w-4 text-blue-600" />
+                <span className="text-sm font-medium text-blue-800">Paciente Atual</span>
+              </div>
+              <p className="text-blue-700">{getSelectedPatientName()}</p>
+            </div>
+
+            {/* Action Buttons */}
+            <div className="flex space-x-3 mt-6">
+              <button
+                onClick={() => setShowPatientChangeModal(false)}
+                className="flex-1 px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors"
+              >
+                Cancelar
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+    )}
   );
 }
