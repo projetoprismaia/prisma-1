@@ -18,17 +18,9 @@ export function useTabVisibility(): UseTabVisibilityReturn {
       console.log('🔍 [useTabVisibility] Mudança de visibilidade:', {
         isVisible,
         previousState: isTabVisible,
-        documentHidden: document.hidden,
-        visibilityState: document.visibilityState
-      });
-
-      if (!isTabVisible && isVisible) {
-        // Aba voltou a ficar visível após estar oculta
-        console.log('👁️ [useTabVisibility] Aba voltou a ficar visível - disparando callbacks');
         setWasTabHidden(true);
         
         // Executar todos os callbacks registrados
-        visibilityCallbacks.forEach(callback => {
           try {
             callback();
           } catch (error) {
@@ -36,11 +28,9 @@ export function useTabVisibility(): UseTabVisibilityReturn {
           }
         });
       } else if (isTabVisible && !isVisible) {
-        // Aba ficou oculta
         console.log('🙈 [useTabVisibility] Aba ficou oculta');
         setWasTabHidden(false);
       }
-
       setIsTabVisible(isVisible);
     };
 
@@ -49,14 +39,12 @@ export function useTabVisibility(): UseTabVisibilityReturn {
 
     // Também escutar eventos de foco da janela como fallback
     const handleFocus = () => {
-      console.log('🔍 [useTabVisibility] Window focus event');
       if (!document.hidden && !isTabVisible) {
         handleVisibilityChange();
       }
     };
 
     const handleBlur = () => {
-      console.log('🔍 [useTabVisibility] Window blur event');
       if (document.hidden && isTabVisible) {
         setIsTabVisible(false);
       }

@@ -30,7 +30,6 @@ export default function PatientList({ currentUser, refreshTrigger, onNavigateToS
   // Recarregar dados quando refreshTrigger mudar
   useEffect(() => {
     if (refreshTrigger > 0) {
-      console.log('🔄 [PatientList] Recarregando dados devido ao refreshTrigger:', refreshTrigger);
       fetchPatients();
     }
   }, [refreshTrigger]);
@@ -38,7 +37,6 @@ export default function PatientList({ currentUser, refreshTrigger, onNavigateToS
   const fetchPatients = async () => {
     try {
       setLoading(true);
-      console.log('🔄 [PatientList] Buscando pacientes...');
       
       const { data, error } = await supabase
         .from('patients')
@@ -47,12 +45,9 @@ export default function PatientList({ currentUser, refreshTrigger, onNavigateToS
         .order('created_at', { ascending: false });
 
       if (error) throw error;
-      
       const patients = data || [];
-      console.log('👥 [PatientList] Pacientes encontrados:', patients.length);
       setPatients(patients);
     } catch (error) {
-      console.error('Erro ao buscar pacientes:', error);
     } finally {
       setLoading(false);
     }

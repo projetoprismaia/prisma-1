@@ -51,7 +51,6 @@ export default function DashboardSummaries({
   // Recarregar dados quando refreshTrigger mudar
   useEffect(() => {
     if (refreshTrigger > 0) {
-      console.log('🔄 [DashboardSummaries] Recarregando dados devido ao refreshTrigger:', refreshTrigger);
       fetchDashboardData();
     }
   }, [refreshTrigger]);
@@ -73,8 +72,6 @@ export default function DashboardSummaries({
   };
 
   const fetchAdminData = async () => {
-    console.log('🔄 [DashboardSummaries] Buscando dados do admin...');
-    
     // Buscar total de usuários
     const { count: usersCount } = await supabase
       .from('profiles')
@@ -120,8 +117,6 @@ export default function DashboardSummaries({
   };
 
   const fetchUserData = async () => {
-    console.log('🔄 [DashboardSummaries] Buscando dados do usuário...');
-    
     // Buscar pacientes do usuário
     const { count: patientsCount } = await supabase
       .from('patients')

@@ -30,7 +30,6 @@ export default function SessionListPage({ currentUser, refreshTrigger, initialPa
   // Recarregar dados quando refreshTrigger mudar
   useEffect(() => {
     if (refreshTrigger > 0) {
-      console.log('🔄 [SessionListPage] Recarregando dados devido ao refreshTrigger:', refreshTrigger);
       fetchSessions();
       fetchPatients();
     }
@@ -46,7 +45,6 @@ export default function SessionListPage({ currentUser, refreshTrigger, initialPa
   const fetchSessions = async () => {
     try {
       setLoading(true);
-      console.log('🔄 [SessionListPage] Buscando sessões...');
       
       const { data, error } = await supabase
         .from('sessions')
@@ -58,12 +56,9 @@ export default function SessionListPage({ currentUser, refreshTrigger, initialPa
         .order('created_at', { ascending: false });
 
       if (error) throw error;
-      
       const sessions = data || [];
-      console.log('📄 [SessionListPage] Sessões encontradas:', sessions.length);
       setSessions(sessions);
     } catch (error) {
-      console.error('Erro ao buscar sessões:', error);
     } finally {
       setLoading(false);
     }
@@ -71,8 +66,6 @@ export default function SessionListPage({ currentUser, refreshTrigger, initialPa
 
   const fetchPatients = async () => {
     try {
-      console.log('🔄 [SessionListPage] Buscando pacientes...');
-      
       const { data, error } = await supabase
         .from('patients')
         .select('*')
@@ -80,12 +73,9 @@ export default function SessionListPage({ currentUser, refreshTrigger, initialPa
         .order('name');
 
       if (error) throw error;
-      
       const patients = data || [];
-      console.log('👥 [SessionListPage] Pacientes encontrados:', patients.length);
       setPatients(patients);
     } catch (error) {
-      console.error('Erro ao buscar pacientes:', error);
     }
   };
 

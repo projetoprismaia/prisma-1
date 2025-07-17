@@ -39,7 +39,6 @@ export default function AdminPanel({ currentUser, refreshTrigger }: AdminPanelPr
   const fetchUsers = async () => {
     try {
       setLoading(true);
-      console.log('🔍 Buscando usuários e contagem de pacientes...');
       
       // Buscar usuários
       const { data: usersData, error: usersError } = await supabase
@@ -48,13 +47,9 @@ export default function AdminPanel({ currentUser, refreshTrigger }: AdminPanelPr
         .order('created_at', { ascending: false });
 
       if (usersError) throw usersError;
-      console.log('👥 Usuários encontrados:', usersData?.length || 0);
       setUsers(usersData || []);
-
       // Buscar contagem de pacientes para cada usuário
       if (usersData && usersData.length > 0) {
-        console.log('🔍 Buscando pacientes...');
-        
         // Tentar buscar pacientes como admin
         let patientsData = null;
         let patientsError = null;
@@ -65,7 +60,6 @@ export default function AdminPanel({ currentUser, refreshTrigger }: AdminPanelPr
           .select('user_id');
           
         if (allPatientsError) {
-          console.log('⚠️ Erro ao buscar todos os pacientes:', allPatientsError.message);
           
           // Segunda tentativa: usar RPC se disponível
           const { data: rpcData, error: rpcError } = await supabase
@@ -73,7 +67,6 @@ export default function AdminPanel({ currentUser, refreshTrigger }: AdminPanelPr
             .catch(() => ({ data: null, error: { message: 'RPC não disponível' } }));
             
           if (rpcError || !rpcData) {
-            console.log('⚠️ RPC também falhou, usando contagem manual...');
             
             // Terceira tentativa: contar manualmente para cada usuário
             const counts: Record<string, number> = {};
@@ -85,15 +78,11 @@ export default function AdminPanel({ currentUser, refreshTrigger }: AdminPanelPr
                 .eq('user_id', user.id);
                 
               if (countError) {
-                console.error(`Erro ao contar pacientes para ${user.email}:`, countError);
                 counts[user.id] = 0;
               } else {
                 counts[user.id] = count || 0;
-                console.log(`👤 ${user.email}: ${count || 0} pacientes`);
               }
             }
-            
-            console.log('📈 Contagem final por usuário:', counts);
             setPatientCounts(counts);
             return;
           } else {
@@ -107,7 +96,6 @@ export default function AdminPanel({ currentUser, refreshTrigger }: AdminPanelPr
               counts[item.user_id] = item.patient_count;
             });
             
-            console.log('📈 Contagem via RPC:', counts);
             setPatientCounts(counts);
             return;
           }
@@ -117,7 +105,6 @@ export default function AdminPanel({ currentUser, refreshTrigger }: AdminPanelPr
         }
 
         if (patientsError) {
-          console.error('Erro ao buscar pacientes:', patientsError);
           // Em caso de erro, inicializar com zeros
           const emptyCounts: Record<string, number> = {};
           usersData.forEach(user => {
@@ -125,9 +112,6 @@ export default function AdminPanel({ currentUser, refreshTrigger }: AdminPanelPr
           });
           setPatientCounts(emptyCounts);
         } else {
-          console.log('👤 Total de pacientes no banco:', patientsData?.length || 0);
-          console.log('📊 Dados dos pacientes:', patientsData);
-          
           // Contar pacientes por usuário
           const counts: Record<string, number> = {};
           
@@ -141,19 +125,15 @@ export default function AdminPanel({ currentUser, refreshTrigger }: AdminPanelPr
             if (patient.user_id && counts.hasOwnProperty(patient.user_id)) {
               counts[patient.user_id]++;
             } else if (patient.user_id) {
-              console.warn('⚠️ Paciente com user_id não encontrado nos usuários:', patient.user_id);
             }
           });
           
-          console.log('📈 Contagem final por usuário:', counts);
           setPatientCounts(counts);
         }
       } else {
-        console.log('👥 Nenhum usuário encontrado');
         setPatientCounts({});
       }
     } catch (error) {
-      console.error('Erro ao buscar usuários:', error);
       setPatientCounts({});
     } finally {
       setLoading(false);
@@ -191,7 +171,6 @@ export default function AdminPanel({ currentUser, refreshTrigger }: AdminPanelPr
       setUpdating(null);
     }
   };
-
   const handleSaveUser = async (userData: UserFormData) => {
     setFormLoading(true);
     try {
@@ -254,7 +233,6 @@ export default function AdminPanel({ currentUser, refreshTrigger }: AdminPanelPr
       setShowUserFormModal(false);
       setEditingUser(null);
     } catch (error: any) {
-      console.error('Erro ao salvar usuário:', error);
       showError(
         'Erro ao Salvar Usuário',
         `Não foi possível salvar o usuário: ${error.message}`
@@ -303,7 +281,6 @@ export default function AdminPanel({ currentUser, refreshTrigger }: AdminPanelPr
         'O usuário foi removido com sucesso do sistema.'
       );
     } catch (error: any) {
-      console.error('Erro ao deletar usuário:', error);
       showError(
         'Erro ao Deletar',
         `Não foi possível deletar o usuário: ${error.message}`

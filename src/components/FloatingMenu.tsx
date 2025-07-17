@@ -29,12 +29,6 @@ export default function FloatingMenu({
         <button
           onClick={onNavigateToHome}
           onClick={() => {
-            console.log('🖱️ [FloatingMenu] Clique em Dashboard');
-            console.log('🔍 [FloatingMenu] Props:', {
-              currentUser: currentUser ? currentUser.id : 'NO_USER',
-              activeSection,
-              isAdmin
-            });
             onNavigateToHome();
           }}
           className={`menu-item ${activeSection === 'dashboard' ? 'active' : ''}`}
@@ -46,8 +40,6 @@ export default function FloatingMenu({
         {!isAdmin && (
           <button
             onClick={() => {
-              console.log('🖱️ [FloatingMenu] Clique em Pacientes');
-              console.log('🔍 [FloatingMenu] isAdmin:', isAdmin);
               onNavigateToPatients();
             }}
             className={`menu-item ${activeSection === 'patients' ? 'active' : ''}`}
@@ -59,7 +51,6 @@ export default function FloatingMenu({
         
         <button
           onClick={() => {
-            console.log('🖱️ [FloatingMenu] Clique em Sessões');
             onNavigateToSessions();
           }}
           className={`menu-item ${activeSection === 'sessions' ? 'active' : ''}`}
@@ -71,8 +62,6 @@ export default function FloatingMenu({
         {isAdmin && (
           <button
             onClick={() => {
-              console.log('🖱️ [FloatingMenu] Clique em Admin');
-              console.log('🔍 [FloatingMenu] isAdmin:', isAdmin);
               onNavigateToAdmin();
             }}
             className={`menu-item ${activeSection === 'admin' ? 'active' : ''}`}
@@ -91,8 +80,6 @@ export default function FloatingMenu({
         
         <button
           onClick={() => {
-            console.log('🖱️ [FloatingMenu] Clique em Sair');
-            console.log('🔍 [FloatingMenu] Fazendo logout...');
             onSignOut();
           }}
           className="menu-item logout"
