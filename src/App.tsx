@@ -38,21 +38,18 @@ function App() {
     const handleTabVisible = () => {
       console.log('👁️ [App] Aba voltou a ficar visível - iniciando revalidação');
       
-      // Pequeno delay para evitar múltiplas requisições
-      setTimeout(async () => {
-        try {
-          // Revalidar sessão do usuário
-          await refreshProfile();
-          
-          // Disparar recarregamento de dados nos componentes
-          console.log('🔄 [App] Disparando revalidação de dados...');
-          setRefreshTrigger(prev => prev + 1);
-          
-          console.log('✅ [App] Revalidação concluída com sucesso');
-        } catch (error) {
-          console.error('❌ [App] Erro na revalidação:', error);
-        }
-      }, 500);
+      try {
+        // Revalidar sessão do usuário
+        refreshProfile();
+        
+        // Disparar recarregamento de dados nos componentes
+        console.log('🔄 [App] Disparando revalidação de dados...');
+        setRefreshTrigger(prev => prev + 1);
+        
+        console.log('✅ [App] Revalidação concluída com sucesso');
+      } catch (error) {
+        console.error('❌ [App] Erro na revalidação:', error);
+      }
     };
 
     // Registrar callback para quando aba voltar a ficar visível

@@ -8,6 +8,7 @@ export function useAuth() {
   const [error, setError] = useState<string | null>(null);
   const isProcessingRef = useRef(false);
   const mountedRef = useRef(true);
+  const initializationDoneRef = useRef(false);
 
   console.log('🔍 [useAuth] Hook inicializado');
 
@@ -48,17 +49,78 @@ export function useAuth() {
     }
   };
 
+  // Função pura para buscar/criar perfil do usuário
+  const handleUserSession = async (authUser: any): Promise<UserProfile | null> => {
+    try {
+      console.log('👤 [handleUserSession] Buscando perfil do usuário:', authUser.id);
+      
+      // Tentar buscar perfil existente
+      const { data: profile, error } = await supabase
+        .from('profiles')
+        .select('*')
+        .eq('id', authUser.id)
+        .single();
+
+      console.log('🔍 [handleUserSession] Profile query result:', {
+        profile: profile ? 'FOUND' : 'NOT_FOUND',
+        error: error?.message || 'NO_ERROR'
+      });
+
+      if (error) {
+        console.error('❌ [handleUserSession] Erro ao buscar perfil:', error.message);
+        
+        // Se usuário não existe no banco, retornar null
+        if (error.code === 'PGRST116' || 
+            error.message?.includes('No rows found') ||
+            error.message?.includes('relation "profiles" does not exist')) {
+          console.log('🚪 [handleUserSession] Usuário não encontrado no banco');
+          return null;
+        }
+
+        // Para outros erros, tentar criar perfil
+        console.log('📝 [handleUserSession] Tentando criar perfil...');
+        const { data: newProfile, error: insertError } = await supabase
+          .from('profiles')
+          .insert({
+            id: authUser.id,
+            email: authUser.email,
+            role: 'user',
+            full_name: authUser.user_metadata?.full_name || null,
+            created_at: new Date().toISOString(),
+            updated_at: new Date().toISOString()
+          })
+          .select()
+          .single();
+
+        if (insertError) {
+          console.error('❌ [handleUserSession] Erro ao criar perfil:', insertError.message);
+          return null;
+        }
+
+        console.log('✅ [handleUserSession] Perfil criado com sucesso');
+        return newProfile as UserProfile;
+      } else {
+        console.log('✅ [handleUserSession] Perfil encontrado');
+        return profile as UserProfile;
+      }
+    } catch (error) {
+      console.error('❌ [handleUserSession] Erro crítico ao buscar perfil:', error);
+      return null;
+    }
+  };
+
   useEffect(() => {
     console.log('🔍 [useAuth] useEffect iniciado');
 
     const initializeAuth = async () => {
-      // Verificar se já está processando ou se o componente foi desmontado
-      if (isProcessingRef.current || !mountedRef.current) {
-        console.log('⚠️ [initializeAuth] Já está processando ou desmontado, ignorando...');
+      // Verificar se já foi inicializado ou se está processando
+      if (initializationDoneRef.current || isProcessingRef.current || !mountedRef.current) {
+        console.log('⚠️ [initializeAuth] Já inicializado, processando ou desmontado, ignorando...');
         return;
       }
 
       isProcessingRef.current = true;
+      initializationDoneRef.current = true;
 
       try {
         setLoading(true);
@@ -87,7 +149,23 @@ export function useAuth() {
         
         if (session?.user) {
           console.log('✅ [initializeAuth] Sessão encontrada, verificando usuário...');
-          await handleUserSession(session.user);
+          const profile = await handleUserSession(session.user);
+          
+          if (!mountedRef.current) return;
+          
+          if (profile) {
+            setUser({
+              id: session.user.id,
+              email: session.user.email,
+              profile: profile
+            });
+            setError(null);
+          } else {
+            console.log('🚪 [initializeAuth] Perfil não encontrado, limpando sessão...');
+            await clearAllSessions();
+            setUser(null);
+            setError(null);
+          }
         } else {
           console.log('👤 [initializeAuth] Nenhuma sessão ativa');
           if (mountedRef.current) {
@@ -110,97 +188,6 @@ export function useAuth() {
       }
     };
 
-    const handleUserSession = async (authUser: any) => {
-      if (!mountedRef.current) return;
-
-      try {
-        console.log('👤 [handleUserSession] Buscando perfil do usuário:', authUser.id);
-        
-        // Tentar buscar perfil existente
-        const { data: profile, error } = await supabase
-          .from('profiles')
-          .select('*')
-          .eq('id', authUser.id)
-          .single();
-
-        console.log('🔍 [handleUserSession] Profile query result:', {
-          profile: profile ? 'FOUND' : 'NOT_FOUND',
-          error: error?.message || 'NO_ERROR'
-        });
-
-        if (!mountedRef.current) return;
-
-        if (error) {
-          console.error('❌ [handleUserSession] Erro ao buscar perfil:', error.message);
-          
-          // Se usuário não existe no banco, limpar tudo e fazer logout
-          if (error.code === 'PGRST116' || 
-              error.message?.includes('No rows found') ||
-              error.message?.includes('relation "profiles" does not exist')) {
-            console.log('🚪 [handleUserSession] Usuário não encontrado no banco, limpando sessão...');
-            await clearAllSessions();
-            if (mountedRef.current) {
-              setUser(null);
-              setError(null);
-            }
-            return;
-          }
-
-          // Para outros erros, tentar criar perfil
-          console.log('📝 [handleUserSession] Tentando criar perfil...');
-          const { data: newProfile, error: insertError } = await supabase
-            .from('profiles')
-            .insert({
-              id: authUser.id,
-              email: authUser.email,
-              role: 'user',
-              full_name: authUser.user_metadata?.full_name || null,
-              created_at: new Date().toISOString(),
-              updated_at: new Date().toISOString()
-            })
-            .select()
-            .single();
-
-          if (!mountedRef.current) return;
-
-          if (insertError) {
-            console.error('❌ [handleUserSession] Erro ao criar perfil:', insertError.message);
-            await clearAllSessions();
-            if (mountedRef.current) {
-              setUser(null);
-              setError(null);
-            }
-            return;
-          }
-
-          console.log('✅ [handleUserSession] Perfil criado com sucesso');
-          if (mountedRef.current) {
-            setUser({
-              id: authUser.id,
-              email: authUser.email,
-              profile: newProfile as UserProfile
-            });
-          }
-        } else {
-          console.log('✅ [handleUserSession] Perfil encontrado');
-          if (mountedRef.current) {
-            setUser({
-              id: authUser.id,
-              email: authUser.email,
-              profile: profile as UserProfile
-            });
-          }
-        }
-      } catch (error) {
-        console.error('❌ [handleUserSession] Erro crítico ao buscar perfil:', error);
-        await clearAllSessions();
-        if (mountedRef.current) {
-          setUser(null);
-          setError(null);
-        }
-      }
-    };
-
     // Inicializar
     initializeAuth();
 
@@ -210,8 +197,7 @@ export function useAuth() {
         event,
         session: session ? 'EXISTS' : 'NULL',
         user: session?.user ? session.user.id : 'NO_USER',
-        mounted: mountedRef.current,
-        isProcessing: isProcessingRef.current
+        mounted: mountedRef.current
       });
 
       // Verificar se deve processar o evento
@@ -220,29 +206,37 @@ export function useAuth() {
         return;
       }
 
-      if (isProcessingRef.current) {
-        console.log('⚠️ [onAuthStateChange] Já está processando, ignorando evento');
-        return;
-      }
-
-      // Marcar como processando
-      isProcessingRef.current = true;
-      
       try {
         if (event === 'SIGNED_OUT' || !session?.user) {
           console.log('🚪 [onAuthStateChange] Usuário deslogado');
+          await clearAllSessions();
           if (mountedRef.current) {
             setUser(null);
             setError(null);
             setLoading(false);
           }
-        } else if (event === 'SIGNED_IN' && session?.user) {
+        } else if ((event === 'SIGNED_IN' || event === 'INITIAL_SESSION') && session?.user) {
           console.log('🔑 [onAuthStateChange] Usuário logado');
           if (mountedRef.current) {
             setLoading(true);
           }
-          await handleUserSession(session.user);
+          
+          const profile = await handleUserSession(session.user);
+          
           if (mountedRef.current) {
+            if (profile) {
+              setUser({
+                id: session.user.id,
+                email: session.user.email,
+                profile: profile
+              });
+              setError(null);
+            } else {
+              console.log('🚪 [onAuthStateChange] Perfil não encontrado, limpando sessão...');
+              await clearAllSessions();
+              setUser(null);
+              setError(null);
+            }
             setLoading(false);
           }
         }
@@ -253,9 +247,6 @@ export function useAuth() {
           setError(null);
           setLoading(false);
         }
-      } finally {
-        // Sempre resetar o flag de processamento
-        isProcessingRef.current = false;
       }
     });
 
@@ -263,7 +254,7 @@ export function useAuth() {
       mountedRef.current = false;
       subscription.unsubscribe();
     };
-  }, []);
+  }, []); // Dependências vazias - executa apenas uma vez
 
   // Log adicional para monitorar mudanças no estado do usuário
   useEffect(() => {
@@ -333,24 +324,20 @@ export function useAuth() {
       }
       
       // Buscar perfil atualizado
-      const { data: profile, error } = await supabase
-        .from('profiles')
-        .select('*')
-        .eq('id', user.id)
-        .single();
-
-      if (error) {
-        console.error('❌ [refreshProfile] Erro ao buscar perfil:', error);
-        return;
-      }
+      const profile = await handleUserSession(session.user);
 
       if (profile && mountedRef.current) {
         console.log('✅ [refreshProfile] Perfil atualizado com sucesso');
         setUser({
           id: user.id,
           email: user.email,
-          profile: profile as UserProfile
+          profile: profile
         });
+      } else if (mountedRef.current) {
+        console.log('❌ [refreshProfile] Perfil não encontrado, forçando logout');
+        await clearAllSessions();
+        setUser(null);
+        setError(null);
       }
     } catch (error) {
       console.error('❌ [refreshProfile] Erro ao revalidar perfil:', error);
