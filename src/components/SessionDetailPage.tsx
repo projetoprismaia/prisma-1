@@ -12,7 +12,6 @@ interface SessionDetailPageProps {
   onBack: () => void;
 }
 
-export default function SessionDetailPage({ sessionId, currentUser, onBack }: SessionDetailPageProps) {
 export default function SessionDetailPage({ sessionId, currentUser, refreshTrigger, onBack }: SessionDetailPageProps) {
   const [session, setSession] = useState<Session | null>(null);
   const [loading, setLoading] = useState(true);
@@ -65,7 +64,7 @@ export default function SessionDetailPage({ sessionId, currentUser, refreshTrigg
     if (!session) return;
 
     const element = document.createElement('a');
-    const content = `Sessão: ${session.title}\nPaciente: ${session.patient?.name}\nData: ${formatDateTimeToDDMMAAAA(session.created_at)}\nDuração: ${session.duration || 'N/A'}\nStatus: ${getStatusText(session.status)}\n\n${session.transcription_content || 'Sem transcrição disponível'}`;
+    const content = `Sessão: ${session.title}\nPaciente: ${session.patient?.name}\nData: ${formatDateTime(session.created_at)}\nDuração: ${session.duration || 'N/A'}\nStatus: ${getStatusText(session.status)}\n\n${session.transcription_content || 'Sem transcrição disponível'}`;
     
     const file = new Blob([content], { type: 'text/plain' });
     element.href = URL.createObjectURL(file);
