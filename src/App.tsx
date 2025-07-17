@@ -12,6 +12,7 @@ import ConsultationPage from './components/ConsultationPage';
 import DashboardSummaries from './components/DashboardSummaries';
 import NotificationModal from './components/NotificationModal';
 import { useNotification } from './hooks/useNotification';
+import { dataCache } from './utils/dataCache';
 
 function App() {
   const { user, loading, error, signOut, isAdmin, refreshProfile } = useAuth();
@@ -39,6 +40,16 @@ function App() {
         
         // Pequeno delay para evitar múltiplas requisições
         await new Promise(resolve => setTimeout(resolve, 500));
+        
+        // Invalidar caches críticos para forçar dados frescos
+        console.log('🧹 [App] Invalidando caches após retorno da aba...');
+        dataCache.invalidatePattern('dashboard_');
+        dataCache.invalidatePattern('sessions_');
+        dataCache.invalidatePattern('patients_');
+        if (isAdmin()) {
+          dataCache.invalidate('users_all');
+          dataCache.invalidate('user_patient_counts');
+        }
         
         // Revalidar sessão do usuário
         await refreshProfile();

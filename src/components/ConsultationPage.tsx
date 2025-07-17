@@ -5,6 +5,7 @@ import { Patient } from '../types/patient';
 import { AuthUser } from '../types/user';
 import { useNotification } from '../hooks/useNotification';
 import { formatDateTimeShort } from '../utils/dateFormatter';
+import { dataCache, cacheKeys } from '../utils/dataCache';
 
 interface ConsultationPageProps {
   currentUser: AuthUser;
@@ -81,6 +82,17 @@ export default function ConsultationPage({ currentUser, isTabVisible, onBack }: 
 
   const fetchPatients = async () => {
     try {
+      const cacheKey = cacheKeys.patients(currentUser.id);
+      
+      // Tentar obter dados do cache primeiro
+      const cachedPatients = dataCache.get<Patient[]>(cacheKey);
+      if (cachedPatients) {
+        console.log('👥 [ConsultationPage] Usando pacientes do cache');
+        setPatients(cachedPatients);
+        setLoading(false);
+        return;
+      }
+      
       const { data, error } = await supabase
         .from('patients')
         .select('*')
@@ -88,7 +100,12 @@ export default function ConsultationPage({ currentUser, isTabVisible, onBack }: 
         .order('name');
 
       if (error) throw error;
-      setPatients(data || []);
+      
+      const patients = data || [];
+      
+      // Armazenar no cache
+      dataCache.set(cacheKey, patients);
+      setPatients(patients);
     } catch (error) {
       console.error('Erro ao buscar pacientes:', error);
       showError('Erro', 'Não foi possível carregar a lista de pacientes.');
@@ -99,6 +116,19 @@ export default function ConsultationPage({ currentUser, isTabVisible, onBack }: 
 
   const fetchAudioDevices = async () => {
     try {
+      const cacheKey = cacheKeys.audioDevices();
+      
+      // Tentar obter dados do cache primeiro
+      const cachedDevices = dataCache.get<AudioDevice[]>(cacheKey);
+      if (cachedDevices) {
+        console.log('🎤 [ConsultationPage] Usando dispositivos do cache');
+        setAudioDevices(cachedDevices);
+        if (cachedDevices.length > 0) {
+          setSelectedDevice(cachedDevices[0].deviceId);
+        }
+        return;
+      }
+      
       // Solicitar permissão para acessar microfone primeiro
       await navigator.mediaDevices.getUserMedia({ audio: true });
       
@@ -110,6 +140,8 @@ export default function ConsultationPage({ currentUser, isTabVisible, onBack }: 
           label: device.label || `Microfone ${device.deviceId.slice(0, 8)}`
         }));
 
+      // Armazenar no cache
+      dataCache.set(cacheKey, audioInputs);
       setAudioDevices(audioInputs);
       
       // Selecionar o primeiro dispositivo por padrão
@@ -288,6 +320,10 @@ export default function ConsultationPage({ currentUser, isTabVisible, onBack }: 
 
       if (error) throw error;
 
+      // Invalidar caches relacionados após salvar sessão
+      dataCache.invalidate(cacheKeys.sessions(currentUser.id));
+      dataCache.invalidatePattern(`dashboard_user_${currentUser.id}`);
+      
       setRecordingStatus('completed');
       showSuccess('Consulta Salva', 'A consulta foi salva com sucesso!');
       

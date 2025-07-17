@@ -5,7 +5,6 @@ import { UserProfile, UserRole } from '../types/user';
 import UserFormModal, { UserFormData } from './UserFormModal';
 import { useNotification } from '../hooks/useNotification';
 import { formatToDDMM } from '../utils/dateFormatter';
-import { dataCache, cacheKeys } from '../utils/dataCache';
 
 interface AdminPanelProps {
   currentUser: any;
@@ -41,37 +40,6 @@ export default function AdminPanel({ currentUser, refreshTrigger }: AdminPanelPr
     try {
       console.log('🔍 Buscando usuários e contagem de pacientes...');
       
-      const usersCacheKey = cacheKeys.users();
-      const countsCacheKey = cacheKeys.userPatientCounts();
-      
-      // Tentar obter dados do cache primeiro
-      const cachedUsers = dataCache.get<UserProfile[]>(usersCacheKey);
-      const cachedCounts = dataCache.get<Record<string, number>>(countsCacheKey);
-      
-      if (cachedUsers && cachedCounts) {
-        console.log('👥 [AdminPanel] Usando dados do cache');
-        setUsers(cachedUsers);
-        setPatientCounts(cachedCounts);
-        setLoading(false);
-        
-        // Buscar dados frescos em segundo plano
-        setTimeout(() => fetchUsersFresh(usersCacheKey, countsCacheKey), 100);
-        return;
-      }
-      
-      await fetchUsersFresh(usersCacheKey, countsCacheKey);
-    } catch (error) {
-      console.error('Erro ao buscar usuários:', error);
-      setPatientCounts({});
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const fetchUsersFresh = async (usersCacheKey: string, countsCacheKey: string) => {
-    try {
-      console.log('🔄 [AdminPanel] Buscando dados frescos de usuários...');
-      
       // Buscar usuários
       const { data: usersData, error: usersError } = await supabase
         .from('profiles')
@@ -80,15 +48,10 @@ export default function AdminPanel({ currentUser, refreshTrigger }: AdminPanelPr
 
       if (usersError) throw usersError;
       console.log('👥 Usuários encontrados:', usersData?.length || 0);
-      
-      const users = usersData || [];
-      
-      // Armazenar usuários no cache
-      dataCache.set(usersCacheKey, users);
-      setUsers(users);
+      setUsers(usersData || []);
 
       // Buscar contagem de pacientes para cada usuário
-      if (users.length > 0) {
+      if (usersData && usersData.length > 0) {
         console.log('🔍 Buscando pacientes...');
         
         // Tentar buscar pacientes como admin
@@ -114,7 +77,7 @@ export default function AdminPanel({ currentUser, refreshTrigger }: AdminPanelPr
             // Terceira tentativa: contar manualmente para cada usuário
             const counts: Record<string, number> = {};
             
-            for (const user of users) {
+            for (const user of usersData) {
               const { count, error: countError } = await supabase
                 .from('patients')
                 .select('*', { count: 'exact', head: true })
@@ -130,13 +93,12 @@ export default function AdminPanel({ currentUser, refreshTrigger }: AdminPanelPr
             }
             
             console.log('📈 Contagem final por usuário:', counts);
-            dataCache.set(countsCacheKey, counts);
             setPatientCounts(counts);
             return;
           } else {
             // RPC funcionou
             const counts: Record<string, number> = {};
-            users.forEach(user => {
+            usersData.forEach(user => {
               counts[user.id] = 0;
             });
             
@@ -145,7 +107,6 @@ export default function AdminPanel({ currentUser, refreshTrigger }: AdminPanelPr
             });
             
             console.log('📈 Contagem via RPC:', counts);
-            dataCache.set(countsCacheKey, counts);
             setPatientCounts(counts);
             return;
           }
@@ -158,10 +119,9 @@ export default function AdminPanel({ currentUser, refreshTrigger }: AdminPanelPr
           console.error('Erro ao buscar pacientes:', patientsError);
           // Em caso de erro, inicializar com zeros
           const emptyCounts: Record<string, number> = {};
-          users.forEach(user => {
+          usersData.forEach(user => {
             emptyCounts[user.id] = 0;
           });
-          dataCache.set(countsCacheKey, emptyCounts);
           setPatientCounts(emptyCounts);
         } else {
           console.log('👤 Total de pacientes no banco:', patientsData?.length || 0);
@@ -171,7 +131,7 @@ export default function AdminPanel({ currentUser, refreshTrigger }: AdminPanelPr
           const counts: Record<string, number> = {};
           
           // Inicializar todos os usuários com 0
-          users.forEach(user => {
+          usersData.forEach(user => {
             counts[user.id] = 0;
           });
           
@@ -185,17 +145,17 @@ export default function AdminPanel({ currentUser, refreshTrigger }: AdminPanelPr
           });
           
           console.log('📈 Contagem final por usuário:', counts);
-          dataCache.set(countsCacheKey, counts);
           setPatientCounts(counts);
         }
       } else {
         console.log('👥 Nenhum usuário encontrado');
-        dataCache.set(countsCacheKey, {});
         setPatientCounts({});
       }
     } catch (error) {
-      console.error('Erro ao buscar dados frescos de usuários:', error);
+      console.error('Erro ao buscar usuários:', error);
       setPatientCounts({});
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -285,6 +245,11 @@ export default function AdminPanel({ currentUser, refreshTrigger }: AdminPanelPr
         }
       }
 
+      // Invalidar cache após mudanças
+      dataCache.invalidate(cacheKeys.users());
+      dataCache.invalidate(cacheKeys.userPatientCounts());
+      dataCache.invalidate(cacheKeys.dashboardAdmin());
+      
       setShowUserFormModal(false);
       setEditingUser(null);
     } catch (error: any) {
@@ -326,6 +291,12 @@ export default function AdminPanel({ currentUser, refreshTrigger }: AdminPanelPr
       // Remove user from local state
       setUsers(users.filter(user => user.id !== userId));
       setDeleteConfirm(null);
+      
+      // Invalidar cache após exclusão
+      dataCache.invalidate(cacheKeys.users());
+      dataCache.invalidate(cacheKeys.userPatientCounts());
+      dataCache.invalidate(cacheKeys.dashboardAdmin());
+      
       showSuccess(
         'Usuário Deletado',
         'O usuário foi removido com sucesso do sistema.'
