@@ -91,33 +91,39 @@ export default function ConsultationPage({ currentUser, isTabVisible, onBack }: 
     try {
       const cacheKey = cacheKeys.patients(currentUser.id);
       
-      // Tentar obter dados do cache primeiro
+      // Implementar padrão SWR - mostrar dados do cache imediatamente
       const cachedPatients = dataCache.get<Patient[]>(cacheKey);
+      const isDataStale = dataCache.isStale(cacheKey);
+      
       if (cachedPatients) {
-        console.log('👥 [ConsultationPage] Usando pacientes do cache');
+        console.log(`👥 [ConsultationPage] Usando pacientes do cache (${isDataStale ? 'STALE' : 'FRESH'})`);
         setPatients(cachedPatients);
         setLoading(false);
-        return;
       }
       
-      const { data, error } = await supabase
-        .from('patients')
-        .select('*')
-        .eq('user_id', currentUser.id)
-        .order('name');
+      // Se dados estão stale ou não existem, buscar dados frescos
+      if (isDataStale || !cachedPatients) {
+        const { data, error } = await supabase
+          .from('patients')
+          .select('*')
+          .eq('user_id', currentUser.id)
+          .order('name');
 
-      if (error) throw error;
-      
-      const patients = data || [];
-      
-      // Armazenar no cache
-      dataCache.set(cacheKey, patients);
-      setPatients(patients);
+        if (error) throw error;
+        
+        const patients = data || [];
+        
+        // Armazenar no cache
+        dataCache.set(cacheKey, patients);
+        setPatients(patients);
+      }
     } catch (error) {
       console.error('Erro ao buscar pacientes:', error);
       showError('Erro', 'Não foi possível carregar a lista de pacientes.');
     } finally {
-      setLoading(false);
+      if (!dataCache.get(cacheKeys.patients(currentUser.id))) {
+        setLoading(false);
+      }
     }
   };
 
@@ -125,35 +131,39 @@ export default function ConsultationPage({ currentUser, isTabVisible, onBack }: 
     try {
       const cacheKey = cacheKeys.audioDevices();
       
-      // Tentar obter dados do cache primeiro
+      // Implementar padrão SWR - mostrar dados do cache imediatamente
       const cachedDevices = dataCache.get<AudioDevice[]>(cacheKey);
+      const isDataStale = dataCache.isStale(cacheKey);
+      
       if (cachedDevices) {
-        console.log('🎤 [ConsultationPage] Usando dispositivos do cache');
+        console.log(`🎤 [ConsultationPage] Usando dispositivos do cache (${isDataStale ? 'STALE' : 'FRESH'})`);
         setAudioDevices(cachedDevices);
         if (cachedDevices.length > 0) {
           setSelectedDevice(cachedDevices[0].deviceId);
         }
-        return;
       }
       
-      // Solicitar permissão para acessar microfone primeiro
-      await navigator.mediaDevices.getUserMedia({ audio: true });
-      
-      const devices = await navigator.mediaDevices.enumerateDevices();
-      const audioInputs = devices
-        .filter(device => device.kind === 'audioinput')
-        .map(device => ({
-          deviceId: device.deviceId,
-          label: device.label || `Microfone ${device.deviceId.slice(0, 8)}`
-        }));
+      // Se dados estão stale ou não existem, buscar dados frescos
+      if (isDataStale || !cachedDevices) {
+        // Solicitar permissão para acessar microfone primeiro
+        await navigator.mediaDevices.getUserMedia({ audio: true });
+        
+        const devices = await navigator.mediaDevices.enumerateDevices();
+        const audioInputs = devices
+          .filter(device => device.kind === 'audioinput')
+          .map(device => ({
+            deviceId: device.deviceId,
+            label: device.label || `Microfone ${device.deviceId.slice(0, 8)}`
+          }));
 
-      // Armazenar no cache
-      dataCache.set(cacheKey, audioInputs);
-      setAudioDevices(audioInputs);
-      
-      // Selecionar o primeiro dispositivo por padrão
-      if (audioInputs.length > 0) {
-        setSelectedDevice(audioInputs[0].deviceId);
+        // Armazenar no cache
+        dataCache.set(cacheKey, audioInputs);
+        setAudioDevices(audioInputs);
+        
+        // Selecionar o primeiro dispositivo por padrão
+        if (audioInputs.length > 0) {
+          setSelectedDevice(audioInputs[0].deviceId);
+        }
       }
     } catch (error) {
       console.error('Erro ao buscar dispositivos de áudio:', error);
