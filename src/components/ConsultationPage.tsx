@@ -19,7 +19,6 @@ interface AudioDevice {
   label: string;
 }
 
-export default function ConsultationPage({ currentUser, onBack }: ConsultationPageProps) {
 export default function ConsultationPage({ currentUser, isTabVisible, onBack }: ConsultationPageProps) {
   const [patients, setPatients] = useState<Patient[]>([]);
   const [audioDevices, setAudioDevices] = useState<AudioDevice[]>([]);
@@ -33,7 +32,7 @@ export default function ConsultationPage({ currentUser, isTabVisible, onBack }: 
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
 
-  const { showSuccess, showError } = useNotification();
+  const { showSuccess, showError, showWarning } = useNotification();
   const mediaRecorderRef = useRef<MediaRecorder | null>(null);
   const streamRef = useRef<MediaStream | null>(null);
   const intervalRef = useRef<NodeJS.Timeout | null>(null);
