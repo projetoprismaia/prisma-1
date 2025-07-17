@@ -148,14 +148,6 @@ export default function SessionDetailPage({ sessionId, currentUser, onBack }: Se
             <ArrowLeft className="h-5 w-5" />
             <span>Voltar às sessões</span>
           </button>
-          
-          <button
-            onClick={exportSession}
-            className="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-lg flex items-center space-x-2 transition-colors"
-          >
-            <Download className="h-4 w-4" />
-            <span>Exportar</span>
-          </button>
         </div>
 
         <div className="flex items-center space-x-4">
