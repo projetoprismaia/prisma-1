@@ -8,9 +8,10 @@ import { formatToDDMM } from '../utils/dateFormatter';
 
 interface AdminPanelProps {
   currentUser: any;
+  refreshTrigger?: number;
 }
 
-export default function AdminPanel({ currentUser }: AdminPanelProps) {
+export default function AdminPanel({ currentUser, refreshTrigger }: AdminPanelProps) {
   const [users, setUsers] = useState<UserProfile[]>([]);
   const { showSuccess, showError, showWarning } = useNotification();
   const [patientCounts, setPatientCounts] = useState<Record<string, number>>({});
@@ -26,6 +27,14 @@ export default function AdminPanel({ currentUser }: AdminPanelProps) {
   useEffect(() => {
     fetchUsers();
   }, []);
+
+  // Recarregar dados quando refreshTrigger mudar
+  useEffect(() => {
+    if (refreshTrigger && refreshTrigger > 0) {
+      console.log('🔄 [AdminPanel] Recarregando dados devido ao refreshTrigger:', refreshTrigger);
+      fetchUsers();
+    }
+  }, [refreshTrigger]);
 
   const fetchUsers = async () => {
     try {

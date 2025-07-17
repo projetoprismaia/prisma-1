@@ -8,6 +8,7 @@ import { formatDateTimeShort } from '../utils/dateFormatter';
 
 interface ConsultationPageProps {
   currentUser: AuthUser;
+  isTabVisible: boolean;
   onBack: () => void;
 }
 
@@ -19,6 +20,7 @@ interface AudioDevice {
 }
 
 export default function ConsultationPage({ currentUser, onBack }: ConsultationPageProps) {
+export default function ConsultationPage({ currentUser, isTabVisible, onBack }: ConsultationPageProps) {
   const [patients, setPatients] = useState<Patient[]>([]);
   const [audioDevices, setAudioDevices] = useState<AudioDevice[]>([]);
   const [selectedPatient, setSelectedPatient] = useState<string>('');
@@ -61,6 +63,22 @@ export default function ConsultationPage({ currentUser, onBack }: ConsultationPa
       cleanup();
     };
   }, []);
+
+  // Gerenciar gravação baseado na visibilidade da aba
+  useEffect(() => {
+    if (!isTabVisible && (recordingStatus === 'recording' || recordingStatus === 'paused')) {
+      console.log('🙈 [ConsultationPage] Aba ficou oculta durante gravação - pausando automaticamente');
+      
+      if (recordingStatus === 'recording') {
+        // Pausar automaticamente se estava gravando
+        pauseRecording();
+        showWarning(
+          'Consulta Pausada Automaticamente',
+          'A gravação foi pausada porque a aba perdeu o foco. Clique em "Continuar" para retomar.'
+        );
+      }
+    }
+  }, [isTabVisible, recordingStatus]);
 
   const fetchPatients = async () => {
     try {

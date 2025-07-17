@@ -9,10 +9,12 @@ import { formatToDDMM } from '../utils/dateFormatter';
 
 interface PatientListProps {
   currentUser: AuthUser;
+  refreshTrigger: number;
   onNavigateToSessions?: (patientId: string) => void;
 }
 
 export default function PatientList({ currentUser, onNavigateToSessions }: PatientListProps) {
+export default function PatientList({ currentUser, refreshTrigger, onNavigateToSessions }: PatientListProps) {
   const [patients, setPatients] = useState<Patient[]>([]);
   const { showSuccess, showError } = useNotification();
   const [loading, setLoading] = useState(true);
@@ -25,6 +27,14 @@ export default function PatientList({ currentUser, onNavigateToSessions }: Patie
   useEffect(() => {
     fetchPatients();
   }, []);
+
+  // Recarregar dados quando refreshTrigger mudar
+  useEffect(() => {
+    if (refreshTrigger > 0) {
+      console.log('🔄 [PatientList] Recarregando dados devido ao refreshTrigger:', refreshTrigger);
+      fetchPatients();
+    }
+  }, [refreshTrigger]);
 
   const fetchPatients = async () => {
     try {

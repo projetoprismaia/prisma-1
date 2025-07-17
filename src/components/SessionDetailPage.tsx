@@ -8,10 +8,12 @@ import { formatToDDMM, formatDateTime } from '../utils/dateFormatter';
 interface SessionDetailPageProps {
   sessionId: string;
   currentUser: AuthUser;
+  refreshTrigger: number;
   onBack: () => void;
 }
 
 export default function SessionDetailPage({ sessionId, currentUser, onBack }: SessionDetailPageProps) {
+export default function SessionDetailPage({ sessionId, currentUser, refreshTrigger, onBack }: SessionDetailPageProps) {
   const [session, setSession] = useState<Session | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -19,6 +21,14 @@ export default function SessionDetailPage({ sessionId, currentUser, onBack }: Se
   useEffect(() => {
     fetchSessionDetails();
   }, [sessionId]);
+
+  // Recarregar dados quando refreshTrigger mudar
+  useEffect(() => {
+    if (refreshTrigger > 0) {
+      console.log('🔄 [SessionDetailPage] Recarregando dados devido ao refreshTrigger:', refreshTrigger);
+      fetchSessionDetails();
+    }
+  }, [refreshTrigger]);
 
   const fetchSessionDetails = async () => {
     try {

@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { useAuth } from './hooks/useAuth';
+import { useTabVisibility } from './hooks/useTabVisibility';
 import OrganicBackground from './components/OrganicBackground';
 import AuthForm from './components/AuthForm';
 import FloatingMenu from './components/FloatingMenu';
@@ -14,14 +15,61 @@ import { useNotification } from './hooks/useNotification';
 
 function App() {
   const { user, loading, error, signOut, isAdmin } = useAuth();
+  const { user, loading, error, signOut, isAdmin, refreshProfile } = useAuth();
   const { notification, hideNotification } = useNotification();
+  const { showSuccess, showInfo } = useNotification();
+  const { isTabVisible, wasTabHidden, onTabVisible } = useTabVisibility();
   const [showAdminPanel, setShowAdminPanel] = useState(false);
   const [showPatientPanel, setShowPatientPanel] = useState(false);
   const [showSessionsPanel, setShowSessionsPanel] = useState(false);
   const [selectedPatientFilter, setSelectedPatientFilter] = useState<string | null>(null);
   const [viewingSessionId, setViewingSessionId] = useState<string | null>(null);
   const [showConsultationPage, setShowConsultationPage] = useState(false);
+  const [refreshTrigger, setRefreshTrigger] = useState(0);
 
+  // Gerenciar recarregamento de dados quando aba volta a ficar visível
+  useEffect(() => {
+    const handleTabVisible = async () => {
+      if (!user) return;
+      
+      console.log('👁️ [App] Aba voltou a ficar visível - iniciando revalidação');
+      
+      try {
+        // Mostrar feedback visual
+        showInfo('Atualizando dados...', 'Verificando informações mais recentes');
+        
+        // Pequeno delay para evitar múltiplas requisições
+        await new Promise(resolve => setTimeout(resolve, 500));
+        
+        // Revalidar sessão do usuário
+        await refreshProfile();
+        
+        // Disparar recarregamento de dados nos componentes
+        setRefreshTrigger(prev => prev + 1);
+        
+        // Feedback de sucesso
+        setTimeout(() => {
+          showSuccess('Dados atualizados', 'Informações sincronizadas com sucesso');
+        }, 1000);
+        
+        console.log('✅ [App] Revalidação concluída com sucesso');
+      } catch (error) {
+        console.error('❌ [App] Erro na revalidação:', error);
+      }
+    };
+
+    // Registrar callback para quando aba voltar a ficar visível
+    onTabVisible(handleTabVisible);
+  }, [user, refreshProfile, onTabVisible, showInfo, showSuccess]);
+
+  // Log para debug
+  useEffect(() => {
+    console.log('🔍 [App] Estado de visibilidade:', {
+      isTabVisible,
+      wasTabHidden,
+      user: user ? user.email : 'NO_USER'
+    });
+  }, [isTabVisible, wasTabHidden, user]);
   const handleSignOut = () => {
     signOut().then(() => {
       // Forçar limpeza adicional do estado local após logout
@@ -175,12 +223,14 @@ function App() {
           {showConsultationPage ? (
             <ConsultationPage
               currentUser={user}
+              isTabVisible={isTabVisible}
               onBack={navigateToSessions}
             />
           ) : viewingSessionId ? (
             <SessionDetailPage
               sessionId={viewingSessionId}
               currentUser={user}
+              refreshTrigger={refreshTrigger}
               onBack={navigateToSessions}
             />
           ) : showAdminPanel && isAdmin() ? (
@@ -188,11 +238,13 @@ function App() {
           ) : showPatientPanel && !isAdmin() ? (
             <PatientList 
               currentUser={user} 
+              refreshTrigger={refreshTrigger}
               onNavigateToSessions={navigateToSessionsWithPatient}
             />
           ) : showSessionsPanel ? (
             <SessionListPage 
               currentUser={user} 
+              refreshTrigger={refreshTrigger}
               initialPatientFilter={selectedPatientFilter}
               onViewSession={navigateToSessionDetail}
               onStartNewConsultation={navigateToConsultation}
@@ -200,6 +252,8 @@ function App() {
           ) : (
             <DashboardSummaries
               currentUser={user}
+              refreshTrigger={refreshTrigger}
+              refreshTrigger={refreshTrigger}
               onNavigateToPatients={navigateToPatients}
               onNavigateToSessions={navigateToSessions}
               onNavigateToAdmin={isAdmin() ? navigateToAdmin : undefined}

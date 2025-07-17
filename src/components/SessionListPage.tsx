@@ -8,6 +8,7 @@ import { formatToDDMM, formatDateTimeShort, formatDateTime } from '../utils/date
 
 interface SessionListPageProps {
   currentUser: AuthUser;
+  refreshTrigger: number;
   initialPatientFilter?: string;
   onViewSession: (sessionId: string) => void;
   onStartNewConsultation: () => void;
@@ -22,6 +23,7 @@ const log = (message: string, data?: any) => {
 };
 
 export default function SessionListPage({ currentUser, initialPatientFilter, onViewSession, onStartNewConsultation }: SessionListPageProps) {
+export default function SessionListPage({ currentUser, refreshTrigger, initialPatientFilter, onViewSession, onStartNewConsultation }: SessionListPageProps) {
   const [sessions, setSessions] = useState<Session[]>([]);
   const [patients, setPatients] = useState<Patient[]>([]);
   const [loading, setLoading] = useState(true);
@@ -33,6 +35,15 @@ export default function SessionListPage({ currentUser, initialPatientFilter, onV
     fetchSessions();
     fetchPatients();
   }, []);
+
+  // Recarregar dados quando refreshTrigger mudar
+  useEffect(() => {
+    if (refreshTrigger > 0) {
+      console.log('🔄 [SessionListPage] Recarregando dados devido ao refreshTrigger:', refreshTrigger);
+      fetchSessions();
+      fetchPatients();
+    }
+  }, [refreshTrigger]);
 
   // Update selected patient when initialPatientFilter changes
   useEffect(() => {

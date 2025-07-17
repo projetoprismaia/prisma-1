@@ -299,12 +299,55 @@ export function useAuth() {
 
   const isAdmin = () => user?.profile?.role === 'admin';
 
+  const refreshProfile = async () => {
+    if (!user) return;
+    
+    try {
+      console.log('🔄 [refreshProfile] Revalidando perfil do usuário:', user.id);
+      
+      // Verificar sessão atual
+      const { data: { session }, error: sessionError } = await supabase.auth.getSession();
+      
+      if (sessionError || !session?.user) {
+        console.log('❌ [refreshProfile] Sessão inválida, forçando logout');
+        await clearAllSessions();
+        setUser(null);
+        setError(null);
+        setLoading(false);
+        return;
+      }
+      
+      // Buscar perfil atualizado
+      const { data: profile, error } = await supabase
+        .from('profiles')
+        .select('*')
+        .eq('id', user.id)
+        .single();
+
+      if (error) {
+        console.error('❌ [refreshProfile] Erro ao buscar perfil:', error);
+        return;
+      }
+
+      if (profile) {
+        console.log('✅ [refreshProfile] Perfil atualizado com sucesso');
+        setUser({
+          id: user.id,
+          email: user.email,
+          profile: profile as UserProfile
+        });
+      }
+    } catch (error) {
+      console.error('❌ [refreshProfile] Erro ao revalidar perfil:', error);
+    }
+  };
+
   return {
     user,
     loading,
     error,
     signOut,
     isAdmin,
-    refreshProfile: () => user && handleUserSession({ id: user.id, email: user.email })
+    refreshProfile
   };
 }

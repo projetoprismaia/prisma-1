@@ -6,6 +6,7 @@ import { formatDateTime } from '../utils/dateFormatter';
 
 interface DashboardSummariesProps {
   currentUser: AuthUser;
+  refreshTrigger: number;
   onNavigateToPatients: () => void;
   onNavigateToSessions: () => void;
   onNavigateToAdmin?: () => void;
@@ -27,6 +28,7 @@ interface DashboardData {
 
 export default function DashboardSummaries({ 
   currentUser, 
+  refreshTrigger,
   onNavigateToPatients, 
   onNavigateToSessions,
   onNavigateToAdmin,
@@ -45,6 +47,14 @@ export default function DashboardSummaries({
   useEffect(() => {
     fetchDashboardData();
   }, [currentUser]);
+
+  // Recarregar dados quando refreshTrigger mudar
+  useEffect(() => {
+    if (refreshTrigger > 0) {
+      console.log('🔄 [DashboardSummaries] Recarregando dados devido ao refreshTrigger:', refreshTrigger);
+      fetchDashboardData();
+    }
+  }, [refreshTrigger]);
 
   const fetchDashboardData = async () => {
     try {
