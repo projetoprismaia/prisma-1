@@ -18,9 +18,8 @@ const log = (message: string, data?: any) => {
   if (DEBUG) {
     console.log(`[SessionListPage] ${message}`, data);
   }
-}
+};
 
-export default function SessionListPage({ currentUser, onStartRecording, initialPatientFilter, onViewSession }: SessionListPageProps) {
 export default function SessionListPage({ currentUser, initialPatientFilter, onViewSession }: SessionListPageProps) {
   const [sessions, setSessions] = useState<Session[]>([]);
   const [patients, setPatients] = useState<Patient[]>([]);
