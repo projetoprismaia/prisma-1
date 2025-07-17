@@ -1,6 +1,5 @@
 import React, { useState } from 'react';
 import { useAuth } from './hooks/useAuth';
-import { testSupabaseConnection } from './lib/supabase';
 import OrganicBackground from './components/OrganicBackground';
 import AuthForm from './components/AuthForm';
 import FloatingMenu from './components/FloatingMenu';
@@ -16,15 +15,12 @@ import { useNotification } from './hooks/useNotification';
 function App() {
   const { user, loading, error, signOut, isAdmin } = useAuth();
   const { notification, hideNotification } = useNotification();
-  const { showInfo, showWarning, showSuccess } = useNotification();
   const [showAdminPanel, setShowAdminPanel] = useState(false);
   const [showPatientPanel, setShowPatientPanel] = useState(false);
   const [showSessionsPanel, setShowSessionsPanel] = useState(false);
   const [selectedPatientFilter, setSelectedPatientFilter] = useState<string | null>(null);
   const [viewingSessionId, setViewingSessionId] = useState<string | null>(null);
   const [showTranscriptionPage, setShowTranscriptionPage] = useState(false);
-  const [isOnline, setIsOnline] = useState(navigator.onLine);
-  const [connectionStatus, setConnectionStatus] = useState<'connected' | 'disconnected' | 'checking'>('connected');
 
   const handleSignOut = () => {
     signOut().then(() => {
@@ -131,76 +127,6 @@ function App() {
     console.log('🔍 [getCurrentSection] Seção atual:', section);
     return section;
   };
-
-  // Efeito para monitorar status da rede
-  useEffect(() => {
-    console.log('🌐 [App] Configurando listeners de rede...');
-    
-    const handleOnline = () => {
-      console.log('✅ [App] Conexão de rede restaurada');
-      setIsOnline(true);
-      showSuccess('Conexão Restaurada', 'Sua conexão com a internet foi restabelecida.');
-      
-      // Testar conexão com Supabase quando voltar online
-      testSupabaseConnection().then(isConnected => {
-        setConnectionStatus(isConnected ? 'connected' : 'disconnected');
-      });
-    };
-
-    const handleOffline = () => {
-      console.log('❌ [App] Conexão de rede perdida');
-      setIsOnline(false);
-      setConnectionStatus('disconnected');
-      showWarning('Sem Conexão', 'Você está offline. Algumas funcionalidades podem não funcionar.');
-    };
-
-    // Registrar listeners
-    window.addEventListener('online', handleOnline);
-    window.addEventListener('offline', handleOffline);
-
-    // Cleanup
-    return () => {
-      console.log('🧹 [App] Removendo listeners de rede');
-      window.removeEventListener('online', handleOnline);
-      window.removeEventListener('offline', handleOffline);
-    };
-  }, [showSuccess, showWarning]);
-
-  // Efeito para heartbeat de conexão com Supabase
-  useEffect(() => {
-    if (!user) return; // Só fazer heartbeat se usuário estiver logado
-
-    console.log('💓 [App] Iniciando heartbeat de conexão...');
-    
-    const heartbeatInterval = setInterval(async () => {
-      if (!isOnline) {
-        console.log('🚫 [App] Heartbeat cancelado - offline');
-        return;
-      }
-
-      console.log('💓 [App] Executando heartbeat...');
-      setConnectionStatus('checking');
-      
-      const isConnected = await testSupabaseConnection();
-      const newStatus = isConnected ? 'connected' : 'disconnected';
-      
-      console.log(`💓 [App] Heartbeat resultado: ${newStatus}`);
-      setConnectionStatus(newStatus);
-      
-      // Notificar apenas se houve mudança de status
-      if (connectionStatus === 'connected' && !isConnected) {
-        showWarning('Problema de Conexão', 'Detectamos problemas na conexão com o servidor.');
-      } else if (connectionStatus === 'disconnected' && isConnected) {
-        showSuccess('Conexão Restaurada', 'A conexão com o servidor foi restabelecida.');
-      }
-    }, 30000); // 30 segundos
-
-    // Cleanup
-    return () => {
-      console.log('🧹 [App] Parando heartbeat de conexão');
-      clearInterval(heartbeatInterval);
-    };
-  }, [user, isOnline, connectionStatus, showWarning, showSuccess]);
 
   // Loading state
   if (loading) {

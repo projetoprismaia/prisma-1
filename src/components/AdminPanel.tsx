@@ -1,11 +1,9 @@
 import React, { useState, useEffect } from 'react';
 import { Users, Shield, UserCheck, UserX, Search, Filter, Plus, Edit, Trash2, Phone, AlertTriangle, User } from 'lucide-react';
-import { supabase, fetchDataWithRetry } from '../lib/supabase';
+import { supabase } from '../lib/supabase';
 import { UserProfile, UserRole } from '../types/user';
 import UserFormModal, { UserFormData } from './UserFormModal';
 import { useNotification } from '../hooks/useNotification';
-import { useUsers } from '../hooks/useSupabaseData';
-import { cache, generateCacheKey } from '../utils/cache';
 import { formatToDDMM } from '../utils/dateFormatter';
 
 interface AdminPanelProps {
@@ -14,10 +12,9 @@ interface AdminPanelProps {
 
 export default function AdminPanel({ currentUser }: AdminPanelProps) {
   const [users, setUsers] = useState<UserProfile[]>([]);
-  const { showSuccess, showError, showWarning, showErrorFromException } = useNotification();
+  const { showSuccess, showError, showWarning } = useNotification();
   const [patientCounts, setPatientCounts] = useState<Record<string, number>>({});
   const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<Error | null>(null);
   const [searchTerm, setSearchTerm] = useState('');
   const [roleFilter, setRoleFilter] = useState<'all' | UserRole>('all');
   const [updating, setUpdating] = useState<string | null>(null);
@@ -26,77 +23,130 @@ export default function AdminPanel({ currentUser }: AdminPanelProps) {
   const [formLoading, setFormLoading] = useState(false);
   const [deleteConfirm, setDeleteConfirm] = useState<string | null>(null);
 
-  // Usar o hook personalizado para buscar usuários
-  const {
-    data: usersData,
-    loading: usersLoading,
-    error: usersError,
-    retry: retryUsers,
-    refresh: refreshUsers
-  } = useUsers(currentUser.id);
-
   useEffect(() => {
-    if (usersData) {
-      console.log('👥 [AdminPanel] Dados de usuários recebidos:', usersData.length);
-      setUsers(usersData);
-      fetchPatientCounts(usersData);
-    }
-  }, [usersData]);
+    fetchUsers();
+  }, []);
 
-  useEffect(() => {
-    if (usersError) {
-      console.error('❌ [AdminPanel] Erro ao carregar usuários:', usersError);
-      setError(usersError);
-    }
-  }, [usersError]);
-
-  useEffect(() => {
-    setLoading(usersLoading);
-  }, [usersLoading]);
-
-  const fetchPatientCounts = async (usersData: UserProfile[]) => {
+  const fetchUsers = async () => {
     try {
-      console.log('🔍 [AdminPanel] Buscando contagem de pacientes...');
+      console.log('🔍 Buscando usuários e contagem de pacientes...');
+      
+      // Buscar usuários
+      const { data: usersData, error: usersError } = await supabase
+        .from('profiles')
+        .select('*')
+        .order('created_at', { ascending: false });
+
+      if (usersError) throw usersError;
+      console.log('👥 Usuários encontrados:', usersData?.length || 0);
+      setUsers(usersData || []);
 
       // Buscar contagem de pacientes para cada usuário
       if (usersData && usersData.length > 0) {
-        console.log('🔍 [AdminPanel] Buscando pacientes...');
+        console.log('🔍 Buscando pacientes...');
         
-        // Buscar todos os pacientes usando fetchDataWithRetry
-        const patientsData = await fetchDataWithRetry(
-          () => supabase.from('patients').select('user_id'),
-          { skipSessionCheck: false }
-        );
-
-        console.log('👤 [AdminPanel] Total de pacientes no banco:', patientsData?.length || 0);
+        // Tentar buscar pacientes como admin
+        let patientsData = null;
+        let patientsError = null;
         
-        // Contar pacientes por usuário
-        const counts: Record<string, number> = {};
-        
-        // Inicializar todos os usuários com 0
-        usersData.forEach(user => {
-          counts[user.id] = 0;
-        });
-        
-        // Contar pacientes para cada usuário
-        patientsData?.forEach((patient: any) => {
-          if (patient.user_id && counts.hasOwnProperty(patient.user_id)) {
-            counts[patient.user_id]++;
-          } else if (patient.user_id) {
-            console.warn('⚠️ [AdminPanel] Paciente com user_id não encontrado nos usuários:', patient.user_id);
+        // Primeira tentativa: buscar todos os pacientes (admin)
+        const { data: allPatients, error: allPatientsError } = await supabase
+          .from('patients')
+          .select('user_id');
+          
+        if (allPatientsError) {
+          console.log('⚠️ Erro ao buscar todos os pacientes:', allPatientsError.message);
+          
+          // Segunda tentativa: usar RPC se disponível
+          const { data: rpcData, error: rpcError } = await supabase
+            .rpc('count_patients_by_user')
+            .catch(() => ({ data: null, error: { message: 'RPC não disponível' } }));
+            
+          if (rpcError || !rpcData) {
+            console.log('⚠️ RPC também falhou, usando contagem manual...');
+            
+            // Terceira tentativa: contar manualmente para cada usuário
+            const counts: Record<string, number> = {};
+            
+            for (const user of usersData) {
+              const { count, error: countError } = await supabase
+                .from('patients')
+                .select('*', { count: 'exact', head: true })
+                .eq('user_id', user.id);
+                
+              if (countError) {
+                console.error(`Erro ao contar pacientes para ${user.email}:`, countError);
+                counts[user.id] = 0;
+              } else {
+                counts[user.id] = count || 0;
+                console.log(`👤 ${user.email}: ${count || 0} pacientes`);
+              }
+            }
+            
+            console.log('📈 Contagem final por usuário:', counts);
+            setPatientCounts(counts);
+            return;
+          } else {
+            // RPC funcionou
+            const counts: Record<string, number> = {};
+            usersData.forEach(user => {
+              counts[user.id] = 0;
+            });
+            
+            rpcData.forEach((item: any) => {
+              counts[item.user_id] = item.patient_count;
+            });
+            
+            console.log('📈 Contagem via RPC:', counts);
+            setPatientCounts(counts);
+            return;
           }
-        });
-        
-        console.log('📈 [AdminPanel] Contagem final por usuário:', counts);
-        setPatientCounts(counts);
+        } else {
+          patientsData = allPatients;
+          patientsError = null;
+        }
+
+        if (patientsError) {
+          console.error('Erro ao buscar pacientes:', patientsError);
+          // Em caso de erro, inicializar com zeros
+          const emptyCounts: Record<string, number> = {};
+          usersData.forEach(user => {
+            emptyCounts[user.id] = 0;
+          });
+          setPatientCounts(emptyCounts);
+        } else {
+          console.log('👤 Total de pacientes no banco:', patientsData?.length || 0);
+          console.log('📊 Dados dos pacientes:', patientsData);
+          
+          // Contar pacientes por usuário
+          const counts: Record<string, number> = {};
+          
+          // Inicializar todos os usuários com 0
+          usersData.forEach(user => {
+            counts[user.id] = 0;
+          });
+          
+          // Contar pacientes para cada usuário
+          patientsData?.forEach(patient => {
+            if (patient.user_id && counts.hasOwnProperty(patient.user_id)) {
+              counts[patient.user_id]++;
+            } else if (patient.user_id) {
+              console.warn('⚠️ Paciente com user_id não encontrado nos usuários:', patient.user_id);
+            }
+          });
+          
+          console.log('📈 Contagem final por usuário:', counts);
+          setPatientCounts(counts);
+        }
       } else {
-        console.log('👥 [AdminPanel] Nenhum usuário encontrado');
+        console.log('👥 Nenhum usuário encontrado');
         setPatientCounts({});
       }
     } catch (error) {
-      console.error('❌ [AdminPanel] Erro ao buscar contagem de pacientes:', error);
-      showErrorFromException(error as Error, 'Erro ao Carregar Contagem');
+      console.error('Erro ao buscar usuários:', error);
       setPatientCounts({});
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -111,27 +161,22 @@ export default function AdminPanel({ currentUser }: AdminPanelProps) {
 
     setUpdating(userId);
     try {
-      console.log(`🔄 [AdminPanel] Atualizando role do usuário ${userId} para ${newRole}`);
-      
-      await fetchDataWithRetry(
-        () => supabase.from('profiles').update({ role: newRole }).eq('id', userId),
-        { skipSessionCheck: false }
-      );
+      const { error } = await supabase
+        .from('profiles')
+        .update({ role: newRole })
+        .eq('id', userId);
 
-      console.log('✅ [AdminPanel] Role atualizado com sucesso');
+      if (error) throw error;
 
       setUsers(users.map(user => 
         user.id === userId ? { ...user, role: newRole } : user
       ));
-      
-      // Invalidar cache de usuários
-      const cacheKey = generateCacheKey(currentUser.id, 'users');
-      cache.invalidate(cacheKey);
-      
-      showSuccess('Role Atualizado', 'O tipo de usuário foi alterado com sucesso.');
     } catch (error) {
-      console.error('❌ [AdminPanel] Erro ao atualizar role:', error);
-      showErrorFromException(error as Error, 'Erro ao Atualizar Role');
+      console.error('Erro ao atualizar role:', error);
+      showError(
+        'Erro ao Atualizar',
+        'Não foi possível atualizar o role do usuário. Tente novamente.'
+      );
     } finally {
       setUpdating(null);
     }
@@ -140,18 +185,18 @@ export default function AdminPanel({ currentUser }: AdminPanelProps) {
   const handleSaveUser = async (userData: UserFormData) => {
     setFormLoading(true);
     try {
-      console.log('💾 [AdminPanel] Salvando usuário:', userData.email);
-      
       if (editingUser) {
         // Editing existing user
-        await fetchDataWithRetry(
-          () => supabase.from('profiles').update({
+        const { error } = await supabase
+          .from('profiles')
+          .update({
             full_name: userData.full_name,
             whatsapp: userData.whatsapp,
             role: userData.role
-          }).eq('id', editingUser.id),
-          { skipSessionCheck: false }
-        );
+          })
+          .eq('id', editingUser.id);
+
+        if (error) throw error;
 
         // Update local state
         setUsers(users.map(user => 
@@ -164,11 +209,8 @@ export default function AdminPanel({ currentUser }: AdminPanelProps) {
               }
             : user
         ));
-        
-        console.log('✅ [AdminPanel] Usuário editado com sucesso');
       } else {
         // Creating new user
-        console.log('👤 [AdminPanel] Criando novo usuário...');
         const { data: authData, error: authError } = await supabase.auth.signUp({
           email: userData.email,
           password: userData.password!,
@@ -178,38 +220,30 @@ export default function AdminPanel({ currentUser }: AdminPanelProps) {
 
         if (authData.user) {
           // Update the profile with additional data
-          await fetchDataWithRetry(
-            () => supabase.from('profiles').update({
+          const { error: profileError } = await supabase
+            .from('profiles')
+            .update({
               full_name: userData.full_name,
               whatsapp: userData.whatsapp,
               role: userData.role
-            }).eq('id', authData.user.id),
-            { skipSessionCheck: false }
-          );
+            })
+            .eq('id', authData.user.id);
+
+          if (profileError) throw profileError;
 
           // Refresh the users list
-          refreshUsers();
-          
-          console.log('✅ [AdminPanel] Usuário criado com sucesso');
+          await fetchUsers();
         }
       }
 
-      // Invalidar cache
-      const cacheKey = generateCacheKey(currentUser.id, 'users');
-      cache.invalidate(cacheKey);
-      
       setShowUserFormModal(false);
       setEditingUser(null);
-      
-      showSuccess(
-        editingUser ? 'Usuário Atualizado' : 'Usuário Criado',
-        editingUser 
-          ? 'Os dados do usuário foram atualizados com sucesso.'
-          : 'O novo usuário foi criado com sucesso.'
-      );
     } catch (error: any) {
-      console.error('❌ [AdminPanel] Erro ao salvar usuário:', error);
-      showErrorFromException(error, 'Erro ao Salvar Usuário');
+      console.error('Erro ao salvar usuário:', error);
+      showError(
+        'Erro ao Salvar Usuário',
+        `Não foi possível salvar o usuário: ${error.message}`
+      );
     } finally {
       setFormLoading(false);
     }
@@ -225,8 +259,6 @@ export default function AdminPanel({ currentUser }: AdminPanelProps) {
     }
 
     try {
-      console.log('🗑️ [AdminPanel] Deletando usuário:', userId);
-      
       const response = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/delete-user`, {
         method: 'POST',
         headers: {
@@ -245,19 +277,16 @@ export default function AdminPanel({ currentUser }: AdminPanelProps) {
       // Remove user from local state
       setUsers(users.filter(user => user.id !== userId));
       setDeleteConfirm(null);
-      
-      // Invalidar cache
-      const cacheKey = generateCacheKey(currentUser.id, 'users');
-      cache.invalidate(cacheKey);
-      
-      console.log('✅ [AdminPanel] Usuário deletado com sucesso');
       showSuccess(
         'Usuário Deletado',
         'O usuário foi removido com sucesso do sistema.'
       );
     } catch (error: any) {
-      console.error('❌ [AdminPanel] Erro ao deletar usuário:', error);
-      showErrorFromException(error, 'Erro ao Deletar Usuário');
+      console.error('Erro ao deletar usuário:', error);
+      showError(
+        'Erro ao Deletar',
+        `Não foi possível deletar o usuário: ${error.message}`
+      );
     }
   };
 
@@ -292,17 +321,6 @@ export default function AdminPanel({ currentUser }: AdminPanelProps) {
   if (loading) {
     return (
       <div className="bg-white rounded-xl shadow-lg p-6">
-        <div className="flex items-center justify-between mb-4">
-          <h2 className="text-xl font-semibold text-gray-800">Carregando usuários...</h2>
-          {error && (
-            <button
-              onClick={retryUsers}
-              className="bg-purple-600 hover:bg-purple-700 text-white px-4 py-2 rounded-lg text-sm transition-colors"
-            >
-              Tentar Novamente
-            </button>
-          )}
-        </div>
         <div className="animate-pulse">
           <div className="h-6 bg-gray-200 rounded w-1/4 mb-4"></div>
           <div className="space-y-3">
@@ -310,25 +328,6 @@ export default function AdminPanel({ currentUser }: AdminPanelProps) {
               <div key={i} className="h-16 bg-gray-200 rounded"></div>
             ))}
           </div>
-        </div>
-      </div>
-    );
-  }
-
-  // Mostrar erro se houver falha no carregamento
-  if (error && !loading && users.length === 0) {
-    return (
-      <div className="glass-card rounded-xl shadow-lg p-6">
-        <div className="text-center py-8">
-          <AlertTriangle className="h-12 w-12 text-red-500 mx-auto mb-3" />
-          <h3 className="text-lg font-semibold text-gray-800 mb-2">Erro ao Carregar Usuários</h3>
-          <p className="text-gray-600 mb-4">{error.message}</p>
-          <button
-            onClick={retryUsers}
-            className="bg-purple-600 hover:bg-purple-700 text-white px-4 py-2 rounded-lg transition-colors"
-          >
-            Tentar Novamente
-          </button>
         </div>
       </div>
     );
@@ -414,10 +413,7 @@ export default function AdminPanel({ currentUser }: AdminPanelProps) {
               </p>
               {Object.keys(patientCounts).length > 0 && (
                 <button
-                  onClick={() => {
-                    console.log('🔄 [AdminPanel] Atualizando contagem de pacientes...');
-                    fetchPatientCounts(users);
-                  }}
+                  onClick={fetchUsers}
                   className="text-xs text-indigo-600 hover:text-indigo-800 underline"
                   title="Atualizar contagem"
                 >

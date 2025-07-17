@@ -1,12 +1,10 @@
 import React, { useState, useEffect } from 'react';
 import { Users, Search, Plus, Edit, Trash2, Mail, Phone, UserX, AlertTriangle } from 'lucide-react';
-import { supabase, fetchDataWithRetry } from '../lib/supabase';
+import { supabase } from '../lib/supabase';
 import { Patient, PatientFormData } from '../types/patient';
 import { AuthUser } from '../types/user';
 import PatientFormModal from './PatientFormModal';
 import { useNotification } from '../hooks/useNotification';
-import { usePatients } from '../hooks/useSupabaseData';
-import { cache, generateCacheKey } from '../utils/cache';
 import { formatToDDMM } from '../utils/dateFormatter';
 
 interface PatientListProps {
@@ -16,57 +14,49 @@ interface PatientListProps {
 
 export default function PatientList({ currentUser, onNavigateToSessions }: PatientListProps) {
   const [patients, setPatients] = useState<Patient[]>([]);
-  const { showSuccess, showError, showErrorFromException } = useNotification();
+  const { showSuccess, showError } = useNotification();
   const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<Error | null>(null);
   const [searchTerm, setSearchTerm] = useState('');
   const [showPatientFormModal, setShowPatientFormModal] = useState(false);
   const [editingPatient, setEditingPatient] = useState<Patient | null>(null);
   const [formLoading, setFormLoading] = useState(false);
   const [deleteConfirm, setDeleteConfirm] = useState<string | null>(null);
 
-  // Usar o hook personalizado para buscar pacientes
-  const {
-    data: patientsData,
-    loading: patientsLoading,
-    error: patientsError,
-    retry: retryPatients,
-    refresh: refreshPatients
-  } = usePatients(currentUser.id);
-
   useEffect(() => {
-    if (patientsData) {
-      console.log('👥 [PatientList] Dados de pacientes recebidos:', patientsData.length);
-      setPatients(patientsData);
+    fetchPatients();
+  }, []);
+
+  const fetchPatients = async () => {
+    try {
+      const { data, error } = await supabase
+        .from('patients')
+        .select('*')
+        .order('created_at', { ascending: false });
+
+      if (error) throw error;
+      setPatients(data || []);
+    } catch (error) {
+      console.error('Erro ao buscar pacientes:', error);
+    } finally {
+      setLoading(false);
     }
-  }, [patientsData]);
-
-  useEffect(() => {
-    if (patientsError) {
-      console.error('❌ [PatientList] Erro ao carregar pacientes:', patientsError);
-      setError(patientsError);
-    }
-  }, [patientsError]);
-
-  useEffect(() => {
-    setLoading(patientsLoading);
-  }, [patientsLoading]);
+  };
 
   const handleSavePatient = async (patientData: PatientFormData) => {
     setFormLoading(true);
     try {
-      console.log('💾 [PatientList] Salvando paciente:', patientData.name);
-      
       if (editingPatient) {
         // Editing existing patient
-        await fetchDataWithRetry(
-          () => supabase.from('patients').update({
+        const { error } = await supabase
+          .from('patients')
+          .update({
             name: patientData.name,
             email: patientData.email || null,
             whatsapp: patientData.whatsapp || null
-          }).eq('id', editingPatient.id),
-          { skipSessionCheck: false }
-        );
+          })
+          .eq('id', editingPatient.id);
+
+        if (error) throw error;
 
         // Update local state
         setPatients(patients.map(patient => 
@@ -80,33 +70,27 @@ export default function PatientList({ currentUser, onNavigateToSessions }: Patie
               }
             : patient
         ));
-        
-        console.log('✅ [PatientList] Paciente editado com sucesso');
       } else {
         // Creating new patient
-        const newPatient = await fetchDataWithRetry(
-          () => supabase.from('patients').insert({
+        const { data, error } = await supabase
+          .from('patients')
+          .insert({
             name: patientData.name,
             email: patientData.email || null,
             whatsapp: patientData.whatsapp || null,
             user_id: currentUser.id
-          }).select().single(),
-          { skipSessionCheck: false }
-        );
+          })
+          .select()
+          .single();
+
+        if (error) throw error;
 
         // Add to local state
-        setPatients([newPatient, ...patients]);
-        
-        console.log('✅ [PatientList] Paciente criado com sucesso');
+        setPatients([data, ...patients]);
       }
 
-      // Invalidar cache
-      const cacheKey = generateCacheKey(currentUser.id, 'patients');
-      cache.invalidate(cacheKey);
-      
       setShowPatientFormModal(false);
       setEditingPatient(null);
-      
       showSuccess(
         editingPatient ? 'Paciente Atualizado' : 'Paciente Criado',
         editingPatient 
@@ -114,8 +98,11 @@ export default function PatientList({ currentUser, onNavigateToSessions }: Patie
           : 'O novo paciente foi adicionado com sucesso.'
       );
     } catch (error: any) {
-      console.error('❌ [PatientList] Erro ao salvar paciente:', error);
-      showErrorFromException(error, 'Erro ao Salvar Paciente');
+      console.error('Erro ao salvar paciente:', error);
+      showError(
+        'Erro ao Salvar',
+        `Não foi possível salvar o paciente: ${error.message}`
+      );
     } finally {
       setFormLoading(false);
     }
@@ -123,30 +110,26 @@ export default function PatientList({ currentUser, onNavigateToSessions }: Patie
 
   const handleDeletePatient = async (patientId: string) => {
     try {
-      console.log('🗑️ [PatientList] Deletando paciente:', patientId);
-      
-      await fetchDataWithRetry(
-        () => supabase.from('patients').delete().eq('id', patientId),
-        { skipSessionCheck: false }
-      );
+      const { error } = await supabase
+        .from('patients')
+        .delete()
+        .eq('id', patientId);
 
+      if (error) throw error;
 
       // Remove from local state
       setPatients(patients.filter(patient => patient.id !== patientId));
       setDeleteConfirm(null);
-      
-      // Invalidar cache
-      const cacheKey = generateCacheKey(currentUser.id, 'patients');
-      cache.invalidate(cacheKey);
-      
-      console.log('✅ [PatientList] Paciente deletado com sucesso');
       showSuccess(
         'Paciente Removido',
         'O paciente foi removido com sucesso do sistema.'
       );
     } catch (error: any) {
-      console.error('❌ [PatientList] Erro ao deletar paciente:', error);
-      showErrorFromException(error, 'Erro ao Deletar Paciente');
+      console.error('Erro ao deletar paciente:', error);
+      showError(
+        'Erro ao Deletar',
+        `Não foi possível deletar o paciente: ${error.message}`
+      );
     }
   };
 
@@ -176,17 +159,6 @@ export default function PatientList({ currentUser, onNavigateToSessions }: Patie
   if (loading) {
     return (
       <div className="bg-white rounded-xl shadow-lg p-6">
-        <div className="flex items-center justify-between mb-4">
-          <h2 className="text-xl font-semibold text-gray-800">Carregando pacientes...</h2>
-          {error && (
-            <button
-              onClick={retryPatients}
-              className="bg-purple-600 hover:bg-purple-700 text-white px-4 py-2 rounded-lg text-sm transition-colors"
-            >
-              Tentar Novamente
-            </button>
-          )}
-        </div>
         <div className="animate-pulse">
           <div className="h-6 bg-gray-200 rounded w-1/4 mb-4"></div>
           <div className="space-y-3">
@@ -194,25 +166,6 @@ export default function PatientList({ currentUser, onNavigateToSessions }: Patie
               <div key={i} className="h-16 bg-gray-200 rounded"></div>
             ))}
           </div>
-        </div>
-      </div>
-    );
-  }
-
-  // Mostrar erro se houver falha no carregamento
-  if (error && !loading && patients.length === 0) {
-    return (
-      <div className="glass-card rounded-xl shadow-lg p-6">
-        <div className="text-center py-8">
-          <AlertTriangle className="h-12 w-12 text-red-500 mx-auto mb-3" />
-          <h3 className="text-lg font-semibold text-gray-800 mb-2">Erro ao Carregar Pacientes</h3>
-          <p className="text-gray-600 mb-4">{error.message}</p>
-          <button
-            onClick={retryPatients}
-            className="bg-purple-600 hover:bg-purple-700 text-white px-4 py-2 rounded-lg transition-colors"
-          >
-            Tentar Novamente
-          </button>
         </div>
       </div>
     );
@@ -322,6 +275,7 @@ export default function PatientList({ currentUser, onNavigateToSessions }: Patie
 
                 <div className="flex space-x-2">
                   <button
+                    onClick={() => openEditModal(patient)}
                     onClick={(e) => {
                       e.stopPropagation();
                       openEditModal(patient);

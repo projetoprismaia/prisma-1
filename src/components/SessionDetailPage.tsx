@@ -1,10 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { FileText, User, Calendar, Clock, ArrowLeft, Download, CheckCircle, AlertCircle, Play, Pause, Square } from 'lucide-react';
-import { supabase, fetchDataWithRetry } from '../lib/supabase';
+import { supabase } from '../lib/supabase';
 import { Session } from '../types/session';
 import { AuthUser } from '../types/user';
-import { useSession } from '../hooks/useSupabaseData';
-import { useNotification } from '../hooks/useNotification';
 import { formatToDDMM, formatDateTime } from '../utils/dateFormatter';
 
 interface SessionDetailPageProps {
@@ -17,42 +15,47 @@ export default function SessionDetailPage({ sessionId, currentUser, onBack }: Se
   const [session, setSession] = useState<Session | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const { showErrorFromException } = useNotification();
-
-  // Usar hook personalizado para buscar dados da sessão
-  const {
-    data: sessionData,
-    loading: sessionLoading,
-    error: sessionError,
-    retry: retrySession
-  } = useSession(sessionId, currentUser.id);
 
   useEffect(() => {
-    if (sessionData) {
-      console.log('📄 [SessionDetailPage] Dados da sessão recebidos:', sessionData.id);
-      setSession(sessionData);
+    fetchSessionDetails();
+  }, [sessionId]);
+
+  const fetchSessionDetails = async () => {
+    try {
+      setLoading(true);
       setError(null);
-    }
-  }, [sessionData]);
 
-  useEffect(() => {
-    if (sessionError) {
-      console.error('❌ [SessionDetailPage] Erro ao carregar sessão:', sessionError);
-      setError(sessionError.message || 'Erro ao carregar sessão');
-      showErrorFromException(sessionError, 'Erro ao Carregar Sessão');
-    }
-  }, [sessionError, showErrorFromException]);
+      const { data, error } = await supabase
+        .from('sessions')
+        .select(`
+          *,
+          patient:patients(id, name, email, whatsapp)
+        `)
+        .eq('id', sessionId)
+        .eq('user_id', currentUser.id)
+        .single();
 
-  useEffect(() => {
-    setLoading(sessionLoading);
-  }, [sessionLoading]);
+      if (error) throw error;
+
+      if (!data) {
+        setError('Sessão não encontrada');
+        return;
+      }
+
+      setSession(data);
+    } catch (error: any) {
+      console.error('Erro ao buscar detalhes da sessão:', error);
+      setError(error.message || 'Erro ao carregar sessão');
+    } finally {
+      setLoading(false);
+    }
+  };
 
   const exportSession = () => {
     if (!session) return;
 
-    console.log('📥 [SessionDetailPage] Exportando sessão:', session.id);
     const element = document.createElement('a');
-    const content = `Sessão: ${session.title}\nPaciente: ${session.patient?.name}\nData: ${formatDateTime(session.created_at)}\nDuração: ${session.duration || 'N/A'}\nStatus: ${getStatusText(session.status)}\n\n${session.transcription_content || 'Sem transcrição disponível'}`;
+    const content = `Sessão: ${session.title}\nPaciente: ${session.patient?.name}\nData: ${formatDateTimeToDDMMAAAA(session.created_at)}\nDuração: ${session.duration || 'N/A'}\nStatus: ${getStatusText(session.status)}\n\n${session.transcription_content || 'Sem transcrição disponível'}`;
     
     const file = new Blob([content], { type: 'text/plain' });
     element.href = URL.createObjectURL(file);
@@ -113,7 +116,7 @@ export default function SessionDetailPage({ sessionId, currentUser, onBack }: Se
     );
   }
 
-  if (!session && !loading) {
+  if (error || !session) {
     return (
       <div className="min-h-screen flex items-center justify-center">
         <div className="glass-card rounded-xl shadow-xl p-8 max-w-md text-center border border-white/20">
@@ -121,49 +124,13 @@ export default function SessionDetailPage({ sessionId, currentUser, onBack }: Se
             <AlertCircle className="h-8 w-8 text-red-600" />
           </div>
           <h2 className="text-xl font-semibold text-gray-800 mb-2">Erro ao carregar sessão</h2>
-          <p className="text-gray-600 text-sm mb-4">Sessão não encontrada</p>
+          <p className="text-gray-600 text-sm mb-4">{error || 'Sessão não encontrada'}</p>
           <button
             onClick={onBack}
             className="bg-purple-600 hover:bg-purple-700 text-white px-4 py-2 rounded-lg transition-colors"
           >
             Voltar
           </button>
-          {error && (
-            <button
-              onClick={retrySession}
-              className="bg-purple-600 hover:bg-purple-700 text-white px-4 py-2 rounded-lg transition-colors ml-3"
-            >
-              Tentar Novamente
-            </button>
-          )}
-        </div>
-      </div>
-    );
-  }
-
-  if (error && !session) {
-    return (
-      <div className="min-h-screen flex items-center justify-center">
-        <div className="glass-card rounded-xl shadow-xl p-8 max-w-md text-center border border-white/20">
-          <div className="bg-red-100 p-3 rounded-full w-16 h-16 mx-auto mb-4 flex items-center justify-center">
-            <AlertCircle className="h-8 w-8 text-red-600" />
-          </div>
-          <h2 className="text-xl font-semibold text-gray-800 mb-2">Erro ao carregar sessão</h2>
-          <p className="text-gray-600 text-sm mb-4">{error}</p>
-          <div className="flex space-x-3">
-            <button
-              onClick={onBack}
-              className="flex-1 px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors"
-            >
-              Voltar
-            </button>
-            <button
-              onClick={retrySession}
-              className="flex-1 bg-purple-600 hover:bg-purple-700 text-white px-4 py-2 rounded-lg transition-colors"
-            >
-              Tentar Novamente
-            </button>
-          </div>
         </div>
       </div>
     );
@@ -274,17 +241,6 @@ export default function SessionDetailPage({ sessionId, currentUser, onBack }: Se
               )}
             </div>
           </div>
-        </div>
-        
-        {/* Botão de exportar */}
-        <div className="flex justify-end">
-          <button
-            onClick={exportSession}
-            className="bg-indigo-600 hover:bg-indigo-700 text-white px-4 py-2 rounded-lg flex items-center space-x-2 transition-colors"
-          >
-            <Download className="h-4 w-4" />
-            <span>Exportar Sessão</span>
-          </button>
         </div>
       </div>
 
