@@ -23,19 +23,28 @@ export default function PatientList({ currentUser, refreshTrigger, onNavigateToS
   const [formLoading, setFormLoading] = useState(false);
   const [deleteConfirm, setDeleteConfirm] = useState<string | null>(null);
 
+  console.log('🔍 PATIENT LIST:', {
+    userId: currentUser.id,
+    userEmail: currentUser.email,
+    refreshTrigger
+  });
+
   useEffect(() => {
+    console.log('🔍 PATIENT LIST: Initial fetch');
     fetchPatients();
   }, []);
 
   // Recarregar dados quando refreshTrigger mudar
   useEffect(() => {
     if (refreshTrigger > 0) {
+      console.log('🔍 PATIENT LIST: Refresh trigger =', refreshTrigger);
       fetchPatients();
     }
   }, [refreshTrigger]);
 
   const fetchPatients = async () => {
     try {
+      console.log('🔍 FETCHING PATIENTS for user:', currentUser.id);
       setLoading(true);
       
       const { data, error } = await supabase
@@ -44,11 +53,19 @@ export default function PatientList({ currentUser, refreshTrigger, onNavigateToS
         .eq('user_id', currentUser.id)
         .order('created_at', { ascending: false });
 
+      console.log('🔍 PATIENTS QUERY RESULT:', {
+        hasData: !!data,
+        count: data?.length,
+        error: error?.message
+      });
+
       if (error) throw error;
       const patients = data || [];
+      console.log('✅ PATIENTS LOADED:', patients.length);
       setPatients(patients);
       
     } catch (error) {
+      console.error('❌ FETCH PATIENTS ERROR:', error);
       showError('Erro ao Carregar', 'Não foi possível carregar os pacientes');
     } finally {
       setLoading(false);

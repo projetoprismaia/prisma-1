@@ -11,13 +11,21 @@ export function useAuth() {
     let mounted = true;
 
     const initAuth = async () => {
+      console.log('🔍 INIT AUTH: Iniciando verificação de autenticação');
       try {
         console.log('🚀 Iniciando autenticação...');
         
         // Verificar sessão atual
         const { data: { session }, error: sessionError } = await supabase.auth.getSession();
         
+        console.log('🔍 SESSION CHECK:', {
+          hasSession: !!session,
+          hasUser: !!session?.user,
+          error: sessionError?.message
+        });
+        
         if (sessionError) {
+          console.error('❌ SESSION ERROR:', sessionError);
           console.error('❌ Erro na sessão:', sessionError);
           if (mounted) {
             setUser(null);
@@ -28,14 +36,22 @@ export function useAuth() {
         }
 
         if (session?.user) {
+          console.log('👤 USER FOUND:', session.user.email);
+          
           console.log('👤 Usuário encontrado:', session.user.email);
           
           // Tentar buscar perfil do usuário
+          console.log('🔍 FETCHING PROFILE...');
           const { data: profile, error: profileError } = await supabase
             .from('profiles')
             .select('*')
             .eq('id', session.user.id)
             .single();
+
+          console.log('🔍 PROFILE RESULT:', {
+            hasProfile: !!profile,
+            error: profileError?.message
+          });
 
           if (mounted) {
             if (profileError) {
@@ -114,11 +130,13 @@ export function useAuth() {
           console.log('⚠️ Perfil não encontrado no login');
           setUser({
             id: session.user.id,
+            console.log('⚠️ PROFILE NOT FOUND, creating basic user');
             email: session.user.email,
             profile: {
               id: session.user.id,
               email: session.user.email,
               role: 'user',
+            console.log('✅ PROFILE LOADED:', profile.email);
               full_name: session.user.user_metadata?.full_name || null,
               created_at: new Date().toISOString(),
               updated_at: new Date().toISOString()
@@ -128,6 +146,7 @@ export function useAuth() {
           console.log('✅ Perfil carregado no login');
           setUser({
             id: session.user.id,
+          console.log('❌ NO SESSION FOUND');
             email: session.user.email,
             profile: profile as UserProfile
           });
@@ -135,6 +154,7 @@ export function useAuth() {
         
         setError(null);
         setLoading(false);
+        console.error('❌ INIT AUTH ERROR:', err);
       }
     });
 
@@ -159,11 +179,15 @@ export function useAuth() {
   };
 
   const isAdmin = () => {
-    return user?.profile?.role === 'admin';
+    const result = user?.profile?.role === 'admin';
+    console.log('🔍 IS ADMIN CHECK:', result);
+    return result;
+          console.log('⚠️ PROFILE NOT FOUND ON SIGN IN');
   };
 
   const refreshProfile = async () => {
     if (!user) return;
+    console.log('🔄 REFRESHING PROFILE...');
     
     try {
       const { data: profile, error } = await supabase
@@ -171,24 +195,45 @@ export function useAuth() {
         .select('*')
         .eq('id', user.id)
         .single();
+      console.log('🔍 REFRESH PROFILE RESULT:', {
+        hasProfile: !!profile,
+        error: error?.message
+      });
 
+
+        console.log('✅ PROFILE REFRESHED');
+      console.log('🔄 AUTH STATE CHANGE:', event);
+          console.log('✅ PROFILE LOADED ON SIGN IN');
       if (!error && profile) {
         setUser({
+        console.log('🚪 USER SIGNED OUT');
           id: user.id,
+        console.log('🔑 USER SIGNED IN:', session.user.email);
+      console.error('❌ REFRESH PROFILE ERROR:', err);
           email: user.email,
           profile: profile as UserProfile
+        console.log('🔍 FETCHING PROFILE ON SIGN IN...');
         });
       }
     } catch (err) {
       console.error('Erro ao atualizar perfil:', err);
     }
+      console.log('🧹 CLEANUP AUTH');
   };
 
+        console.log('🔍 PROFILE ON SIGN IN:', {
+          hasProfile: !!profile,
+          error: profileError?.message
+        });
+
+      console.log('🚪 SIGNING OUT...');
   return {
     user,
     loading,
     error,
+      console.log('✅ SIGNED OUT SUCCESSFULLY');
     signOut,
+      console.error('❌ SIGN OUT ERROR:', err);
     isAdmin,
     refreshProfile
   };

@@ -12,28 +12,36 @@ export default function AuthForm() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    console.log('🔍 AUTH FORM: Submit attempt', { isLogin, email });
     setLoading(true);
     setError(null);
 
     try {
       if (isLogin) {
+        console.log('🔑 ATTEMPTING LOGIN...');
         const { error } = await supabase.auth.signInWithPassword({
           email,
           password,
         });
+        console.log('🔍 LOGIN RESULT:', { hasError: !!error, error: error?.message });
         if (error) {
           throw error;
         }
+        console.log('✅ LOGIN SUCCESS');
       } else {
+        console.log('📝 ATTEMPTING SIGNUP...');
         const { error } = await supabase.auth.signUp({
           email,
           password,
         });
+        console.log('🔍 SIGNUP RESULT:', { hasError: !!error, error: error?.message });
         if (error) {
           throw error;
         }
+        console.log('✅ SIGNUP SUCCESS');
       }
     } catch (error: any) {
+      console.error('❌ AUTH ERROR:', error);
       setError(error.message);
     } finally {
       setLoading(false);
