@@ -4,6 +4,7 @@ import { supabase } from '../lib/supabase';
 import { Session } from '../types/session';
 import { AuthUser } from '../types/user';
 import { formatToDDMM, formatDateTime } from '../utils/dateFormatter';
+import { dataCache, cacheKeys } from '../utils/dataCache';
 
 interface SessionDetailPageProps {
   sessionId: string;
@@ -34,6 +35,33 @@ export default function SessionDetailPage({ sessionId, currentUser, refreshTrigg
       setLoading(true);
       setError(null);
 
+      const cacheKey = cacheKeys.sessionDetail(sessionId);
+      
+      // Tentar obter dados do cache primeiro
+      const cachedSession = dataCache.get<Session>(cacheKey);
+      if (cachedSession) {
+        console.log('📄 [SessionDetailPage] Usando sessão do cache');
+        setSession(cachedSession);
+        setLoading(false);
+        
+        // Buscar dados frescos em segundo plano
+        setTimeout(() => fetchSessionDetailsFresh(cacheKey), 100);
+        return;
+      }
+      
+      await fetchSessionDetailsFresh(cacheKey);
+    } catch (error: any) {
+      console.error('Erro ao buscar detalhes da sessão:', error);
+      setError(error.message || 'Erro ao carregar sessão');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const fetchSessionDetailsFresh = async (cacheKey: string) => {
+    try {
+      console.log('🔄 [SessionDetailPage] Buscando detalhes frescos da sessão...');
+      
       const { data, error } = await supabase
         .from('sessions')
         .select(`
@@ -51,12 +79,12 @@ export default function SessionDetailPage({ sessionId, currentUser, refreshTrigg
         return;
       }
 
+      // Armazenar no cache
+      dataCache.set(cacheKey, data);
       setSession(data);
     } catch (error: any) {
-      console.error('Erro ao buscar detalhes da sessão:', error);
+      console.error('Erro ao buscar detalhes frescos da sessão:', error);
       setError(error.message || 'Erro ao carregar sessão');
-    } finally {
-      setLoading(false);
     }
   };
 

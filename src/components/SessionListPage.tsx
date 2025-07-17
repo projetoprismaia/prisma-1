@@ -5,6 +5,7 @@ import { Session } from '../types/session';
 import { Patient } from '../types/patient';
 import { AuthUser } from '../types/user';
 import { formatToDDMM, formatDateTimeShort, formatDateTime } from '../utils/dateFormatter';
+import { dataCache, cacheKeys } from '../utils/dataCache';
 
 interface SessionListPageProps {
   currentUser: AuthUser;
@@ -54,6 +55,33 @@ export default function SessionListPage({ currentUser, refreshTrigger, initialPa
   const fetchSessions = async () => {
     try {
       log('Iniciando busca de sessões...');
+      
+      const cacheKey = cacheKeys.sessions(currentUser.id);
+      
+      // Tentar obter dados do cache primeiro
+      const cachedSessions = dataCache.get<Session[]>(cacheKey);
+      if (cachedSessions) {
+        console.log('📄 [SessionListPage] Usando sessões do cache');
+        setSessions(cachedSessions);
+        setLoading(false);
+        
+        // Buscar dados frescos em segundo plano
+        setTimeout(() => fetchSessionsFresh(cacheKey), 100);
+        return;
+      }
+      
+      await fetchSessionsFresh(cacheKey);
+    } catch (error) {
+      log('Erro ao buscar sessões:', error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const fetchSessionsFresh = async (cacheKey: string) => {
+    try {
+      log('🔄 [SessionListPage] Buscando sessões frescas...');
+      
       const { data, error } = await supabase
         .from('sessions')
         .select(`
@@ -64,18 +92,42 @@ export default function SessionListPage({ currentUser, refreshTrigger, initialPa
         .order('created_at', { ascending: false });
 
       if (error) throw error;
-      log('Sessões encontradas:', data);
-      setSessions(data || []);
+      
+      const sessions = data || [];
+      log('Sessões encontradas:', sessions);
+      
+      // Armazenar no cache
+      dataCache.set(cacheKey, sessions);
+      setSessions(sessions);
     } catch (error) {
-      log('Erro ao buscar sessões:', error);
-    } finally {
-      setLoading(false);
+      log('Erro ao buscar sessões frescas:', error);
     }
   };
 
   const fetchPatients = async () => {
     try {
       log('Iniciando busca de pacientes...');
+      
+      const cacheKey = cacheKeys.patients(currentUser.id);
+      
+      // Tentar obter dados do cache primeiro
+      const cachedPatients = dataCache.get<Patient[]>(cacheKey);
+      if (cachedPatients) {
+        console.log('👥 [SessionListPage] Usando pacientes do cache');
+        setPatients(cachedPatients);
+        return;
+      }
+      
+      await fetchPatientsFresh(cacheKey);
+    } catch (error) {
+      log('Erro ao buscar pacientes:', error);
+    }
+  };
+
+  const fetchPatientsFresh = async (cacheKey: string) => {
+    try {
+      log('🔄 [SessionListPage] Buscando pacientes frescos...');
+      
       const { data, error } = await supabase
         .from('patients')
         .select('*')
@@ -83,10 +135,15 @@ export default function SessionListPage({ currentUser, refreshTrigger, initialPa
         .order('name');
 
       if (error) throw error;
-      log('Pacientes encontrados:', data);
-      setPatients(data || []);
+      
+      const patients = data || [];
+      log('Pacientes encontrados:', patients);
+      
+      // Armazenar no cache
+      dataCache.set(cacheKey, patients);
+      setPatients(patients);
     } catch (error) {
-      log('Erro ao buscar pacientes:', error);
+      log('Erro ao buscar pacientes frescos:', error);
     }
   };
 
