@@ -37,24 +37,27 @@ export default function SessionDetailPage({ sessionId, currentUser, refreshTrigg
 
       const cacheKey = cacheKeys.sessionDetail(sessionId);
       
-      // Tentar obter dados do cache primeiro
+      // Implementar padrão SWR - mostrar dados do cache imediatamente
       const cachedSession = dataCache.get<Session>(cacheKey);
+      const isDataStale = dataCache.isStale(cacheKey);
+      
       if (cachedSession) {
-        console.log('📄 [SessionDetailPage] Usando sessão do cache');
+        console.log(`📄 [SessionDetailPage] Usando sessão do cache (${isDataStale ? 'STALE' : 'FRESH'})`);
         setSession(cachedSession);
         setLoading(false);
-        
-        // Buscar dados frescos em segundo plano
-        setTimeout(() => fetchSessionDetailsFresh(cacheKey), 100);
-        return;
       }
       
-      await fetchSessionDetailsFresh(cacheKey);
+      // Se dados estão stale ou não existem, buscar dados frescos
+      if (isDataStale || !cachedSession) {
+        await fetchSessionDetailsFresh(cacheKey);
+      }
     } catch (error: any) {
       console.error('Erro ao buscar detalhes da sessão:', error);
       setError(error.message || 'Erro ao carregar sessão');
     } finally {
-      setLoading(false);
+      if (!dataCache.get(cacheKeys.sessionDetail(sessionId))) {
+        setLoading(false);
+      }
     }
   };
 

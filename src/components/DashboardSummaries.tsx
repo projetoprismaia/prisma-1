@@ -63,33 +63,30 @@ export default function DashboardSummaries({
       
       const cacheKey = isAdmin ? cacheKeys.dashboardAdmin() : cacheKeys.dashboardUser(currentUser.id);
       
-      // Tentar obter dados do cache primeiro
+      // Implementar padrão SWR - mostrar dados do cache imediatamente
       const cachedData = dataCache.get<DashboardData>(cacheKey);
+      const isDataStale = dataCache.isStale(cacheKey);
+      
       if (cachedData) {
-        console.log('📊 [DashboardSummaries] Usando dados do cache');
+        console.log(`📊 [DashboardSummaries] Usando dados do cache (${isDataStale ? 'STALE' : 'FRESH'})`);
         setData(cachedData);
         setLoading(false);
-        
-        // Continuar com busca em segundo plano para dados frescos
-        setTimeout(() => {
-          if (isAdmin) {
-            fetchAdminDataFresh(cacheKey);
-          } else {
-            fetchUserDataFresh(cacheKey);
-          }
-        }, 100);
-        return;
       }
       
-      if (isAdmin) {
-        await fetchAdminDataFresh(cacheKey);
-      } else {
-        await fetchUserDataFresh(cacheKey);
+      // Se dados estão stale ou não existem, buscar dados frescos
+      if (isDataStale || !cachedData) {
+        if (isAdmin) {
+          await fetchAdminDataFresh(cacheKey);
+        } else {
+          await fetchUserDataFresh(cacheKey);
+        }
       }
     } catch (error) {
       console.error('Erro ao buscar dados do dashboard:', error);
     } finally {
-      setLoading(false);
+      if (!dataCache.get(cacheKeys.dashboardAdmin()) && !dataCache.get(cacheKeys.dashboardUser(currentUser.id))) {
+        setLoading(false);
+      }
     }
   };
 

@@ -58,23 +58,26 @@ export default function SessionListPage({ currentUser, refreshTrigger, initialPa
       
       const cacheKey = cacheKeys.sessions(currentUser.id);
       
-      // Tentar obter dados do cache primeiro
+      // Implementar padrão SWR - mostrar dados do cache imediatamente
       const cachedSessions = dataCache.get<Session[]>(cacheKey);
+      const isDataStale = dataCache.isStale(cacheKey);
+      
       if (cachedSessions) {
-        console.log('📄 [SessionListPage] Usando sessões do cache');
+        console.log(`📄 [SessionListPage] Usando sessões do cache (${isDataStale ? 'STALE' : 'FRESH'})`);
         setSessions(cachedSessions);
         setLoading(false);
-        
-        // Buscar dados frescos em segundo plano
-        setTimeout(() => fetchSessionsFresh(cacheKey), 100);
-        return;
       }
       
-      await fetchSessionsFresh(cacheKey);
+      // Se dados estão stale ou não existem, buscar dados frescos
+      if (isDataStale || !cachedSessions) {
+        await fetchSessionsFresh(cacheKey);
+      }
     } catch (error) {
       log('Erro ao buscar sessões:', error);
     } finally {
-      setLoading(false);
+      if (!dataCache.get(cacheKeys.sessions(currentUser.id))) {
+        setLoading(false);
+      }
     }
   };
 
@@ -110,15 +113,19 @@ export default function SessionListPage({ currentUser, refreshTrigger, initialPa
       
       const cacheKey = cacheKeys.patients(currentUser.id);
       
-      // Tentar obter dados do cache primeiro
+      // Implementar padrão SWR - mostrar dados do cache imediatamente
       const cachedPatients = dataCache.get<Patient[]>(cacheKey);
+      const isDataStale = dataCache.isStale(cacheKey);
+      
       if (cachedPatients) {
-        console.log('👥 [SessionListPage] Usando pacientes do cache');
+        console.log(`👥 [SessionListPage] Usando pacientes do cache (${isDataStale ? 'STALE' : 'FRESH'})`);
         setPatients(cachedPatients);
-        return;
       }
       
-      await fetchPatientsFresh(cacheKey);
+      // Se dados estão stale ou não existem, buscar dados frescos
+      if (isDataStale || !cachedPatients) {
+        await fetchPatientsFresh(cacheKey);
+      }
     } catch (error) {
       log('Erro ao buscar pacientes:', error);
     }

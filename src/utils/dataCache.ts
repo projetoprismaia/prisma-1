@@ -38,17 +38,29 @@ class DataCache {
       return null;
     }
 
-    const now = Date.now();
-    const isExpired = now - entry.timestamp > this.config.ttl;
+    const isExpired = this.isStale(key);
     
     if (isExpired) {
-      console.log(`⏰ [DataCache] Cache EXPIRED para chave: ${key}`);
-      this.cache.delete(key);
-      return null;
+      console.log(`⏰ [DataCache] Cache HIT (STALE) para chave: ${key}`);
+    } else {
+      console.log(`✅ [DataCache] Cache HIT (FRESH) para chave: ${key}`);
+    }
+    
+    return entry.data;
+  }
+
+  /**
+   * Verifica se uma entrada do cache está expirada (stale)
+   */
+  isStale(key: string): boolean {
+    const entry = this.cache.get(key);
+    
+    if (!entry) {
+      return true; // Se não existe, considera como stale
     }
 
-    console.log(`✅ [DataCache] Cache HIT para chave: ${key}`);
-    return entry.data;
+    const now = Date.now();
+    return now - entry.timestamp > this.config.ttl;
   }
 
   /**
@@ -234,47 +246,58 @@ export function useCachedData<T>(
       throw new Error('Fetch disabled');
     }
 
-    // 1. Tentar obter dados do cache primeiro (stale)
+    // 1. Tentar obter dados do cache primeiro (pode ser stale ou fresh)
     const cachedData = dataCache.get<T>(key);
+    const isDataStale = dataCache.isStale(key);
     
-    // 2. Se tiver dados no cache, usar imediatamente
+    // 2. Se tiver dados no cache, usar imediatamente (SWR pattern)
     if (cachedData && onSuccess) {
+      console.log(`📦 [useCachedData] Usando dados do cache (${isDataStale ? 'STALE' : 'FRESH'}) para: ${key}`);
       onSuccess(cachedData);
     }
     
-    try {
-      // 3. Sempre buscar dados frescos (revalidate)
-      console.log(`🔄 [useCachedData] Buscando dados frescos para: ${key}`);
-      const freshData = await fetcher();
-      
-      // 4. Atualizar cache com dados frescos
-      dataCache.set(key, freshData);
-      
-      // 5. Notificar sucesso com dados frescos
-      if (onSuccess) {
-        onSuccess(freshData);
-      }
-      
-      return freshData;
-    } catch (error) {
-      console.error(`❌ [useCachedData] Erro ao buscar dados para ${key}:`, error);
-      
-      // 6. Em caso de erro, tentar usar dados stale como fallback
-      const staleData = dataCache.getStale<T>(key);
-      if (staleData) {
-        console.log(`🔄 [useCachedData] Usando dados stale como fallback para: ${key}`);
-        if (onSuccess) {
-          onSuccess(staleData);
+    // 3. Se dados estão stale ou não existem, buscar dados frescos em background
+    if (isDataStale || !cachedData) {
+      try {
+        console.log(`🔄 [useCachedData] Buscando dados frescos para: ${key}`);
+        const freshData = await fetcher();
+        
+        // 4. Atualizar cache com dados frescos
+        dataCache.set(key, freshData);
+        
+        // 5. Se não tínhamos dados em cache, ou se os dados mudaram, notificar
+        if (!cachedData || JSON.stringify(cachedData) !== JSON.stringify(freshData)) {
+          console.log(`✨ [useCachedData] Dados atualizados para: ${key}`);
+          if (onSuccess) {
+            onSuccess(freshData);
+          }
         }
-        return staleData;
+        
+        return freshData;
+      } catch (error) {
+        console.error(`❌ [useCachedData] Erro ao buscar dados para ${key}:`, error);
+        
+        // 6. Em caso de erro, usar dados do cache como fallback (se existirem)
+        if (cachedData) {
+          console.log(`🔄 [useCachedData] Usando dados do cache como fallback para: ${key}`);
+          return cachedData;
+        }
+        
+        // 7. Se não tiver fallback, propagar erro
+        if (onError) {
+          onError(error);
+        }
+        throw error;
       }
-      
-      // 7. Se não tiver fallback, propagar erro
-      if (onError) {
-        onError(error);
-      }
-      throw error;
     }
+    
+    // 8. Se dados estão fresh e existem, retornar do cache
+    if (cachedData) {
+      return cachedData;
+    }
+    
+    // 9. Fallback final - não deveria chegar aqui
+    throw new Error(`Dados não disponíveis para: ${key}`);
   };
 
   return { fetchWithCache };

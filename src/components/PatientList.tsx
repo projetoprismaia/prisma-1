@@ -40,23 +40,26 @@ export default function PatientList({ currentUser, refreshTrigger, onNavigateToS
     try {
       const cacheKey = cacheKeys.patients(currentUser.id);
       
-      // Tentar obter dados do cache primeiro
+      // Implementar padrão SWR - mostrar dados do cache imediatamente
       const cachedPatients = dataCache.get<Patient[]>(cacheKey);
+      const isDataStale = dataCache.isStale(cacheKey);
+      
       if (cachedPatients) {
-        console.log('👥 [PatientList] Usando pacientes do cache');
+        console.log(`👥 [PatientList] Usando pacientes do cache (${isDataStale ? 'STALE' : 'FRESH'})`);
         setPatients(cachedPatients);
         setLoading(false);
-        
-        // Buscar dados frescos em segundo plano
-        setTimeout(() => fetchPatientsFresh(cacheKey), 100);
-        return;
       }
       
-      await fetchPatientsFresh(cacheKey);
+      // Se dados estão stale ou não existem, buscar dados frescos
+      if (isDataStale || !cachedPatients) {
+        await fetchPatientsFresh(cacheKey);
+      }
     } catch (error) {
       console.error('Erro ao buscar pacientes:', error);
     } finally {
-      setLoading(false);
+      if (!dataCache.get(cacheKeys.patients(currentUser.id))) {
+        setLoading(false);
+      }
     }
   };
 

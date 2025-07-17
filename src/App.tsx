@@ -35,37 +35,20 @@ function App() {
       console.log('👁️ [App] Aba voltou a ficar visível - iniciando revalidação');
       
       try {
-        // Mostrar feedback visual
-        showInfo('Atualizando dados...', 'Verificando informações mais recentes');
-        
         // Pequeno delay para evitar múltiplas requisições
         await new Promise(resolve => setTimeout(resolve, 500));
-        
-        // Invalidar caches críticos para forçar dados frescos
-        console.log('🧹 [App] Invalidando caches após retorno da aba...');
-        dataCache.invalidatePattern('dashboard_');
-        dataCache.invalidatePattern('sessions_');
-        dataCache.invalidatePattern('patients_');
-        if (isAdmin()) {
-          dataCache.invalidate('users_all');
-          dataCache.invalidate('user_patient_counts');
-        }
         
         // Revalidar sessão do usuário
         await refreshProfile();
         
         // Disparar recarregamento de dados nos componentes
+        console.log('🔄 [App] Disparando revalidação de dados...');
         setRefreshTrigger(prev => prev + 1);
-        
-        // Feedback de sucesso
-        setTimeout(() => {
-          showSuccess('Dados atualizados', 'Informações sincronizadas com sucesso');
-        }, 1000);
         
         console.log('✅ [App] Revalidação concluída com sucesso');
       } catch (error) {
         console.error('❌ [App] Erro na revalidação:', error);
-        showError('Erro na Sincronização', 'Não foi possível atualizar os dados. Tente recarregar a página.');
+        console.log('⚠️ [App] Continuando com dados em cache devido ao erro');
       }
     };
 
@@ -73,7 +56,7 @@ function App() {
     if (user) {
       onTabVisible(handleTabVisible);
     }
-  }, [user, refreshProfile, onTabVisible, showInfo, showSuccess]);
+  }, [user, refreshProfile, onTabVisible]);
 
   // Log para debug
   useEffect(() => {
