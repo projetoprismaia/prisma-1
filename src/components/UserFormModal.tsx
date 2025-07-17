@@ -159,6 +159,7 @@ export default function UserFormModal({
                 value={formData.full_name}
                 onChange={(e) => handleInputChange('full_name', e.target.value)}
                 className={`w-full pl-10 pr-4 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-colors ${
+                }
                 className={`w-full pl-10 pr-4 py-2 border rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent transition-colors ${
                   errors.full_name ? 'border-red-300' : 'border-gray-300'
                 }`}
@@ -186,6 +187,7 @@ export default function UserFormModal({
                 onChange={(e) => handleInputChange('email', e.target.value)}
                 disabled={isEditing}
                 className={`w-full pl-10 pr-4 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-colors ${
+                }
                 className={`w-full pl-10 pr-4 py-2 border rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent transition-colors ${
                   isEditing ? 'bg-gray-100 cursor-not-allowed' : ''
                 } ${errors.email ? 'border-red-300' : 'border-gray-300'}`}
@@ -217,6 +219,7 @@ export default function UserFormModal({
                 value={formData.whatsapp}
                 onChange={(e) => handleInputChange('whatsapp', e.target.value)}
                 className={`w-full pl-10 pr-4 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-colors ${
+                }
                 className={`w-full pl-10 pr-4 py-2 border rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent transition-colors ${
                   errors.whatsapp ? 'border-red-300' : 'border-gray-300'
                 }`}
@@ -262,6 +265,7 @@ export default function UserFormModal({
                   value={formData.password || ''}
                   onChange={(e) => handleInputChange('password', e.target.value)}
                   className={`w-full pl-10 pr-12 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-colors ${
+                  }
                   className={`w-full pl-10 pr-12 py-2 border rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent transition-colors ${
                     errors.password ? 'border-red-300' : 'border-gray-300'
                   }`}
@@ -312,4 +316,7 @@ export default function UserFormModal({
       </div>
     </div>
   );
+}
+          }
+  )
 }
