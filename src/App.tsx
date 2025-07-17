@@ -14,7 +14,6 @@ import NotificationModal from './components/NotificationModal';
 import { useNotification } from './hooks/useNotification';
 
 function App() {
-  const { user, loading, error, signOut, isAdmin } = useAuth();
   const { user, loading, error, signOut, isAdmin, refreshProfile } = useAuth();
   const { notification, hideNotification } = useNotification();
   const { showSuccess, showInfo } = useNotification();
@@ -28,6 +27,7 @@ function App() {
   const [refreshTrigger, setRefreshTrigger] = useState(0);
 
   // Gerenciar recarregamento de dados quando aba volta a ficar visível
+  useEffect(() => {
   useEffect(() => {
     const handleTabVisible = async () => {
       if (!user) return;
