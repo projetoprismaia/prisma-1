@@ -231,16 +231,16 @@ export default function DashboardSummaries({
         >
           <div className="flex items-center justify-between">
             <div>
-              <p className="text-sm font-medium text-green-600 mb-1">
+              <p className="text-sm font-medium text-purple-600 mb-1">
                 {isAdmin ? 'Total de Pacientes' : 'Meus Pacientes'}
               </p>
               <p className="text-3xl font-bold text-gray-900">{data.totalPatients}</p>
             </div>
-            <div className="bg-green-100 p-3 rounded-full">
-              <Users className="h-6 w-6 text-green-600" />
+            <div className="bg-purple-100 p-3 rounded-full">
+              <Users className="h-6 w-6 text-purple-600" />
             </div>
           </div>
-          <div className="mt-4 flex items-center text-sm text-green-600">
+          <div className="mt-4 flex items-center text-sm text-purple-600">
             <TrendingUp className="h-4 w-4 mr-1" />
             <span>Gerenciar</span>
           </div>
@@ -272,16 +272,16 @@ export default function DashboardSummaries({
         >
           <div className="flex items-center justify-between">
             <div>
-              <p className="text-sm font-medium text-indigo-600 mb-1">
+              <p className="text-sm font-medium text-purple-600 mb-1">
                 {isAdmin ? 'Total de Sessões' : 'Minhas Sessões'}
               </p>
               <p className="text-3xl font-bold text-gray-900">{data.totalSessions}</p>
             </div>
-            <div className="bg-indigo-100 p-3 rounded-full">
-              <FileText className="h-6 w-6 text-indigo-600" />
+            <div className="bg-purple-100 p-3 rounded-full">
+              <FileText className="h-6 w-6 text-purple-600" />
             </div>
           </div>
-          <div className="mt-4 flex items-center text-sm text-indigo-600">
+          <div className="mt-4 flex items-center text-sm text-purple-600">
             <TrendingUp className="h-4 w-4 mr-1" />
             <span>Ver todas</span>
           </div>
@@ -303,7 +303,7 @@ export default function DashboardSummaries({
             </div>
             <button
               onClick={onNavigateToSessions}
-              className="text-indigo-600 hover:text-indigo-700 text-sm font-medium"
+              className="text-purple-600 hover:text-purple-700 text-sm font-medium"
             >
               Ver todas →
             </button>
