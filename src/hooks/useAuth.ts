@@ -12,89 +12,87 @@ export function useAuth() {
 
     const initAuth = async () => {
       try {
+        console.log('🚀 Iniciando autenticação...');
+        
+        // Verificar sessão atual
         const { data: { session }, error: sessionError } = await supabase.auth.getSession();
         
-        if (!mounted) return;
-        
         if (sessionError) {
-          setError(sessionError.message);
-          setLoading(false);
+          console.error('❌ Erro na sessão:', sessionError);
+          if (mounted) {
+            setUser(null);
+            setError(sessionError.message);
+            setLoading(false);
+          }
           return;
         }
-        
+
         if (session?.user) {
-          // Buscar perfil do usuário
+          console.log('👤 Usuário encontrado:', session.user.email);
+          
+          // Tentar buscar perfil do usuário
           const { data: profile, error: profileError } = await supabase
             .from('profiles')
             .select('*')
             .eq('id', session.user.id)
             .single();
 
-          if (!mounted) return;
-
-          if (profileError) {
-            // Se perfil não existe, criar um básico
-            if (profileError.code === 'PGRST116') {
-              const { data: newProfile, error: insertError } = await supabase
-                .from('profiles')
-                .insert({
+          if (mounted) {
+            if (profileError) {
+              console.log('⚠️ Perfil não encontrado, criando usuário básico...');
+              // Se não encontrou perfil, criar usuário básico
+              setUser({
+                id: session.user.id,
+                email: session.user.email,
+                profile: {
                   id: session.user.id,
                   email: session.user.email,
                   role: 'user',
                   full_name: session.user.user_metadata?.full_name || null,
                   created_at: new Date().toISOString(),
                   updated_at: new Date().toISOString()
-                })
-                .select()
-                .single();
-
-              if (!mounted) return;
-
-              if (insertError) {
-                setError('Erro ao criar perfil do usuário');
-                setLoading(false);
-                return;
-              }
-
+                } as UserProfile
+              });
+            } else {
+              console.log('✅ Perfil encontrado:', profile.email);
               setUser({
                 id: session.user.id,
                 email: session.user.email,
-                profile: newProfile as UserProfile
+                profile: profile as UserProfile
               });
-            } else {
-              setError('Erro ao carregar perfil do usuário');
             }
+            setError(null);
             setLoading(false);
-            return;
           }
-
-          // Perfil carregado com sucesso
-          setUser({
-            id: session.user.id,
-            email: session.user.email,
-            profile: profile as UserProfile
-          });
         } else {
-          setUser(null);
+          console.log('❌ Nenhuma sessão encontrada');
+          if (mounted) {
+            setUser(null);
+            setError(null);
+            setLoading(false);
+          }
         }
-        
-        setLoading(false);
       } catch (err: any) {
+        console.error('❌ Erro geral na autenticação:', err);
         if (mounted) {
-          setError(err.message || 'Erro na autenticação');
           setUser(null);
+          setError(err.message);
           setLoading(false);
         }
       }
     };
 
+    // Inicializar autenticação
     initAuth();
 
     // Listener para mudanças de autenticação
     const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
       if (!mounted) return;
       
+      console.log('🔄 Mudança de autenticação:', event);
+      
       if (event === 'SIGNED_OUT' || !session?.user) {
+        console.log('🚪 Usuário deslogado');
         setUser(null);
         setError(null);
         setLoading(false);
@@ -102,6 +100,7 @@ export function useAuth() {
       }
       
       if (event === 'SIGNED_IN' && session?.user) {
+        console.log('🔑 Usuário logado:', session.user.email);
         setLoading(true);
         
         // Buscar perfil do usuário
@@ -111,19 +110,30 @@ export function useAuth() {
           .eq('id', session.user.id)
           .single();
 
-        if (!mounted) return;
-
-        if (profileError || !profile) {
-          setError('Erro ao carregar perfil');
-          setLoading(false);
-          return;
+        if (profileError) {
+          console.log('⚠️ Perfil não encontrado no login');
+          setUser({
+            id: session.user.id,
+            email: session.user.email,
+            profile: {
+              id: session.user.id,
+              email: session.user.email,
+              role: 'user',
+              full_name: session.user.user_metadata?.full_name || null,
+              created_at: new Date().toISOString(),
+              updated_at: new Date().toISOString()
+            } as UserProfile
+          });
+        } else {
+          console.log('✅ Perfil carregado no login');
+          setUser({
+            id: session.user.id,
+            email: session.user.email,
+            profile: profile as UserProfile
+          });
         }
-
-        setUser({
-          id: session.user.id,
-          email: session.user.email,
-          profile: profile as UserProfile
-        });
+        
+        setError(null);
         setLoading(false);
       }
     });
@@ -132,41 +142,19 @@ export function useAuth() {
       mounted = false;
       subscription.unsubscribe();
     };
-  }, []); // Dependências vazias - executa apenas uma vez
+  }, []); // Sem dependências - executa apenas uma vez
 
   const signOut = async () => {
     try {
-      setLoading(true);
-      
-      // Limpar localStorage
-      const keys = Object.keys(localStorage);
-      keys.forEach(key => {
-        if (key.startsWith('sb-') || key.includes('supabase')) {
-          localStorage.removeItem(key);
-        }
-      });
-
-      // Limpar sessionStorage
-      const sessionKeys = Object.keys(sessionStorage);
-      sessionKeys.forEach(key => {
-        if (key.startsWith('sb-') || key.includes('supabase')) {
-          sessionStorage.removeItem(key);
-        }
-      });
-
-      // Fazer logout no Supabase
-      const { error } = await supabase.auth.signOut();
-      if (error) throw error;
-
-      // Limpar estado
+      console.log('🚪 Fazendo logout...');
+      await supabase.auth.signOut();
       setUser(null);
       setError(null);
       setLoading(false);
+      console.log('✅ Logout concluído');
     } catch (err: any) {
-      // Forçar limpeza mesmo com erro
-      setUser(null);
-      setError(null);
-      setLoading(false);
+      console.error('❌ Erro no logout:', err);
+      setError(err.message);
     }
   };
 
@@ -178,27 +166,13 @@ export function useAuth() {
     if (!user) return;
     
     try {
-      // Verificar se ainda há sessão válida
-      const { data: { session }, error: sessionError } = await supabase.auth.getSession();
-      
-      if (sessionError || !session?.user) {
-        setUser(null);
-        setError(null);
-        return;
-      }
-
-      // Buscar perfil atualizado
       const { data: profile, error } = await supabase
         .from('profiles')
         .select('*')
         .eq('id', user.id)
         .single();
 
-      if (error) {
-        return;
-      }
-
-      if (profile) {
+      if (!error && profile) {
         setUser({
           id: user.id,
           email: user.email,
@@ -206,7 +180,7 @@ export function useAuth() {
         });
       }
     } catch (err) {
-      // Silenciar erros de refresh
+      console.error('Erro ao atualizar perfil:', err);
     }
   };
 
