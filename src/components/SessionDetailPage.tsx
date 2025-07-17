@@ -160,9 +160,10 @@ export default function SessionDetailPage({ sessionId, currentUser, onBack }: Se
             <button
               onClick={retrySession}
               className="flex-1 bg-purple-600 hover:bg-purple-700 text-white px-4 py-2 rounded-lg transition-colors"
-          >
-            Voltar
-          </button>
+            >
+              Tentar Novamente
+            </button>
+          </div>
         </div>
       </div>
     );
