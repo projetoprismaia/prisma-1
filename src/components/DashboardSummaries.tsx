@@ -201,7 +201,7 @@ export default function DashboardSummaries({
       </div>
 
       {/* Cards de Sumário */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
         {/* Total de Usuários (apenas para admin) */}
         {isAdmin && (
           <div 
@@ -263,27 +263,6 @@ export default function DashboardSummaries({
           <div className="mt-4 flex items-center text-sm text-orange-600">
             <span className="animate-pulse">●</span>
             <span className="ml-1">Começar agora</span>
-          </div>
-        </div>
-        {/* Total de Sessões */}
-        <div 
-          onClick={onNavigateToSessions}
-          className="glass-card rounded-xl shadow-lg p-6 hover:shadow-xl transition-all duration-200 cursor-pointer hover:scale-105"
-        >
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="text-sm font-medium text-purple-600 mb-1">
-                {isAdmin ? 'Total de Sessões' : 'Minhas Sessões'}
-              </p>
-              <p className="text-3xl font-bold text-gray-900">{data.totalSessions}</p>
-            </div>
-            <div className="bg-purple-100 p-3 rounded-full">
-              <FileText className="h-6 w-6 text-purple-600" />
-            </div>
-          </div>
-          <div className="mt-4 flex items-center text-sm text-purple-600">
-            <TrendingUp className="h-4 w-4 mr-1" />
-            <span>Ver todas</span>
           </div>
         </div>
       </div>
