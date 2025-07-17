@@ -4,7 +4,6 @@ import { supabase } from '../lib/supabase';
 import { Session } from '../types/session';
 import { AuthUser } from '../types/user';
 import { formatToDDMM, formatDateTime } from '../utils/dateFormatter';
-import { dataCache, cacheKeys } from '../utils/dataCache';
 
 interface SessionDetailPageProps {
   sessionId: string;
@@ -34,33 +33,7 @@ export default function SessionDetailPage({ sessionId, currentUser, refreshTrigg
     try {
       setLoading(true);
       setError(null);
-
-      const cacheKey = cacheKeys.sessionDetail(sessionId);
-      
-      // Implementar padrão SWR - mostrar dados do cache imediatamente
-      const cachedSession = dataCache.get<Session>(cacheKey);
-      const isDataStale = dataCache.isStale(cacheKey);
-      
-      if (cachedSession) {
-        console.log(`📄 [SessionDetailPage] Usando sessão do cache (${isDataStale ? 'STALE' : 'FRESH'})`);
-        setSession(cachedSession);
-      }
-      
-      // Se dados estão stale ou não existem, buscar dados frescos
-      if (isDataStale || !cachedSession) {
-        await fetchSessionDetailsFresh(cacheKey);
-      }
-    } catch (error: any) {
-      console.error('Erro ao buscar detalhes da sessão:', error);
-      setError(error.message || 'Erro ao carregar sessão');
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const fetchSessionDetailsFresh = async (cacheKey: string) => {
-    try {
-      console.log('🔄 [SessionDetailPage] Buscando detalhes frescos da sessão...');
+      console.log('🔄 [SessionDetailPage] Buscando detalhes da sessão...');
       
       const { data, error } = await supabase
         .from('sessions')
@@ -79,12 +52,13 @@ export default function SessionDetailPage({ sessionId, currentUser, refreshTrigg
         return;
       }
 
-      // Armazenar no cache
-      dataCache.set(cacheKey, data);
+      console.log('📄 [SessionDetailPage] Sessão encontrada:', data.title);
       setSession(data);
     } catch (error: any) {
-      console.error('Erro ao buscar detalhes frescos da sessão:', error);
+      console.error('Erro ao buscar detalhes da sessão:', error);
       setError(error.message || 'Erro ao carregar sessão');
+    } finally {
+      setLoading(false);
     }
   };
 

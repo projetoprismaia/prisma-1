@@ -3,7 +3,6 @@ import { Users, FileText, TrendingUp, Calendar, Clock, Mic } from 'lucide-react'
 import { supabase } from '../lib/supabase';
 import { AuthUser } from '../types/user';
 import { formatDateTime } from '../utils/dateFormatter';
-import { dataCache, cacheKeys } from '../utils/dataCache';
 
 interface DashboardSummariesProps {
   currentUser: AuthUser;
@@ -61,24 +60,10 @@ export default function DashboardSummaries({
     try {
       setLoading(true);
       
-      const cacheKey = isAdmin ? cacheKeys.dashboardAdmin() : cacheKeys.dashboardUser(currentUser.id);
-      
-      // Implementar padrão SWR - mostrar dados do cache imediatamente
-      const cachedData = dataCache.get<DashboardData>(cacheKey);
-      const isDataStale = dataCache.isStale(cacheKey);
-      
-      if (cachedData) {
-        console.log(`📊 [DashboardSummaries] Usando dados do cache (${isDataStale ? 'STALE' : 'FRESH'})`);
-        setData(cachedData);
-      }
-      
-      // Se dados estão stale ou não existem, buscar dados frescos
-      if (isDataStale || !cachedData) {
-        if (isAdmin) {
-          await fetchAdminDataFresh(cacheKey);
-        } else {
-          await fetchUserDataFresh(cacheKey);
-        }
+      if (isAdmin) {
+        await fetchAdminData();
+      } else {
+        await fetchUserData();
       }
     } catch (error) {
       console.error('Erro ao buscar dados do dashboard:', error);
@@ -87,8 +72,8 @@ export default function DashboardSummaries({
     }
   };
 
-  const fetchAdminDataFresh = async (cacheKey: string) => {
-    console.log('🔄 [DashboardSummaries] Buscando dados frescos do admin...');
+  const fetchAdminData = async () => {
+    console.log('🔄 [DashboardSummaries] Buscando dados do admin...');
     
     // Buscar total de usuários
     const { count: usersCount } = await supabase
@@ -131,13 +116,11 @@ export default function DashboardSummaries({
       })) || []
     };
     
-    // Armazenar no cache
-    dataCache.set(cacheKey, dashboardData);
     setData(dashboardData);
   };
 
-  const fetchUserDataFresh = async (cacheKey: string) => {
-    console.log('🔄 [DashboardSummaries] Buscando dados frescos do usuário...');
+  const fetchUserData = async () => {
+    console.log('🔄 [DashboardSummaries] Buscando dados do usuário...');
     
     // Buscar pacientes do usuário
     const { count: patientsCount } = await supabase
@@ -177,8 +160,6 @@ export default function DashboardSummaries({
       })) || []
     };
     
-    // Armazenar no cache
-    dataCache.set(cacheKey, dashboardData);
     setData(dashboardData);
   };
 

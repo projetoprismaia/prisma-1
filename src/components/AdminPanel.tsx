@@ -38,6 +38,7 @@ export default function AdminPanel({ currentUser, refreshTrigger }: AdminPanelPr
 
   const fetchUsers = async () => {
     try {
+      setLoading(true);
       console.log('🔍 Buscando usuários e contagem de pacientes...');
       
       // Buscar usuários

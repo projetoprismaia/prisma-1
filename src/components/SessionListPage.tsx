@@ -5,7 +5,6 @@ import { Session } from '../types/session';
 import { Patient } from '../types/patient';
 import { AuthUser } from '../types/user';
 import { formatToDDMM, formatDateTimeShort, formatDateTime } from '../utils/dateFormatter';
-import { dataCache, cacheKeys } from '../utils/dataCache';
 
 interface SessionListPageProps {
   currentUser: AuthUser;
@@ -14,14 +13,6 @@ interface SessionListPageProps {
   onViewSession: (sessionId: string) => void;
   onStartNewConsultation: () => void;
 }
-
-// Add debug logging
-const DEBUG = true;
-const log = (message: string, data?: any) => {
-  if (DEBUG) {
-    console.log(`[SessionListPage] ${message}`, data);
-  }
-};
 
 export default function SessionListPage({ currentUser, refreshTrigger, initialPatientFilter, onViewSession, onStartNewConsultation }: SessionListPageProps) {
   const [sessions, setSessions] = useState<Session[]>([]);
@@ -54,33 +45,8 @@ export default function SessionListPage({ currentUser, refreshTrigger, initialPa
 
   const fetchSessions = async () => {
     try {
-      log('Iniciando busca de sessões...');
-      
-      const cacheKey = cacheKeys.sessions(currentUser.id);
-      
-      // Implementar padrão SWR - mostrar dados do cache imediatamente
-      const cachedSessions = dataCache.get<Session[]>(cacheKey);
-      const isDataStale = dataCache.isStale(cacheKey);
-      
-      if (cachedSessions) {
-        console.log(`📄 [SessionListPage] Usando sessões do cache (${isDataStale ? 'STALE' : 'FRESH'})`);
-        setSessions(cachedSessions);
-      }
-      
-      // Se dados estão stale ou não existem, buscar dados frescos
-      if (isDataStale || !cachedSessions) {
-        await fetchSessionsFresh(cacheKey);
-      }
-    } catch (error) {
-      log('Erro ao buscar sessões:', error);
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const fetchSessionsFresh = async (cacheKey: string) => {
-    try {
-      log('🔄 [SessionListPage] Buscando sessões frescas...');
+      setLoading(true);
+      console.log('🔄 [SessionListPage] Buscando sessões...');
       
       const { data, error } = await supabase
         .from('sessions')
@@ -94,43 +60,18 @@ export default function SessionListPage({ currentUser, refreshTrigger, initialPa
       if (error) throw error;
       
       const sessions = data || [];
-      log('Sessões encontradas:', sessions);
-      
-      // Armazenar no cache
-      dataCache.set(cacheKey, sessions);
+      console.log('📄 [SessionListPage] Sessões encontradas:', sessions.length);
       setSessions(sessions);
     } catch (error) {
-      log('Erro ao buscar sessões frescas:', error);
+      console.error('Erro ao buscar sessões:', error);
+    } finally {
+      setLoading(false);
     }
   };
 
   const fetchPatients = async () => {
     try {
-      log('Iniciando busca de pacientes...');
-      
-      const cacheKey = cacheKeys.patients(currentUser.id);
-      
-      // Implementar padrão SWR - mostrar dados do cache imediatamente
-      const cachedPatients = dataCache.get<Patient[]>(cacheKey);
-      const isDataStale = dataCache.isStale(cacheKey);
-      
-      if (cachedPatients) {
-        console.log(`👥 [SessionListPage] Usando pacientes do cache (${isDataStale ? 'STALE' : 'FRESH'})`);
-        setPatients(cachedPatients);
-      }
-      
-      // Se dados estão stale ou não existem, buscar dados frescos
-      if (isDataStale || !cachedPatients) {
-        await fetchPatientsFresh(cacheKey);
-      }
-    } catch (error) {
-      log('Erro ao buscar pacientes:', error);
-    }
-  };
-
-  const fetchPatientsFresh = async (cacheKey: string) => {
-    try {
-      log('🔄 [SessionListPage] Buscando pacientes frescos...');
+      console.log('🔄 [SessionListPage] Buscando pacientes...');
       
       const { data, error } = await supabase
         .from('patients')
@@ -141,13 +82,10 @@ export default function SessionListPage({ currentUser, refreshTrigger, initialPa
       if (error) throw error;
       
       const patients = data || [];
-      log('Pacientes encontrados:', patients);
-      
-      // Armazenar no cache
-      dataCache.set(cacheKey, patients);
+      console.log('👥 [SessionListPage] Pacientes encontrados:', patients.length);
       setPatients(patients);
     } catch (error) {
-      log('Erro ao buscar pacientes frescos:', error);
+      console.error('Erro ao buscar pacientes:', error);
     }
   };
 

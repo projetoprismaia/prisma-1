@@ -12,7 +12,6 @@ import ConsultationPage from './components/ConsultationPage';
 import DashboardSummaries from './components/DashboardSummaries';
 import NotificationModal from './components/NotificationModal';
 import { useNotification } from './hooks/useNotification';
-import { dataCache } from './utils/dataCache';
 
 function App() {
   const { user, loading, error, signOut, isAdmin, refreshProfile } = useAuth();

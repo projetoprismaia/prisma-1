@@ -6,7 +6,6 @@ import { AuthUser } from '../types/user';
 import PatientFormModal from './PatientFormModal';
 import { useNotification } from '../hooks/useNotification';
 import { formatToDDMM } from '../utils/dateFormatter';
-import { dataCache, cacheKeys } from '../utils/dataCache';
 
 interface PatientListProps {
   currentUser: AuthUser;
@@ -38,31 +37,8 @@ export default function PatientList({ currentUser, refreshTrigger, onNavigateToS
 
   const fetchPatients = async () => {
     try {
-      const cacheKey = cacheKeys.patients(currentUser.id);
-      
-      // Implementar padrão SWR - mostrar dados do cache imediatamente
-      const cachedPatients = dataCache.get<Patient[]>(cacheKey);
-      const isDataStale = dataCache.isStale(cacheKey);
-      
-      if (cachedPatients) {
-        console.log(`👥 [PatientList] Usando pacientes do cache (${isDataStale ? 'STALE' : 'FRESH'})`);
-        setPatients(cachedPatients);
-      }
-      
-      // Se dados estão stale ou não existem, buscar dados frescos
-      if (isDataStale || !cachedPatients) {
-        await fetchPatientsFresh(cacheKey);
-      }
-    } catch (error) {
-      console.error('Erro ao buscar pacientes:', error);
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const fetchPatientsFresh = async (cacheKey: string) => {
-    try {
-      console.log('🔄 [PatientList] Buscando pacientes frescos...');
+      setLoading(true);
+      console.log('🔄 [PatientList] Buscando pacientes...');
       
       const { data, error } = await supabase
         .from('patients')
@@ -73,12 +49,12 @@ export default function PatientList({ currentUser, refreshTrigger, onNavigateToS
       if (error) throw error;
       
       const patients = data || [];
-      
-      // Armazenar no cache
-      dataCache.set(cacheKey, patients);
+      console.log('👥 [PatientList] Pacientes encontrados:', patients.length);
       setPatients(patients);
     } catch (error) {
-      console.error('Erro ao buscar pacientes frescos:', error);
+      console.error('Erro ao buscar pacientes:', error);
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -128,10 +104,6 @@ export default function PatientList({ currentUser, refreshTrigger, onNavigateToS
         // Add to local state
         setPatients([data, ...patients]);
       }
-
-      // Invalidar cache após mudanças
-      dataCache.invalidate(cacheKeys.patients(currentUser.id));
-      dataCache.invalidatePattern(`dashboard_user_${currentUser.id}`);
       
       setShowPatientFormModal(false);
       setEditingPatient(null);
@@ -164,10 +136,6 @@ export default function PatientList({ currentUser, refreshTrigger, onNavigateToS
       // Remove from local state
       setPatients(patients.filter(patient => patient.id !== patientId));
       setDeleteConfirm(null);
-      
-      // Invalidar cache após exclusão
-      dataCache.invalidate(cacheKeys.patients(currentUser.id));
-      dataCache.invalidatePattern(`dashboard_user_${currentUser.id}`);
       
       showSuccess(
         'Paciente Removido',
