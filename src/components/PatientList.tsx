@@ -34,29 +34,6 @@ export default function PatientList({ currentUser, refreshTrigger, onNavigateToS
     }
   }, [refreshTrigger]);
 
-  // Recarregar dados quando a aba ganhar foco
-  useEffect(() => {
-    const handleFocus = () => {
-      fetchPatients();
-    };
-
-    const handleVisibilityChange = () => {
-      if (!document.hidden) {
-        fetchPatients();
-      }
-    };
-
-    // Escuta quando a janela/aba ganha foco
-    window.addEventListener('focus', handleFocus);
-    // Escuta quando a aba fica visível (mudança de aba)
-    document.addEventListener('visibilitychange', handleVisibilityChange);
-
-    return () => {
-      window.removeEventListener('focus', handleFocus);
-      document.removeEventListener('visibilitychange', handleVisibilityChange);
-    };
-  }, []);
-
   const fetchPatients = async () => {
     try {
       setLoading(true);

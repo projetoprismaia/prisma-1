@@ -65,22 +65,8 @@ export default function ConsultationPage({ currentUser, isTabVisible, onBack }: 
 
   // Gerenciar gravação baseado na visibilidade da aba
   useEffect(() => {
-    if (!isTabVisible && (recordingStatus === 'recording' || recordingStatus === 'paused')) {
-      if (recordingStatus === 'recording') {
-        // Pausar automaticamente se estava gravando
-        pauseRecording();
-        showWarning(
-          'Consulta Pausada Automaticamente',
-          'A gravação foi pausada porque a aba perdeu o foco. Clique em "Continuar" para retomar.'
-        );
-      }
-    } else if (isTabVisible && recordingStatus === 'paused') {
-      resumeRecording();
-      showSuccess(
-        'Consulta Retomada Automaticamente',
-        'A gravação foi retomada porque a aba voltou a ficar visível.'
-      );
-    }
+    // Lógica de visibilidade da aba temporariamente desabilitada
+    // para evitar loops infinitos
   }, [isTabVisible, recordingStatus]);
 
   const fetchPatients = async () => {

@@ -34,27 +34,6 @@ export default function DashboardSummaries({
   onNavigateToAdmin,
   onStartNewConsultation
 }: DashboardSummariesProps) {
-  const [data, setData] = useState<DashboardData>({
-    totalPatients: 0,
-    totalSessions: 0,
-    totalUsers: 0,
-    recentSessions: []
-  });
-  const [loading, setLoading] = useState(true);
-
-  const isAdmin = currentUser.profile.role === 'admin';
-
-  useEffect(() => {
-    fetchDashboardData();
-  }, [currentUser]);
-
-  // Recarregar dados quando refreshTrigger mudar
-  useEffect(() => {
-    if (refreshTrigger > 0) {
-      fetchDashboardData();
-    }
-  }, [refreshTrigger]);
-
   const fetchDashboardData = async () => {
     try {
       setLoading(true);

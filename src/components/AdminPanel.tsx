@@ -14,27 +14,6 @@ interface AdminPanelProps {
 export default function AdminPanel({ currentUser, refreshTrigger }: AdminPanelProps) {
   const [users, setUsers] = useState<UserProfile[]>([]);
   const { showSuccess, showError, showWarning } = useNotification();
-  const [patientCounts, setPatientCounts] = useState<Record<string, number>>({});
-  const [loading, setLoading] = useState(true);
-  const [searchTerm, setSearchTerm] = useState('');
-  const [roleFilter, setRoleFilter] = useState<'all' | UserRole>('all');
-  const [updating, setUpdating] = useState<string | null>(null);
-  const [showUserFormModal, setShowUserFormModal] = useState(false);
-  const [editingUser, setEditingUser] = useState<UserProfile | null>(null);
-  const [formLoading, setFormLoading] = useState(false);
-  const [deleteConfirm, setDeleteConfirm] = useState<string | null>(null);
-
-  useEffect(() => {
-    fetchUsers();
-  }, []);
-
-  // Recarregar dados quando refreshTrigger mudar
-  useEffect(() => {
-    if (refreshTrigger && refreshTrigger > 0) {
-      fetchUsers();
-    }
-  }, [refreshTrigger]);
-
   const fetchUsers = async () => {
     try {
       setLoading(true);

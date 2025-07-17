@@ -1,6 +1,5 @@
 import React, { useState, useEffect } from 'react';
 import { useAuth } from './hooks/useAuth';
-import { useTabVisibility } from './hooks/useTabVisibility';
 import OrganicBackground from './components/OrganicBackground';
 import AuthForm from './components/AuthForm';
 import FloatingMenu from './components/FloatingMenu';
@@ -16,7 +15,6 @@ import { useNotification } from './hooks/useNotification';
 function App() {
   const { user, loading, error, signOut, isAdmin, refreshProfile } = useAuth();
   const { notification, hideNotification } = useNotification();
-  const { isTabVisible, wasTabHidden, onTabVisible } = useTabVisibility();
   const [showAdminPanel, setShowAdminPanel] = useState(false);
   const [showPatientPanel, setShowPatientPanel] = useState(false);
   const [showSessionsPanel, setShowSessionsPanel] = useState(false);
@@ -25,29 +23,16 @@ function App() {
   const [showConsultationPage, setShowConsultationPage] = useState(false);
   const [refreshTrigger, setRefreshTrigger] = useState(0);
 
-  // Gerenciar recarregamento de dados quando aba volta a ficar visível
+  // Recarregar dados periodicamente (simplificado)
   useEffect(() => {
-    const handleTabVisible = async () => {
-      if (!user) return;
-      
-      try {
-        // Pequeno delay para evitar múltiplas requisições
-        await new Promise(resolve => setTimeout(resolve, 500));
-        
-        // Revalidar sessão do usuário
-        await refreshProfile();
-        // Disparar recarregamento de dados nos componentes
-        setRefreshTrigger(prev => prev + 1);
-      } catch (error) {
-        // Silenciar erro de recarregamento
-      }
-    };
-
-    // Registrar callback para quando aba voltar a ficar visível
-    if (user) {
-      onTabVisible(handleTabVisible);
-    }
-  }, [user, refreshProfile, onTabVisible]);
+    if (!user) return;
+    
+    const interval = setInterval(() => {
+      setRefreshTrigger(prev => prev + 1);
+    }, 30000); // A cada 30 segundos
+    
+    return () => clearInterval(interval);
+  }, [user]);
 
   const handleSignOut = () => {
     signOut().then(() => {
@@ -178,7 +163,7 @@ function App() {
           {showConsultationPage ? (
             <ConsultationPage
               currentUser={user}
-              isTabVisible={isTabVisible}
+              isTabVisible={true}
               onBack={navigateToSessions}
             />
           ) : viewingSessionId ? (

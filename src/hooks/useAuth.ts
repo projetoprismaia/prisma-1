@@ -10,9 +10,8 @@ export function useAuth() {
   useEffect(() => {
     let mounted = true;
 
-    const initializeAuth = async () => {
+    const initAuth = async () => {
       try {
-        // Verificar sessão atual uma única vez
         const { data: { session }, error: sessionError } = await supabase.auth.getSession();
         
         if (!mounted) return;
@@ -24,85 +23,72 @@ export function useAuth() {
         }
         
         if (session?.user) {
-          await loadUserProfile(session.user);
+          // Buscar perfil do usuário
+          const { data: profile, error: profileError } = await supabase
+            .from('profiles')
+            .select('*')
+            .eq('id', session.user.id)
+            .single();
+
+          if (!mounted) return;
+
+          if (profileError) {
+            // Se perfil não existe, criar um básico
+            if (profileError.code === 'PGRST116') {
+              const { data: newProfile, error: insertError } = await supabase
+                .from('profiles')
+                .insert({
+                  id: session.user.id,
+                  email: session.user.email,
+                  role: 'user',
+                  full_name: session.user.user_metadata?.full_name || null,
+                  created_at: new Date().toISOString(),
+                  updated_at: new Date().toISOString()
+                })
+                .select()
+                .single();
+
+              if (!mounted) return;
+
+              if (insertError) {
+                setError('Erro ao criar perfil do usuário');
+                setLoading(false);
+                return;
+              }
+
+              setUser({
+                id: session.user.id,
+                email: session.user.email,
+                profile: newProfile as UserProfile
+              });
+            } else {
+              setError('Erro ao carregar perfil do usuário');
+            }
+            setLoading(false);
+            return;
+          }
+
+          // Perfil carregado com sucesso
+          setUser({
+            id: session.user.id,
+            email: session.user.email,
+            profile: profile as UserProfile
+          });
         } else {
           setUser(null);
-          setLoading(false);
         }
-      } catch (err: any) {
-        if (mounted) {
-          setError(err.message || 'Erro na autenticação');
-          setLoading(false);
-        }
-      }
-    };
-
-    const loadUserProfile = async (authUser: any) => {
-      if (!mounted) return;
-      
-      try {
-        // Buscar perfil do usuário
-        const { data: profile, error: profileError } = await supabase
-          .from('profiles')
-          .select('*')
-          .eq('id', authUser.id)
-          .single();
-
-        if (!mounted) return;
-
-        if (profileError) {
-          // Se perfil não existe, criar um novo
-          if (profileError.code === 'PGRST116') {
-            const { data: newProfile, error: insertError } = await supabase
-              .from('profiles')
-              .insert({
-                id: authUser.id,
-                email: authUser.email,
-                role: 'user',
-                full_name: authUser.user_metadata?.full_name || null,
-                created_at: new Date().toISOString(),
-                updated_at: new Date().toISOString()
-              })
-              .select()
-              .single();
-
-            if (!mounted) return;
-
-            if (insertError) {
-              setError('Erro ao criar perfil do usuário');
-              setLoading(false);
-              return;
-            }
-
-            setUser({
-              id: authUser.id,
-              email: authUser.email,
-              profile: newProfile as UserProfile
-            });
-          } else {
-            setError('Erro ao carregar perfil do usuário');
-          }
-          setLoading(false);
-          return;
-        }
-
-        // Perfil carregado com sucesso
-        setUser({
-          id: authUser.id,
-          email: authUser.email,
-          profile: profile as UserProfile
-        });
+        
         setLoading(false);
       } catch (err: any) {
         if (mounted) {
-          setError(err.message || 'Erro ao carregar perfil');
+          setError(err.message || 'Erro na autenticação');
+          setUser(null);
           setLoading(false);
         }
       }
     };
 
-    // Inicializar autenticação
-    initializeAuth();
+    initAuth();
 
     // Listener para mudanças de autenticação
     const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
@@ -117,7 +103,28 @@ export function useAuth() {
       
       if (event === 'SIGNED_IN' && session?.user) {
         setLoading(true);
-        await loadUserProfile(session.user);
+        
+        // Buscar perfil do usuário
+        const { data: profile, error: profileError } = await supabase
+          .from('profiles')
+          .select('*')
+          .eq('id', session.user.id)
+          .single();
+
+        if (!mounted) return;
+
+        if (profileError || !profile) {
+          setError('Erro ao carregar perfil');
+          setLoading(false);
+          return;
+        }
+
+        setUser({
+          id: session.user.id,
+          email: session.user.email,
+          profile: profile as UserProfile
+        });
+        setLoading(false);
       }
     });
 
