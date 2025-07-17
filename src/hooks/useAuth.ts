@@ -174,35 +174,12 @@ export function useAuth() {
           if (insertError) {
             console.error('❌ [handleUserSession] Erro ao criar perfil:', insertError.message);
             
-            // Se erro de recursão ou política, limpar sessão
-            if (insertError.message?.includes('infinite recursion') || 
-                insertError.message?.includes('policy') ||
-                insertError.message?.includes('relation "profiles" does not exist')) {
-              console.log('🚪 [handleUserSession] Erro crítico, limpando sessão...');
-              await clearAllSessions();
-              if (mounted) {
-                setUser(null);
-                setError(null);
-                setLoading(false);
-              }
-              return;
-            }
-            
-            // Usar perfil temporário como último recurso
-            console.log('⚠️ [handleUserSession] Usando perfil temporário...');
+            // Qualquer erro na criação do perfil resulta em logout
+            console.log('🚪 [handleUserSession] Falha ao criar perfil, limpando sessão...');
+            await clearAllSessions();
             if (mounted) {
-              setUser({
-                id: authUser.id,
-                email: authUser.email,
-                profile: {
-                  id: authUser.id,
-                  email: authUser.email,
-                  role: 'user',
-                  full_name: null,
-                  created_at: new Date().toISOString(),
-                  updated_at: new Date().toISOString()
-                }
-              });
+              setUser(null);
+              setError(null);
               setLoading(false);
             }
             return;
@@ -236,6 +213,7 @@ export function useAuth() {
         }
       } catch (error) {
         console.error('❌ [handleUserSession] Erro crítico ao buscar perfil:', error);
+        console.log('🚪 [handleUserSession] Erro crítico, forçando logout...');
         await clearAllSessions();
         if (mounted) {
           setUser(null);
