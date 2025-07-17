@@ -13,7 +13,6 @@ interface PatientListProps {
   onNavigateToSessions?: (patientId: string) => void;
 }
 
-export default function PatientList({ currentUser, onNavigateToSessions }: PatientListProps) {
 export default function PatientList({ currentUser, refreshTrigger, onNavigateToSessions }: PatientListProps) {
   const [patients, setPatients] = useState<Patient[]>([]);
   const { showSuccess, showError } = useNotification();
@@ -285,7 +284,6 @@ export default function PatientList({ currentUser, refreshTrigger, onNavigateToS
 
                 <div className="flex space-x-2">
                   <button
-                    onClick={() => openEditModal(patient)}
                     onClick={(e) => {
                       e.stopPropagation();
                       openEditModal(patient);
