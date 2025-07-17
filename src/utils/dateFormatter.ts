@@ -18,6 +18,7 @@ export function formatToDDMM(dateInput: string | Date): string {
     // Formatar para dd/mm/yyyy
     return date.toLocaleDateString('pt-BR');
   } catch (error) {
+    console.error('Erro ao formatar data:', error);
     return 'Data inválida';
   }
 }
@@ -38,6 +39,7 @@ export function formatDateTime(dateInput: string | Date): string {
     // Formatar para dd/mm/yyyy HH:mm:ss
     return date.toLocaleString('pt-BR');
   } catch (error) {
+    console.error('Erro ao formatar data e hora:', error);
     return 'Data inválida';
   }
 }
@@ -64,6 +66,7 @@ export function formatDateTimeShort(dateInput: string | Date): string {
       minute: '2-digit'
     });
   } catch (error) {
+    console.error('Erro ao formatar data e hora curta:', error);
     return 'Data inválida';
   }
 }

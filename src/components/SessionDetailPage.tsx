@@ -24,6 +24,7 @@ export default function SessionDetailPage({ sessionId, currentUser, refreshTrigg
   // Recarregar dados quando refreshTrigger mudar
   useEffect(() => {
     if (refreshTrigger > 0) {
+      console.log('🔄 [SessionDetailPage] Recarregando dados devido ao refreshTrigger:', refreshTrigger);
       fetchSessionDetails();
     }
   }, [refreshTrigger]);
@@ -32,6 +33,7 @@ export default function SessionDetailPage({ sessionId, currentUser, refreshTrigg
     try {
       setLoading(true);
       setError(null);
+      console.log('🔄 [SessionDetailPage] Buscando detalhes da sessão...');
       
       const { data, error } = await supabase
         .from('sessions')
@@ -50,8 +52,10 @@ export default function SessionDetailPage({ sessionId, currentUser, refreshTrigg
         return;
       }
 
+      console.log('📄 [SessionDetailPage] Sessão encontrada:', data.title);
       setSession(data);
     } catch (error: any) {
+      console.error('Erro ao buscar detalhes da sessão:', error);
       setError(error.message || 'Erro ao carregar sessão');
     } finally {
       setLoading(false);

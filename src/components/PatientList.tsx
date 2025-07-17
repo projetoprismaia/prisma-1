@@ -30,38 +30,15 @@ export default function PatientList({ currentUser, refreshTrigger, onNavigateToS
   // Recarregar dados quando refreshTrigger mudar
   useEffect(() => {
     if (refreshTrigger > 0) {
+      console.log('🔄 [PatientList] Recarregando dados devido ao refreshTrigger:', refreshTrigger);
       fetchPatients();
     }
   }, [refreshTrigger]);
 
-  // 🔧 CORREÇÃO: Recarregar dados quando a aba ganhar foco
-  useEffect(() => {
-    const handleFocus = () => {
-      console.log('Página ganhou foco, recarregando dados...');
-      fetchPatients();
-    };
-
-    const handleVisibilityChange = () => {
-      if (!document.hidden) {
-        console.log('Página ficou visível, recarregando dados...');
-        fetchPatients();
-      }
-    };
-
-    // Escuta quando a janela/aba ganha foco
-    window.addEventListener('focus', handleFocus);
-    // Escuta quando a aba fica visível (mudança de aba)
-    document.addEventListener('visibilitychange', handleVisibilityChange);
-
-    return () => {
-      window.removeEventListener('focus', handleFocus);
-      document.removeEventListener('visibilitychange', handleVisibilityChange);
-    };
-  }, []);
-
   const fetchPatients = async () => {
     try {
       setLoading(true);
+      console.log('🔄 [PatientList] Buscando pacientes...');
       
       const { data, error } = await supabase
         .from('patients')
@@ -70,14 +47,12 @@ export default function PatientList({ currentUser, refreshTrigger, onNavigateToS
         .order('created_at', { ascending: false });
 
       if (error) throw error;
-      const patients = data || [];
-      setPatients(patients);
       
-      // 🔧 CORREÇÃO: Log para debug
-      console.log('Dados recarregados:', patients.length, 'pacientes encontrados');
+      const patients = data || [];
+      console.log('👥 [PatientList] Pacientes encontrados:', patients.length);
+      setPatients(patients);
     } catch (error) {
-      console.error('Erro ao carregar pacientes:', error);
-      showError('Erro ao Carregar', 'Não foi possível carregar os pacientes');
+      console.error('Erro ao buscar pacientes:', error);
     } finally {
       setLoading(false);
     }

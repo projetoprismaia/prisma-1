@@ -66,6 +66,8 @@ export default function ConsultationPage({ currentUser, isTabVisible, onBack }: 
   // Gerenciar gravação baseado na visibilidade da aba
   useEffect(() => {
     if (!isTabVisible && (recordingStatus === 'recording' || recordingStatus === 'paused')) {
+      console.log('🙈 [ConsultationPage] Aba ficou oculta durante gravação - pausando automaticamente');
+      
       if (recordingStatus === 'recording') {
         // Pausar automaticamente se estava gravando
         pauseRecording();
@@ -75,6 +77,7 @@ export default function ConsultationPage({ currentUser, isTabVisible, onBack }: 
         );
       }
     } else if (isTabVisible && recordingStatus === 'paused') {
+      console.log('👁️ [ConsultationPage] Aba voltou a ficar visível enquanto pausada - retomando automaticamente');
       resumeRecording();
       showSuccess(
         'Consulta Retomada Automaticamente',
@@ -86,6 +89,7 @@ export default function ConsultationPage({ currentUser, isTabVisible, onBack }: 
   const fetchPatients = async () => {
     try {
       setLoading(true);
+      console.log('🔄 [ConsultationPage] Buscando pacientes...');
       
       const { data, error } = await supabase
         .from('patients')
@@ -94,9 +98,12 @@ export default function ConsultationPage({ currentUser, isTabVisible, onBack }: 
         .order('name');
 
       if (error) throw error;
+      
       const patients = data || [];
+      console.log('👥 [ConsultationPage] Pacientes encontrados:', patients.length);
       setPatients(patients);
     } catch (error) {
+      console.error('Erro ao buscar pacientes:', error);
       showError('Erro', 'Não foi possível carregar a lista de pacientes.');
     } finally {
       setLoading(false);
@@ -105,6 +112,8 @@ export default function ConsultationPage({ currentUser, isTabVisible, onBack }: 
 
   const fetchAudioDevices = async () => {
     try {
+      console.log('🔄 [ConsultationPage] Buscando dispositivos de áudio...');
+      
       // Solicitar permissão para acessar microfone primeiro
       await navigator.mediaDevices.getUserMedia({ audio: true });
       
@@ -116,6 +125,7 @@ export default function ConsultationPage({ currentUser, isTabVisible, onBack }: 
           label: device.label || `Microfone ${device.deviceId.slice(0, 8)}`
         }));
 
+      console.log('🎤 [ConsultationPage] Dispositivos encontrados:', audioInputs.length);
       setAudioDevices(audioInputs);
       
       // Selecionar o primeiro dispositivo por padrão
@@ -123,6 +133,7 @@ export default function ConsultationPage({ currentUser, isTabVisible, onBack }: 
         setSelectedDevice(audioInputs[0].deviceId);
       }
     } catch (error) {
+      console.error('Erro ao buscar dispositivos de áudio:', error);
       showError('Erro', 'Não foi possível acessar os dispositivos de áudio. Verifique as permissões.');
     }
   };
@@ -156,10 +167,17 @@ export default function ConsultationPage({ currentUser, isTabVisible, onBack }: 
       };
 
       recognition.onerror = (event: any) => {
+        console.error('Erro na transcrição:', event.error);
         if (event.error === 'no-speech') {
           // Reiniciar automaticamente se não houver fala
           if (recordingStatus === 'recording') {
-            recognition.start();
+            setTimeout(() => {
+              try {
+                recognition.start();
+              } catch (e) {
+                console.log('Reconhecimento já ativo');
+              }
+            }, 1000);
           }
         }
       };
@@ -167,7 +185,11 @@ export default function ConsultationPage({ currentUser, isTabVisible, onBack }: 
       recognition.onend = () => {
         // Reiniciar automaticamente se ainda estiver gravando
         if (recordingStatus === 'recording') {
-          recognition.start();
+          try {
+            recognition.start();
+          } catch (e) {
+            console.log('Reconhecimento já ativo');
+          }
         }
       };
 
@@ -248,17 +270,24 @@ export default function ConsultationPage({ currentUser, isTabVisible, onBack }: 
     setSaving(true);
     
     try {
+      // Parar reconhecimento de voz
       if (recognitionRef.current) {
         recognitionRef.current.stop();
       }
+
+      // Parar contagem de tempo
       if (intervalRef.current) {
         clearInterval(intervalRef.current);
       }
+
+      // Parar stream de áudio
       if (streamRef.current) {
         streamRef.current.getTracks().forEach(track => track.stop());
       }
+
       const endTime = new Date();
       const durationFormatted = formatDuration(duration);
+
       // Salvar sessão no Supabase
       const { error } = await supabase
         .from('sessions')
@@ -274,13 +303,17 @@ export default function ConsultationPage({ currentUser, isTabVisible, onBack }: 
         });
 
       if (error) throw error;
+      
       setRecordingStatus('completed');
       showSuccess('Consulta Salva', 'A consulta foi salva com sucesso!');
+      
       // Voltar para a lista de sessões após 2 segundos
       setTimeout(() => {
         onBack();
       }, 2000);
+
     } catch (error) {
+      console.error('Erro ao salvar sessão:', error);
       showError('Erro ao Salvar', 'Não foi possível salvar a consulta. Tente novamente.');
       setRecordingStatus('recording'); // Voltar ao estado anterior
     } finally {

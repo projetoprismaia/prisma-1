@@ -25,11 +25,18 @@ function App() {
   const [showConsultationPage, setShowConsultationPage] = useState(false);
   const [refreshTrigger, setRefreshTrigger] = useState(0);
 
+  console.log('🔴 [App Render] Current Auth State:', {
+    user: user ? user.id : 'NULL',
+    loading,
+    error: error ? error.message : 'NONE'
+  });
+
   // Gerenciar recarregamento de dados quando aba volta a ficar visível
   useEffect(() => {
     const handleTabVisible = async () => {
       if (!user) return;
       
+      console.log('👁️ [App] Aba voltou a ficar visível - iniciando revalidação');
       
       try {
         // Pequeno delay para evitar múltiplas requisições
@@ -37,9 +44,15 @@ function App() {
         
         // Revalidar sessão do usuário
         await refreshProfile();
+        
         // Disparar recarregamento de dados nos componentes
+        console.log('🔄 [App] Disparando revalidação de dados...');
         setRefreshTrigger(prev => prev + 1);
+        
+        console.log('✅ [App] Revalidação concluída com sucesso');
       } catch (error) {
+        console.error('❌ [App] Erro na revalidação:', error);
+        console.log('⚠️ [App] Continuando com dados em cache devido ao erro');
       }
     };
 
@@ -49,6 +62,14 @@ function App() {
     }
   }, [user, refreshProfile, onTabVisible]);
 
+  // Log para debug
+  useEffect(() => {
+    console.log('🔍 [App] Estado de visibilidade:', {
+      isTabVisible,
+      wasTabHidden,
+      user: user ? user.email : 'NO_USER'
+    });
+  }, [isTabVisible, wasTabHidden, user]);
   
   const handleSignOut = () => {
     signOut().then(() => {
@@ -62,65 +83,88 @@ function App() {
   };
 
   const navigateToHome = () => {
+    console.log('🏠 [navigateToHome] Navegando para home');
+    console.log('🔍 [navigateToHome] Estado atual:', {
+      user: user ? user.id : 'NO_USER',
+      showAdminPanel,
+      showPatientPanel,
+      showSessionsPanel,
+    });
     setShowAdminPanel(false);
     setShowPatientPanel(false);
     setShowSessionsPanel(false);
     setShowConsultationPage(false);
     setSelectedPatientFilter(null);
     setViewingSessionId(null);
+    console.log('✅ [navigateToHome] Navegação concluída');
   };
 
   const navigateToAdmin = () => {
+    console.log('⚙️ [navigateToAdmin] Navegando para admin');
+    console.log('🔍 [navigateToAdmin] User role:', user?.profile?.role);
+    console.log('🔍 [navigateToAdmin] isAdmin():', isAdmin());
     setShowAdminPanel(true);
     setShowPatientPanel(false);
     setShowSessionsPanel(false);
     setShowConsultationPage(false);
     setSelectedPatientFilter(null);
     setViewingSessionId(null);
+    console.log('✅ [navigateToAdmin] Navegação concluída');
   };
 
   const navigateToPatients = () => {
+    console.log('👥 [navigateToPatients] Navegando para pacientes');
+    console.log('🔍 [navigateToPatients] User role:', user?.profile?.role);
     setShowAdminPanel(false);
     setShowPatientPanel(true);
     setShowSessionsPanel(false);
     setShowConsultationPage(false);
     setSelectedPatientFilter(null);
     setViewingSessionId(null);
+    console.log('✅ [navigateToPatients] Navegação concluída');
   };
 
   const navigateToSessions = () => {
+    console.log('📄 [navigateToSessions] Navegando para sessões');
     setShowAdminPanel(false);
     setShowPatientPanel(false);
     setShowSessionsPanel(true);
     setShowConsultationPage(false);
     setSelectedPatientFilter(null);
     setViewingSessionId(null);
+    console.log('✅ [navigateToSessions] Navegação concluída');
   };
 
   const navigateToSessionsWithPatient = (patientId: string) => {
+    console.log('📄 [navigateToSessionsWithPatient] Navegando para sessões com filtro:', patientId);
     setShowAdminPanel(false);
     setShowPatientPanel(false);
     setShowSessionsPanel(true);
     setShowConsultationPage(false);
     setSelectedPatientFilter(patientId);
     setViewingSessionId(null);
+    console.log('✅ [navigateToSessionsWithPatient] Navegação concluída');
   };
 
   const navigateToSessionDetail = (sessionId: string) => {
+    console.log('📄 [navigateToSessionDetail] Navegando para detalhes da sessão:', sessionId);
     setViewingSessionId(sessionId);
     setShowAdminPanel(false);
     setShowPatientPanel(false);
     setShowSessionsPanel(false);
     setShowConsultationPage(false);
+    console.log('✅ [navigateToSessionDetail] Navegação concluída');
   };
 
   const navigateToConsultation = () => {
+    console.log('🎤 [navigateToConsultation] Navegando para consulta');
     setShowConsultationPage(true);
     setShowAdminPanel(false);
     setShowPatientPanel(false);
     setShowSessionsPanel(false);
     setViewingSessionId(null);
     setSelectedPatientFilter(null);
+    console.log('✅ [navigateToConsultation] Navegação concluída');
   };
 
   const getCurrentSection = () => {
@@ -129,6 +173,7 @@ function App() {
                    showAdminPanel ? 'admin' : 
                    showPatientPanel ? 'patients' : 
                    showSessionsPanel ? 'sessions' : 'dashboard';
+    console.log('🔍 [getCurrentSection] Seção atual:', section);
     return section;
   };
 
