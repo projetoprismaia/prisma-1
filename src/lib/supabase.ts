@@ -36,7 +36,7 @@ export async function fetchDataWithRetry<T>(
 ): Promise<T> {
   const {
     maxRetries = 3,
-    timeout = 30000, // 30 segundos
+    timeout = 15000, // 15 segundos
     signal,
     skipSessionCheck = false
   } = options;
