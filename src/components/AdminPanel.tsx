@@ -348,7 +348,7 @@ export default function AdminPanel({ currentUser }: AdminPanelProps) {
           </div>
           <button
             onClick={openCreateModal}
-            className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg flex items-center space-x-2 transition-colors"
+            className="bg-purple-600 hover:bg-purple-700 text-white px-4 py-2 rounded-lg flex items-center space-x-2 transition-colors"
           >
             <Plus className="h-4 w-4" />
             <span>Novo Usuário</span>
@@ -383,12 +383,12 @@ export default function AdminPanel({ currentUser }: AdminPanelProps) {
 
         {/* Estatísticas */}
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-6">
-          <div className="bg-blue-50 p-4 rounded-lg">
+          <div className="bg-purple-50 p-4 rounded-lg">
             <div className="flex items-center space-x-2">
-              <UserCheck className="h-5 w-5 text-blue-600" />
-              <span className="text-sm font-medium text-blue-800">Total de Usuários</span>
+              <UserCheck className="h-5 w-5 text-purple-600" />
+              <span className="text-sm font-medium text-purple-800">Total de Usuários</span>
             </div>
-            <p className="text-2xl font-bold text-blue-900 mt-1">{users.length}</p>
+            <p className="text-2xl font-bold text-purple-900 mt-1">{users.length}</p>
           </div>
           <div className="bg-purple-50 p-4 rounded-lg">
             <div className="flex items-center space-x-2">
@@ -399,13 +399,13 @@ export default function AdminPanel({ currentUser }: AdminPanelProps) {
               {users.filter(u => u.role === 'admin').length}
             </p>
           </div>
-          <div className="bg-green-50 p-4 rounded-lg">
+          <div className="bg-indigo-50 p-4 rounded-lg">
             <div className="flex items-center space-x-2">
-              <User className="h-5 w-5 text-green-600" />
-              <span className="text-sm font-medium text-green-800">Total de Pacientes</span>
+              <User className="h-5 w-5 text-indigo-600" />
+              <span className="text-sm font-medium text-indigo-800">Total de Pacientes</span>
             </div>
             <div className="flex items-center space-x-2 mt-1">
-              <p className="text-2xl font-bold text-green-900">
+              <p className="text-2xl font-bold text-indigo-900">
                 {Object.keys(patientCounts).length > 0 
                   ? Object.values(patientCounts).reduce((sum, count) => sum + count, 0)
                   : '...'
@@ -414,7 +414,7 @@ export default function AdminPanel({ currentUser }: AdminPanelProps) {
               {Object.keys(patientCounts).length > 0 && (
                 <button
                   onClick={fetchUsers}
-                  className="text-xs text-green-600 hover:text-green-800 underline"
+                  className="text-xs text-indigo-600 hover:text-indigo-800 underline"
                   title="Atualizar contagem"
                 >
                   ↻ Atualizar
@@ -477,7 +477,7 @@ export default function AdminPanel({ currentUser }: AdminPanelProps) {
                     <div className="flex space-x-2">
                       <button
                         onClick={() => openEditModal(user)}
-                        className="p-2 text-blue-600 hover:bg-blue-100 rounded-lg transition-colors"
+                        className="p-2 text-purple-600 hover:bg-purple-100 rounded-lg transition-colors"
                         title="Editar usuário"
                       >
                         <Edit className="h-4 w-4" />

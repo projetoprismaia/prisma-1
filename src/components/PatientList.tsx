@@ -176,7 +176,7 @@ export default function PatientList({ currentUser, onNavigateToSessions }: Patie
       <div className="glass-card rounded-xl shadow-lg p-6">
         <div className="flex items-center justify-between mb-6">
           <div className="flex items-center space-x-3">
-            <div className="bg-green-600 p-2 rounded-lg">
+            <div className="bg-purple-600 p-2 rounded-lg">
               <Users className="h-6 w-6 text-white" />
             </div>
             <div>
@@ -186,7 +186,7 @@ export default function PatientList({ currentUser, onNavigateToSessions }: Patie
           </div>
           <button
             onClick={openCreateModal}
-            className="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-lg flex items-center space-x-2 transition-colors"
+            className="bg-purple-600 hover:bg-purple-700 text-white px-4 py-2 rounded-lg flex items-center space-x-2 transition-colors"
           >
             <Plus className="h-4 w-4" />
             <span>Novo Paciente</span>
@@ -202,26 +202,26 @@ export default function PatientList({ currentUser, onNavigateToSessions }: Patie
               placeholder="Buscar por nome, email ou WhatsApp..."
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
-              className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent"
+              className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
             />
           </div>
         </div>
 
         {/* Statistics */}
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-6">
-          <div className="bg-green-50 p-4 rounded-lg">
+          <div className="bg-purple-50 p-4 rounded-lg">
             <div className="flex items-center space-x-2">
-              <Users className="h-5 w-5 text-green-600" />
-              <span className="text-sm font-medium text-green-800">Total de Pacientes</span>
+              <Users className="h-5 w-5 text-purple-600" />
+              <span className="text-sm font-medium text-purple-800">Total de Pacientes</span>
             </div>
-            <p className="text-2xl font-bold text-green-900 mt-1">{patients.length}</p>
+            <p className="text-2xl font-bold text-purple-900 mt-1">{patients.length}</p>
           </div>
-          <div className="bg-blue-50 p-4 rounded-lg">
+          <div className="bg-indigo-50 p-4 rounded-lg">
             <div className="flex items-center space-x-2">
-              <Search className="h-5 w-5 text-blue-600" />
-              <span className="text-sm font-medium text-blue-800">Resultados da Busca</span>
+              <Search className="h-5 w-5 text-indigo-600" />
+              <span className="text-sm font-medium text-indigo-800">Resultados da Busca</span>
             </div>
-            <p className="text-2xl font-bold text-blue-900 mt-1">{filteredPatients.length}</p>
+            <p className="text-2xl font-bold text-indigo-900 mt-1">{filteredPatients.length}</p>
           </div>
         </div>
 
@@ -236,7 +236,7 @@ export default function PatientList({ currentUser, onNavigateToSessions }: Patie
               {!searchTerm && (
                 <button
                   onClick={openCreateModal}
-                  className="mt-3 text-green-600 hover:text-green-700 font-medium"
+                  className="mt-3 text-purple-600 hover:text-purple-700 font-medium"
                 >
                   Adicionar primeiro paciente
                 </button>
@@ -280,7 +280,7 @@ export default function PatientList({ currentUser, onNavigateToSessions }: Patie
                       e.stopPropagation();
                       openEditModal(patient);
                     }}
-                    className="p-2 text-blue-600 hover:bg-blue-100 rounded-lg transition-colors"
+                    className="p-2 text-purple-600 hover:bg-purple-100 rounded-lg transition-colors"
                     title="Editar paciente"
                   >
                     <Edit className="h-4 w-4" />

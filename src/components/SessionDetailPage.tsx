@@ -127,7 +127,7 @@ export default function SessionDetailPage({ sessionId, currentUser, onBack }: Se
           <p className="text-gray-600 text-sm mb-4">{error || 'Sessão não encontrada'}</p>
           <button
             onClick={onBack}
-            className="bg-indigo-600 hover:bg-indigo-700 text-white px-4 py-2 rounded-lg transition-colors"
+            className="bg-purple-600 hover:bg-purple-700 text-white px-4 py-2 rounded-lg transition-colors"
           >
             Voltar
           </button>
@@ -143,7 +143,7 @@ export default function SessionDetailPage({ sessionId, currentUser, onBack }: Se
         <div className="flex items-center justify-between mb-4">
           <button
             onClick={onBack}
-            className="flex items-center space-x-2 text-indigo-600 hover:text-indigo-700 transition-colors"
+            className="flex items-center space-x-2 text-purple-600 hover:text-purple-700 transition-colors"
           >
             <ArrowLeft className="h-5 w-5" />
             <span>Voltar às sessões</span>
@@ -151,7 +151,7 @@ export default function SessionDetailPage({ sessionId, currentUser, onBack }: Se
         </div>
 
         <div className="flex items-center space-x-4">
-          <div className="bg-indigo-600 p-3 rounded-lg">
+          <div className="bg-purple-600 p-3 rounded-lg">
             <FileText className="h-8 w-8 text-white" />
           </div>
           <div className="flex-1">

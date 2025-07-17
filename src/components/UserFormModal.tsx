@@ -125,7 +125,7 @@ export default function UserFormModal({
         {/* Header */}
         <div className="flex items-center justify-between p-6 border-b border-gray-200">
           <div className="flex items-center space-x-3">
-            <div className="bg-blue-600 p-2 rounded-lg">
+            <div className="bg-purple-600 p-2 rounded-lg">
               {isEditing ? <User className="h-5 w-5 text-white" /> : <UserCheck className="h-5 w-5 text-white" />}
             </div>
             <div>
@@ -159,6 +159,7 @@ export default function UserFormModal({
                 value={formData.full_name}
                 onChange={(e) => handleInputChange('full_name', e.target.value)}
                 className={`w-full pl-10 pr-4 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-colors ${
+                className={`w-full pl-10 pr-4 py-2 border rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent transition-colors ${
                   errors.full_name ? 'border-red-300' : 'border-gray-300'
                 }`}
                 placeholder="Dr. João Silva"
@@ -185,6 +186,7 @@ export default function UserFormModal({
                 onChange={(e) => handleInputChange('email', e.target.value)}
                 disabled={isEditing}
                 className={`w-full pl-10 pr-4 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-colors ${
+                className={`w-full pl-10 pr-4 py-2 border rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent transition-colors ${
                   isEditing ? 'bg-gray-100 cursor-not-allowed' : ''
                 } ${errors.email ? 'border-red-300' : 'border-gray-300'}`}
                 placeholder="joao@exemplo.com"
@@ -215,6 +217,7 @@ export default function UserFormModal({
                 value={formData.whatsapp}
                 onChange={(e) => handleInputChange('whatsapp', e.target.value)}
                 className={`w-full pl-10 pr-4 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-colors ${
+                className={`w-full pl-10 pr-4 py-2 border rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent transition-colors ${
                   errors.whatsapp ? 'border-red-300' : 'border-gray-300'
                 }`}
                 placeholder="+55 11 99999-9999"
@@ -238,7 +241,7 @@ export default function UserFormModal({
               <select
                 value={formData.role}
                 onChange={(e) => handleInputChange('role', e.target.value as UserRole)}
-                className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-colors appearance-none bg-white"
+                className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent transition-colors appearance-none bg-white"
               >
                 <option value="user">Usuário (Psiquiatra/Psicólogo)</option>
                 <option value="admin">Administrador</option>
@@ -259,6 +262,7 @@ export default function UserFormModal({
                   value={formData.password || ''}
                   onChange={(e) => handleInputChange('password', e.target.value)}
                   className={`w-full pl-10 pr-12 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-colors ${
+                  className={`w-full pl-10 pr-12 py-2 border rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent transition-colors ${
                     errors.password ? 'border-red-300' : 'border-gray-300'
                   }`}
                   placeholder="••••••••"
@@ -292,7 +296,7 @@ export default function UserFormModal({
             <button
               type="submit"
               disabled={loading}
-              className="flex-1 bg-blue-600 hover:bg-blue-700 disabled:bg-blue-400 text-white px-4 py-2 rounded-lg transition-colors flex items-center justify-center space-x-2"
+              className="flex-1 bg-purple-600 hover:bg-purple-700 disabled:bg-purple-400 text-white px-4 py-2 rounded-lg transition-colors flex items-center justify-center space-x-2"
             >
               {loading ? (
                 <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
