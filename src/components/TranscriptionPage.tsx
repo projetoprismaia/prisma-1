@@ -313,42 +313,19 @@ export default function TranscriptionPage({ currentUser, onBack }: Transcription
 
   return (
     <div className="max-w-4xl mx-auto space-y-6">
-      {/* Header */}
-      <div className="glass-card rounded-xl shadow-lg p-6">
-        <div className="flex items-center justify-between mb-4">
-          <button
-            onClick={onBack}
-            disabled={isRecording || isPaused}
-            className="flex items-center space-x-2 text-indigo-600 hover:text-indigo-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-          >
-            <ArrowLeft className="h-5 w-5" />
-            <span>Voltar às sessões</span>
-          </button>
-          
-          {(isRecording || isPaused) && (
-            <div className="flex items-center space-x-2">
-              <Clock className="h-5 w-5 text-gray-600" />
-              <span className="text-lg font-mono font-bold text-gray-800">
-                {formatDuration(duration)}
-              </span>
-            </div>
-          )}
-        </div>
-
-        <div className="flex items-center space-x-4">
-          <div className="bg-indigo-600 p-3 rounded-lg">
-            <Mic className="h-8 w-8 text-white" />
-          </div>
-          <div>
-            <h1 className="text-2xl font-bold text-gray-900 mb-1">Nova Transcrição</h1>
-            <p className="text-gray-600">Configure e inicie uma nova sessão de transcrição</p>
-          </div>
-        </div>
-      </div>
-
       {/* Configuration */}
       {!isRecording && !isPaused && !isCompleted && (
         <div className="glass-card rounded-xl shadow-lg p-6">
+          <div className="flex items-center justify-between mb-6">
+            <button
+              onClick={onBack}
+              className="flex items-center space-x-2 text-indigo-600 hover:text-indigo-700 transition-colors"
+            >
+              <ArrowLeft className="h-5 w-5" />
+              <span>Voltar às sessões</span>
+            </button>
+          </div>
+          
           <h2 className="text-lg font-semibold text-gray-800 mb-4">Configuração da Sessão</h2>
           
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
@@ -428,6 +405,24 @@ export default function TranscriptionPage({ currentUser, onBack }: Transcription
       {/* Recording Controls */}
       {(isRecording || isPaused) && (
         <div className="glass-card rounded-xl shadow-lg p-6">
+          <div className="flex items-center justify-between mb-4">
+            <button
+              onClick={onBack}
+              disabled={true}
+              className="flex items-center space-x-2 text-gray-400 cursor-not-allowed"
+            >
+              <ArrowLeft className="h-5 w-5" />
+              <span>Voltar às sessões</span>
+            </button>
+            
+            <div className="flex items-center space-x-2">
+              <Clock className="h-5 w-5 text-gray-600" />
+              <span className="text-lg font-mono font-bold text-gray-800">
+                {formatDuration(duration)}
+              </span>
+            </div>
+          </div>
+          
           <div className="flex items-center justify-between mb-4">
             <div className="flex items-center space-x-4">
               <div className={`p-3 rounded-full ${isRecording ? 'bg-red-100' : 'bg-yellow-100'}`}>
