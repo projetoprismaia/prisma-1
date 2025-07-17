@@ -17,7 +17,6 @@ import { dataCache } from './utils/dataCache';
 function App() {
   const { user, loading, error, signOut, isAdmin, refreshProfile } = useAuth();
   const { notification, hideNotification } = useNotification();
-  const { showSuccess, showInfo } = useNotification();
   const { isTabVisible, wasTabHidden, onTabVisible } = useTabVisibility();
   const [showAdminPanel, setShowAdminPanel] = useState(false);
   const [showPatientPanel, setShowPatientPanel] = useState(false);
@@ -26,6 +25,12 @@ function App() {
   const [viewingSessionId, setViewingSessionId] = useState<string | null>(null);
   const [showConsultationPage, setShowConsultationPage] = useState(false);
   const [refreshTrigger, setRefreshTrigger] = useState(0);
+
+  console.log('🔴 [App Render] Current Auth State:', {
+    user: user ? user.id : 'NULL',
+    loading,
+    error: error ? error.message : 'NONE'
+  });
 
   // Gerenciar recarregamento de dados quando aba volta a ficar visível
   useEffect(() => {
