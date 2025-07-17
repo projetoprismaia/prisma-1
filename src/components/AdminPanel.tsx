@@ -437,7 +437,7 @@ export default function AdminPanel({ currentUser }: AdminPanelProps) {
               return (
                 <div
                   key={user.id}
-                      <p>Criado em: {formatToDDMMAAAA(user.created_at)}</p>
+                  className="flex items-center justify-between p-4 border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors"
                 >
                   <div className="flex items-center space-x-3">
                     <div className="bg-gray-100 p-2 rounded-full">
@@ -455,7 +455,7 @@ export default function AdminPanel({ currentUser }: AdminPanelProps) {
                         </p>
                       )}
                       <div className="flex items-center space-x-4 text-xs text-gray-500 mt-1">
-                        <p>Criado em: {new Date(user.created_at).toLocaleDateString('pt-BR')}</p>
+                        <p>Criado em: {formatToDDMMAAAA(user.created_at)}</p>
                         <p className="flex items-center">
                           <Users className="h-3 w-3 mr-1" />
                           <span className="font-medium">
