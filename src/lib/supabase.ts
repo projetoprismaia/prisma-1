@@ -12,3 +12,5 @@ if (!supabaseUrl || !supabaseAnonKey) {
   console.error('❌ ERRO CRÍTICO: Variáveis de ambiente ausentes');
   throw new Error('Missing Supabase environment variables')
 }
+
+export const supabase = createClient(supabaseUrl, supabaseAnonKey);
