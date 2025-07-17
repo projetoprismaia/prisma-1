@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { FileText, Search, Plus, Play, Pause, Square, Clock, User, Calendar, Filter, Download, Eye, Mic } from 'lucide-react';
+import { FileText, Search, Plus, Play, Pause, Square, Clock, User, Calendar, Filter, Download, Eye } from 'lucide-react';
 import { supabase } from '../lib/supabase';
 import { Session } from '../types/session';
 import { Patient } from '../types/patient';
@@ -8,7 +8,6 @@ import { formatToDDMMAAAA, formatDateTimeShortToDDMMAAAA, formatDateTimeToDDMMAA
 
 interface SessionListPageProps {
   currentUser: AuthUser;
-  onStartRecording: () => void;
   initialPatientFilter?: string;
   onViewSession: (sessionId: string) => void;
 }
@@ -22,6 +21,7 @@ const log = (message: string, data?: any) => {
 }
 
 export default function SessionListPage({ currentUser, onStartRecording, initialPatientFilter, onViewSession }: SessionListPageProps) {
+export default function SessionListPage({ currentUser, initialPatientFilter, onViewSession }: SessionListPageProps) {
   const [sessions, setSessions] = useState<Session[]>([]);
   const [patients, setPatients] = useState<Patient[]>([]);
   const [loading, setLoading] = useState(true);
@@ -78,11 +78,6 @@ export default function SessionListPage({ currentUser, onStartRecording, initial
     } catch (error) {
       log('Erro ao buscar pacientes:', error);
     }
-  };
-
-  const handleStartSession = () => {
-    log('Iniciando nova sessão - indo direto para gravação');
-    onStartRecording();
   };
 
   const exportSession = (session: Session) => {
@@ -177,13 +172,6 @@ export default function SessionListPage({ currentUser, onStartRecording, initial
               <p className="text-sm text-gray-600">Gerencie suas sessões de consulta</p>
             </div>
           </div>
-          <button
-            onClick={handleStartSession}
-            className="bg-indigo-600 hover:bg-indigo-700 text-white px-4 py-2 rounded-lg flex items-center space-x-2 transition-colors"
-          >
-            <Mic className="h-4 w-4" />
-            <span>Nova Sessão</span>
-          </button>
         </div>
 
         {/* Filtros */}
@@ -257,14 +245,6 @@ export default function SessionListPage({ currentUser, onStartRecording, initial
                   : 'Nenhuma sessão criada ainda'
                 }
               </p>
-              {!searchTerm && selectedPatient === 'all' && !dateFilter && (
-                <button
-                  onClick={handleStartSession}
-                  className="mt-3 text-indigo-600 hover:text-indigo-700 font-medium"
-                >
-                  Criar primeira sessão
-                </button>
-              )}
             </div>
           ) : (
             filteredSessions.map((session) => (

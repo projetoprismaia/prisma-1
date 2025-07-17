@@ -8,7 +8,6 @@ import PatientList from './components/PatientList';
 import SessionListPage from './components/SessionListPage';
 import SessionDetailPage from './components/SessionDetailPage';
 import DashboardSummaries from './components/DashboardSummaries';
-import RecordingPage from './components/RecordingPage';
 import NotificationModal from './components/NotificationModal';
 import { useNotification } from './hooks/useNotification';
 
@@ -20,9 +19,6 @@ function App() {
   const [showSessionsPanel, setShowSessionsPanel] = useState(false);
   const [selectedPatientFilter, setSelectedPatientFilter] = useState<string | null>(null);
   const [viewingSessionId, setViewingSessionId] = useState<string | null>(null);
-  const [activeRecordingSession, setActiveRecordingSession] = useState<{
-    active: boolean;
-  } | null>(null);
 
   const handleSignOut = () => {
     signOut().then(() => {
@@ -30,7 +26,6 @@ function App() {
       setShowAdminPanel(false);
       setShowPatientPanel(false);
       setShowSessionsPanel(false);
-      setActiveRecordingSession(null);
       setViewingSessionId(null);
     });
   };
@@ -42,13 +37,11 @@ function App() {
       showAdminPanel,
       showPatientPanel,
       showSessionsPanel,
-      activeRecordingSession: activeRecordingSession ? 'ACTIVE' : 'NONE'
     });
     setShowAdminPanel(false);
     setShowPatientPanel(false);
     setShowSessionsPanel(false);
     setSelectedPatientFilter(null);
-    setActiveRecordingSession(null);
     setViewingSessionId(null);
     console.log('✅ [navigateToHome] Navegação concluída');
   };
@@ -61,7 +54,6 @@ function App() {
     setShowPatientPanel(false);
     setShowSessionsPanel(false);
     setSelectedPatientFilter(null);
-    setActiveRecordingSession(null);
     setViewingSessionId(null);
     console.log('✅ [navigateToAdmin] Navegação concluída');
   };
@@ -73,7 +65,6 @@ function App() {
     setShowPatientPanel(true);
     setShowSessionsPanel(false);
     setSelectedPatientFilter(null);
-    setActiveRecordingSession(null);
     setViewingSessionId(null);
     console.log('✅ [navigateToPatients] Navegação concluída');
   };
@@ -84,7 +75,6 @@ function App() {
     setShowPatientPanel(false);
     setShowSessionsPanel(true);
     setSelectedPatientFilter(null);
-    setActiveRecordingSession(null);
     setViewingSessionId(null);
     console.log('✅ [navigateToSessions] Navegação concluída');
   };
@@ -95,35 +85,8 @@ function App() {
     setShowPatientPanel(false);
     setShowSessionsPanel(true);
     setSelectedPatientFilter(patientId);
-    setActiveRecordingSession(null);
     setViewingSessionId(null);
     console.log('✅ [navigateToSessionsWithPatient] Navegação concluída');
-  };
-
-  const navigateToRecording = () => {
-    console.log('🎤 [navigateToRecording] Navegando para gravação');
-    setActiveRecordingSession({ active: true });
-    setShowAdminPanel(false);
-    setShowPatientPanel(false);
-    setShowSessionsPanel(false);
-    setViewingSessionId(null);
-    console.log('✅ [navigateToRecording] Navegação concluída');
-  };
-
-  const handleRecordingComplete = () => {
-    console.log('✅ [handleRecordingComplete] Gravação concluída');
-    setActiveRecordingSession(null);
-    setViewingSessionId(null);
-    // Optionally navigate to sessions list
-    navigateToSessions();
-    console.log('✅ [handleRecordingComplete] Redirecionamento concluído');
-  };
-
-  const handleRecordingCancel = () => {
-    console.log('❌ [handleRecordingCancel] Gravação cancelada');
-    setActiveRecordingSession(null);
-    setViewingSessionId(null);
-    console.log('✅ [handleRecordingCancel] Cancelamento concluído');
   };
 
   const navigateToSessionDetail = (sessionId: string) => {
@@ -132,13 +95,11 @@ function App() {
     setShowAdminPanel(false);
     setShowPatientPanel(false);
     setShowSessionsPanel(false);
-    setActiveRecordingSession(null);
     console.log('✅ [navigateToSessionDetail] Navegação concluída');
   };
 
   const getCurrentSection = () => {
     const section = viewingSessionId ? 'sessions' :
-                   activeRecordingSession ? 'sessions' :
                    showAdminPanel ? 'admin' : 
                    showPatientPanel ? 'patients' : 
                    showSessionsPanel ? 'sessions' : 'dashboard';
@@ -197,12 +158,7 @@ function App() {
               onBack={navigateToSessions}
             />
           ) : activeRecordingSession ? (
-            <RecordingPage
-              currentUser={user}
-              onComplete={handleRecordingComplete}
-              onCancel={handleRecordingCancel}
-            />
-          ) : showAdminPanel && isAdmin() ? (
+          showAdminPanel && isAdmin() ? (
             <AdminPanel currentUser={user} />
           ) : showPatientPanel && !isAdmin() ? (
             <PatientList 
@@ -212,7 +168,6 @@ function App() {
           ) : showSessionsPanel ? (
             <SessionListPage 
               currentUser={user} 
-              onStartRecording={navigateToRecording}
               initialPatientFilter={selectedPatientFilter}
               onViewSession={navigateToSessionDetail}
             />
@@ -222,7 +177,6 @@ function App() {
               onNavigateToPatients={navigateToPatients}
               onNavigateToSessions={navigateToSessions}
               onNavigateToAdmin={isAdmin() ? navigateToAdmin : undefined}
-              onStartRecording={navigateToRecording}
             />
           )}
         </div>

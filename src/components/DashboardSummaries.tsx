@@ -9,7 +9,6 @@ interface DashboardSummariesProps {
   onNavigateToPatients: () => void;
   onNavigateToSessions: () => void;
   onNavigateToAdmin?: () => void;
-  onStartRecording?: () => void;
 }
 
 interface DashboardData {
@@ -29,8 +28,7 @@ export default function DashboardSummaries({
   currentUser, 
   onNavigateToPatients, 
   onNavigateToSessions,
-  onNavigateToAdmin,
-  onStartRecording
+  onNavigateToAdmin
 }: DashboardSummariesProps) {
   const [data, setData] = useState<DashboardData>({
     totalPatients: 0,
@@ -267,28 +265,6 @@ export default function DashboardSummaries({
             <span>Ver todas</span>
           </div>
         </div>
-        
-        {/* Botão Nova Gravação - apenas para usuários não-admin */}
-        {!isAdmin && onStartRecording && (
-          <button
-            onClick={onStartRecording}
-            className="rounded-xl shadow-lg p-6 hover:shadow-xl transition-all duration-200 hover:scale-105 bg-gradient-to-r from-purple-600 to-indigo-700 text-white border-0"
-          >
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm font-medium text-white mb-1">Nova Gravação</p>
-                <p className="text-3xl font-bold text-white">🎤</p>
-              </div>
-              <div className="bg-white/20 p-3 rounded-full">
-                <Mic className="h-6 w-6 text-white" />
-              </div>
-            </div>
-            <div className="mt-4 flex items-center text-sm text-white">
-              <TrendingUp className="h-4 w-4 mr-1" />
-              <span>Iniciar nova sessão</span>
-            </div>
-          </button>
-        )}
       </div>
 
       {/* Sessões Recentes */}
