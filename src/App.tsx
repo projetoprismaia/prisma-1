@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useAuth } from './hooks/useAuth';
 import { useTabVisibility } from './hooks/useTabVisibility';
 import OrganicBackground from './components/OrganicBackground';
@@ -27,7 +27,6 @@ function App() {
   const [refreshTrigger, setRefreshTrigger] = useState(0);
 
   // Gerenciar recarregamento de dados quando aba volta a ficar visível
-  useEffect(() => {
   useEffect(() => {
     const handleTabVisible = async () => {
       if (!user) return;
@@ -70,6 +69,7 @@ function App() {
       user: user ? user.email : 'NO_USER'
     });
   }, [isTabVisible, wasTabHidden, user]);
+  
   const handleSignOut = () => {
     signOut().then(() => {
       // Forçar limpeza adicional do estado local após logout
@@ -252,7 +252,6 @@ function App() {
           ) : (
             <DashboardSummaries
               currentUser={user}
-              refreshTrigger={refreshTrigger}
               refreshTrigger={refreshTrigger}
               onNavigateToPatients={navigateToPatients}
               onNavigateToSessions={navigateToSessions}
