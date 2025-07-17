@@ -42,7 +42,8 @@ export default function RecordingPage({
   const [hasStarted, setHasStarted] = useState(false);
   const [loadingPatients, setLoadingPatients] = useState(true);
   const [sessionConfigured, setSessionConfigured] = useState(false);
-  const [patientSearchTerm, setPatientSearchTerm] = useState('');
+  const [patientSearchInput, setPatientSearchInput] = useState('');
+  const [showPatientDropdown, setShowPatientDropdown] = useState(false);
   
   const recognitionRef = useRef<SpeechRecognition | null>(null);
   const intervalRef = useRef<NodeJS.Timeout | null>(null);
@@ -394,12 +395,50 @@ export default function RecordingPage({
 
   const getSelectedPatientName = () => {
     const patient = patients.find(p => p.id === selectedPatientId);
-    return patient?.name || 'Selecione um paciente';
+    return patient?.name || '';
   };
 
-  const filteredPatients = patients.filter(patient =>
-    patient.name.toLowerCase().includes(patientSearchTerm.toLowerCase())
-  );
+  const filteredPatients = patients.filter(patient => {
+    if (!patientSearchInput.trim()) return true;
+    return patient.name.toLowerCase().includes(patientSearchInput.toLowerCase());
+  });
+
+  const handlePatientInputChange = (value: string) => {
+    setPatientSearchInput(value);
+    setShowPatientDropdown(true);
+    
+    // Se o valor foi limpo, limpar também a seleção
+    if (!value.trim()) {
+      setSelectedPatientId('');
+    }
+  };
+
+  const handlePatientSelect = (patient: Patient) => {
+    setSelectedPatientId(patient.id);
+    setPatientSearchInput(patient.name);
+    setShowPatientDropdown(false);
+  };
+
+  const handlePatientInputFocus = () => {
+    setShowPatientDropdown(true);
+  };
+
+  const handlePatientInputBlur = () => {
+    // Delay para permitir clique nos itens da lista
+    setTimeout(() => {
+      setShowPatientDropdown(false);
+    }, 200);
+  };
+
+  // Atualizar o input quando um paciente for selecionado externamente
+  useEffect(() => {
+    if (selectedPatientId) {
+      const selectedPatient = patients.find(p => p.id === selectedPatientId);
+      if (selectedPatient && patientSearchInput !== selectedPatient.name) {
+        setPatientSearchInput(selectedPatient.name);
+      }
+    }
+  }, [selectedPatientId, patients]);
 
   const startRecording = () => {
     if (!recognitionRef.current) {
@@ -644,50 +683,91 @@ export default function RecordingPage({
                     Paciente *
                   </label>
                   
-                  {/* Search Field */}
-                  <div className="relative mb-3">
-                    <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
-                    <input
-                      type="text"
-                      placeholder="Buscar paciente pelo nome..."
-                      value={patientSearchTerm}
-                      onChange={(e) => setPatientSearchTerm(e.target.value)}
-                      className="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
-                    />
-                  </div>
-                  
-                  {/* Patient Selector */}
+                  {/* Unified Patient Search/Select Field */}
                   <div className="relative">
                     <User className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
-                    <select
-                      value={selectedPatientId}
-                      onChange={(e) => setSelectedPatientId(e.target.value)}
-                      className="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent appearance-none bg-white"
-                    >
-                      <option value="">Selecione um paciente</option>
-                      {filteredPatients.map(patient => (
-                        <option key={patient.id} value={patient.id}>
-                          {patient.name}
-                        </option>
-                      ))}
-                    </select>
+                    <input
+                      type="text"
+                      placeholder="Digite o nome do paciente ou selecione da lista..."
+                      value={patientSearchInput}
+                      onChange={(e) => handlePatientInputChange(e.target.value)}
+                      onFocus={handlePatientInputFocus}
+                      onBlur={handlePatientInputBlur}
+                      className="w-full pl-10 pr-10 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
+                    />
+                    <Search className="absolute right-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
+                    
+                    {/* Dropdown List */}
+                    {showPatientDropdown && (
+                      <div className="absolute z-10 w-full mt-1 bg-white border border-gray-300 rounded-lg shadow-lg max-h-60 overflow-y-auto">
+                        {filteredPatients.length > 0 ? (
+                          <ul className="py-1">
+                            {filteredPatients.map(patient => (
+                              <li
+                                key={patient.id}
+                                onClick={() => handlePatientSelect(patient)}
+                                className={`px-4 py-3 hover:bg-indigo-50 cursor-pointer transition-colors ${
+                                  selectedPatientId === patient.id ? 'bg-indigo-100 text-indigo-900' : 'text-gray-900'
+                                }`}
+                              >
+                                <div className="flex items-center space-x-3">
+                                  <div className="bg-gray-100 p-1 rounded-full">
+                                    <User className="h-3 w-3 text-gray-600" />
+                                  </div>
+                                  <div>
+                                    <p className="font-medium">{patient.name}</p>
+                                    {patient.email && (
+                                      <p className="text-xs text-gray-500">{patient.email}</p>
+                                    )}
+                                  </div>
+                                </div>
+                              </li>
+                            ))}
+                          </ul>
+                        ) : (
+                          <div className="px-4 py-3 text-gray-500 text-center">
+                            {patientSearchInput.trim() ? (
+                              <>
+                                <Search className="h-4 w-4 mx-auto mb-1 text-gray-400" />
+                                <p className="text-sm">Nenhum paciente encontrado</p>
+                                <p className="text-xs">com "{patientSearchInput}"</p>
+                              </>
+                            ) : (
+                              <>
+                                <User className="h-4 w-4 mx-auto mb-1 text-gray-400" />
+                                <p className="text-sm">Digite para buscar pacientes</p>
+                              </>
+                            )}
+                          </div>
+                        )}
+                      </div>
+                    )}
                   </div>
                   
                   {/* Status Messages */}
                   {patients.length === 0 ? (
-                    <p className="mt-2 text-sm text-amber-600">
-                      ⚠️ Você precisa cadastrar pelo menos um paciente primeiro
+                    <p className="mt-2 text-sm text-amber-600 flex items-center">
+                      <User className="h-4 w-4 mr-1" />
+                      Você precisa cadastrar pelo menos um paciente primeiro
                     </p>
-                  ) : filteredPatients.length === 0 && patientSearchTerm ? (
-                    <p className="mt-2 text-sm text-gray-600">
-                      🔍 Nenhum paciente encontrado com "{patientSearchTerm}"
+                  ) : selectedPatientId ? (
+                    <p className="mt-2 text-sm text-green-600 flex items-center">
+                      <User className="h-4 w-4 mr-1" />
+                      Paciente selecionado: {getSelectedPatientName()}
                     </p>
-                  ) : patientSearchTerm && filteredPatients.length > 0 ? (
-                    <p className="mt-2 text-sm text-green-600">
-                      ✅ {filteredPatients.length} paciente(s) encontrado(s)
+                  ) : patientSearchInput.trim() && filteredPatients.length === 0 ? (
+                    <p className="mt-2 text-sm text-red-600 flex items-center">
+                      <Search className="h-4 w-4 mr-1" />
+                      Nenhum paciente encontrado com "{patientSearchInput}"
+                    </p>
+                  ) : patientSearchInput.trim() && filteredPatients.length > 0 ? (
+                    <p className="mt-2 text-sm text-blue-600 flex items-center">
+                      <Search className="h-4 w-4 mr-1" />
+                      {filteredPatients.length} paciente(s) encontrado(s)
                     </p>
                   ) : null}
                 </div>
+                
                 {/* Session Title */}
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-2">
@@ -701,7 +781,8 @@ export default function RecordingPage({
                       onChange={(e) => setSessionTitle(e.target.value)}
                       className="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
                       placeholder="Ex: Consulta de acompanhamento"
-                    />
+                    >
+                    </input>
                   </div>
                 </div>
 
